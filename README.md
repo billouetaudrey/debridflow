@@ -14,9 +14,9 @@
 * 🔍 **Scanner de Médiathèque & Liens Debrid ("Médiathèque & Liens")** :
   * **Détection des liens morts** : Analyse récursive de vos dossiers de médiathèque pour repérer les symlinks cassés ou dont la source n'existe plus sur le cloud Debrid.
   * **Relance automatique Radarr / Sonarr** : Déclenchement automatique ou manuel d'une nouvelle recherche (`movies/search`, `episodes/search`) auprès de vos instances pour remplacer instantanément les fichiers manquants.
-  * **Nettoyage sélectif** : Suppression en un clic des symlinks orphelins sur vos disques.
+  * **Nettoyage & Suppression synchronisée** : Suppression locale en un clic des symlinks orphelins avec possibilité de supprimer également le film/la série ou le fichier associé directement dans Radarr / Sonarr.
   * **Gestionnaire de magnets** : Visualisation de tous les torrents cloud, identification des doublons et des magnets non associés à des fichiers locaux avec suppression sélective.
-  * **Progression en direct** : Barre de progression animée avec pourcentage et étapes détaillées.
+  * **Contrôle & Progression en direct** : Barre de progression animée avec pourcentage, étapes détaillées et **possibilité d'interrompre le scan en cours à tout moment**.
   * **Sécurité anti-flood & Coalescing** : Protection contre les rafales de requêtes webhook (cooldown 45s, fusion des imports simultanés et tampon de stabilisation de 15s).
 * 🎨 **Interface Web Moderne & Responsive** :
   * Adaptée aux écrans d'ordinateurs, tablettes et smartphones.
