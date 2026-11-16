@@ -118,6 +118,7 @@ async def update_settings(
     auto_clean_import: Optional[str] = Form(None),
     delete_on_provider: Optional[str] = Form(None),
     delete_on_dl_complete: Optional[str] = Form(None),
+    enable_scanner_tab: Optional[str] = Form(None),
     allowed_exts: str = Form(""),
     username: str = Form(""),
     password: str = Form(""),
@@ -174,6 +175,7 @@ async def update_settings(
         settings_db["radarr_api_key"] = radarr_api_key.strip()
         settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
         settings_db["sonarr_api_key"] = sonarr_api_key.strip()
+        settings_db["enable_scanner_tab"] = enable_scanner_tab == "on"
         settings_db["services"] = new_services
         rebuild_categories()
         save_state()
@@ -339,6 +341,8 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__RADARR_API_KEY__", html.escape(s.get("radarr_api_key", "")))
         .replace("__SONARR_URL__", html.escape(s.get("sonarr_url", "http://127.0.0.1:8989")))
         .replace("__SONARR_API_KEY__", html.escape(s.get("sonarr_api_key", "")))
+        .replace("__CHECKED_SCANNER_TAB__", "checked" if s.get("enable_scanner_tab", True) else "")
+        .replace("__SCANNER_TAB_DISPLAY__", "" if s.get("enable_scanner_tab", True) else "display:none;")
         .replace("__CHECKED_DL_DONE__", "checked" if s.get("delete_on_dl_complete") else "")
         .replace("__CHECKED_AUTO__", "checked" if s.get("auto_clean_import") else "")
         .replace("__CHECKED_DEL__", "checked" if s.get("delete_on_provider") else "")

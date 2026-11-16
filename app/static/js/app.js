@@ -143,6 +143,7 @@ const TRANSLATIONS = {
     btn_delete_checked: "🗑️ Supprimer cochés",
     msg_loading_magnets: "Chargement des magnets...",
     sec_arr_integration: "🔗 Intégration Radarr & Sonarr (Relance automatique des liens morts)",
+    lbl_enable_scanner_tab: "Afficher l'onglet Médiathèque & Liens dans la barre de navigation",
     lbl_radarr_url: "URL Radarr",
     lbl_radarr_key: "Clé API Radarr",
     lbl_sonarr_url: "URL Sonarr",
@@ -293,6 +294,7 @@ const TRANSLATIONS = {
     btn_delete_checked: "🗑️ Delete checked",
     msg_loading_magnets: "Loading magnets...",
     sec_arr_integration: "🔗 Radarr & Sonarr Integration (Auto-trigger search on dead links)",
+    lbl_enable_scanner_tab: "Show Media Library & Links tab in navigation bar",
     lbl_radarr_url: "Radarr URL",
     lbl_radarr_key: "Radarr API Key",
     lbl_sonarr_url: "Sonarr URL",
@@ -472,6 +474,10 @@ function esc(str) {
 }
 
 function showTab(tab) {
+  const btnScanner = document.getElementById('btn-scanner');
+  if (tab === 'scanner' && btnScanner && (btnScanner.style.display === 'none' || getComputedStyle(btnScanner).display === 'none')) {
+    tab = 'queue';
+  }
   currentTab = tab;
   document.getElementById('tab-queue').style.display = tab === 'queue' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';

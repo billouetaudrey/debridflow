@@ -45,6 +45,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "MEDIA_SCAN_PATHS",
         "/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,/mnt/virtual/Medias/Replay,/mnt/virtual/Medias/Enfants,/mnt/virtual/Medias/Animes",
     ),
+    "enable_scanner_tab": os.getenv("ENABLE_SCANNER_TAB", "true").lower() == "true",
     "radarr_url": os.getenv("RADARR_URL", "http://127.0.0.1:7878"),
     "radarr_api_key": os.getenv("RADARR_API_KEY", ""),
     "sonarr_url": os.getenv("SONARR_URL", "http://127.0.0.1:8989"),
