@@ -43,6 +43,10 @@ data/*
 # Environment variables & secrets
 .env
 *.env
+**/.env
+
+# Standalone alldebrid PHP folder (contains .env secrets and cache)
+alldebrid/
 
 # IDE / Editors
 .vscode/

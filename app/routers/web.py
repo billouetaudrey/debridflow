@@ -122,6 +122,11 @@ async def update_settings(
     username: str = Form(""),
     password: str = Form(""),
     ui_language: str = Form("fr"),
+    media_scan_paths: str = Form(""),
+    radarr_url: str = Form(""),
+    radarr_api_key: str = Form(""),
+    sonarr_url: str = Form(""),
+    sonarr_api_key: str = Form(""),
     service_names: Optional[List[str]] = Form(None),
     service_modes_list: Optional[List[str]] = Form(None),
     service_subpaths: Optional[List[str]] = Form(None),
@@ -163,6 +168,12 @@ async def update_settings(
         settings_db["username"] = username.strip()
         settings_db["password"] = password.strip()
         settings_db["ui_language"] = clean_lang
+        if media_scan_paths.strip():
+            settings_db["media_scan_paths"] = media_scan_paths.strip()
+        settings_db["radarr_url"] = radarr_url.strip() or "http://127.0.0.1:7878"
+        settings_db["radarr_api_key"] = radarr_api_key.strip()
+        settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
+        settings_db["sonarr_api_key"] = sonarr_api_key.strip()
         settings_db["services"] = new_services
         rebuild_categories()
         save_state()
@@ -323,6 +334,11 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__UI_LANGUAGE__", html.escape(ui_lang))
         .replace("__ALLOWED_EXTS__", html.escape(s["allowed_exts"]))
         .replace("__API_BASE__", html.escape(s["api_base"]))
+        .replace("__MEDIA_SCAN_PATHS__", html.escape(s.get("media_scan_paths", "")))
+        .replace("__RADARR_URL__", html.escape(s.get("radarr_url", "http://127.0.0.1:7878")))
+        .replace("__RADARR_API_KEY__", html.escape(s.get("radarr_api_key", "")))
+        .replace("__SONARR_URL__", html.escape(s.get("sonarr_url", "http://127.0.0.1:8989")))
+        .replace("__SONARR_API_KEY__", html.escape(s.get("sonarr_api_key", "")))
         .replace("__CHECKED_DL_DONE__", "checked" if s.get("delete_on_dl_complete") else "")
         .replace("__CHECKED_AUTO__", "checked" if s.get("auto_clean_import") else "")
         .replace("__CHECKED_DEL__", "checked" if s.get("delete_on_provider") else "")

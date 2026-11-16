@@ -41,6 +41,14 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "ui_language": os.getenv("UI_LANGUAGE", "fr").strip().lower(),
     "provider": os.getenv("DEBRID_PROVIDER", "alldebrid").strip().lower(),
     "services": {k: dict(v) for k, v in DEFAULT_SERVICES.items()},
+    "media_scan_paths": os.getenv(
+        "MEDIA_SCAN_PATHS",
+        "/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,/mnt/virtual/Medias/Replay,/mnt/virtual/Medias/Enfants,/mnt/virtual/Medias/Animes",
+    ),
+    "radarr_url": os.getenv("RADARR_URL", "http://127.0.0.1:7878"),
+    "radarr_api_key": os.getenv("RADARR_API_KEY", ""),
+    "sonarr_url": os.getenv("SONARR_URL", "http://127.0.0.1:8989"),
+    "sonarr_api_key": os.getenv("SONARR_API_KEY", ""),
 }
 
 logging.basicConfig(

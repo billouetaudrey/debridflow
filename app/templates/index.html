@@ -27,6 +27,7 @@
     <div class="header-controls">
       <div class="tabs">
         <button id="btn-queue" class="tab-btn active" onclick="showTab('queue')" data-i18n="tab_queue">File d'attente</button>
+        <button id="btn-scanner" class="tab-btn" onclick="showTab('scanner')" data-i18n="tab_scanner">Médiathèque &amp; Liens</button>
         <button id="btn-settings" class="tab-btn" onclick="showTab('settings')" data-i18n="tab_settings">Paramètres</button>
       </div>
 
@@ -74,6 +75,103 @@
       </thead>
       <tbody id="queue-tbody">__TABLE_BODY__</tbody>
     </table>
+  </div>
+
+  <!-- Onglet 2 : Médiathèque, Liens Morts & Magnets (Scanner) -->
+  <div id="tab-scanner" class="card" style="display:none">
+    <div class="scanner-header-bar">
+      <div class="scanner-title-area">
+        <h3 style="margin:0;font-size:16px;" data-i18n="sc_title">🧲 Gestionnaire AllDebrid &amp; Liens Morts Médiathèque</h3>
+        <span id="scan-last-time" style="font-size:12px;color:var(--text-muted);" data-i18n="sc_last_scan_unknown">Dernier scan : Inconnu</span>
+      </div>
+      <div class="scanner-actions">
+        <button type="button" id="btn-start-scan" class="btn-main" onclick="triggerScannerScan()">
+          <span id="scan-btn-spinner" style="display:none;">⏳ </span>
+          <span id="scan-btn-text" data-i18n="btn_scan_now">🔄 Scanner la médiathèque &amp; AllDebrid</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Grille des statistiques -->
+    <div class="scanner-stats-grid">
+      <div class="sc-stat-card" id="card-stat-dead">
+        <div class="sc-stat-val text-danger" id="sc-val-dead">0</div>
+        <div class="sc-stat-lbl" data-i18n="sc_stat_dead">⚠️ Liens Morts Locaux</div>
+      </div>
+      <div class="sc-stat-card">
+        <div class="sc-stat-val text-accent" id="sc-val-magnets">0</div>
+        <div class="sc-stat-lbl" data-i18n="sc_stat_magnets">🧲 Total Magnets AD</div>
+      </div>
+      <div class="sc-stat-card">
+        <div class="sc-stat-val text-warning" id="sc-val-duplicates">0</div>
+        <div class="sc-stat-lbl" data-i18n="sc_stat_duplicates">📑 Doublons AD</div>
+      </div>
+      <div class="sc-stat-card">
+        <div class="sc-stat-val text-muted" id="sc-val-unlinked">0</div>
+        <div class="sc-stat-lbl" data-i18n="sc_stat_unlinked">❓ Non Symlinkés</div>
+      </div>
+      <div class="sc-stat-card">
+        <div class="sc-stat-val text-success" id="sc-val-links">0</div>
+        <div class="sc-stat-lbl" data-i18n="sc_stat_links">🔗 Fichiers Détectés</div>
+      </div>
+    </div>
+
+    <!-- Section 1 : Liens Morts avec Relance Sonarr / Radarr -->
+    <div class="scanner-section" id="section-dead-links">
+      <div class="scanner-section-head">
+        <h4 style="margin:0;font-size:15px;color:var(--text-bright);"><span data-i18n="sc_dead_head">⚠️ Liens Morts dans votre Médiathèque</span> (<span id="dead-links-badge-count">0</span>)</h4>
+        <div class="sc-btn-group">
+          <button type="button" id="btn-research-all" class="btn-main" style="background:#238636;display:none;" onclick="researchAllDeadLinks()" data-i18n="btn_research_all">⚡ Relancer dans Radarr / Sonarr &amp; Purger</button>
+          <button type="button" id="btn-clean-all-dead" class="btn-del" style="display:none;" onclick="cleanAllDeadSymlinks()" data-i18n="btn_clean_all_dead">🗑️ Supprimer tous les liens morts</button>
+        </div>
+      </div>
+      <div id="dead-links-container" style="margin-top:12px;">
+        <div style="color:var(--text-muted);text-align:center;padding:15px;" id="no-dead-links-msg" data-i18n="msg_no_dead_links">Aucun lien mort détecté dans la médiathèque. Lancez un scan pour vérifier.</div>
+        <div class="table-responsive">
+          <table id="dead-links-table" style="display:none;width:100%;">
+            <thead>
+              <tr>
+                <th style="width:240px;" data-i18n="th_sc_media">Média Radarr / Sonarr</th>
+                <th data-i18n="th_sc_deadpath">Lien symbolique mort</th>
+                <th data-i18n="th_sc_target">Cible manquante (Rclone / AD)</th>
+                <th style="width:230px;" data-i18n="th_sc_actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dead-links-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2 : Gestionnaire & Nettoyeur de Magnets AllDebrid -->
+    <div class="scanner-section" style="margin-top:25px;">
+      <div class="scanner-section-head">
+        <h4 style="margin:0;font-size:15px;color:var(--text-bright);" data-i18n="sc_magnets_head">🧲 Magnets AllDebrid &amp; Doublons</h4>
+        <div class="sc-btn-group">
+          <button type="button" class="btn-sec sc-filter-btn active" data-filter="all" onclick="setMagnetsFilter('all')" data-i18n="btn_filter_all">Tous</button>
+          <button type="button" class="btn-sec sc-filter-btn" data-filter="duplicates" onclick="setMagnetsFilter('duplicates')" data-i18n="btn_filter_duplicates">Doublons uniquement</button>
+          <button type="button" class="btn-sec sc-filter-btn" data-filter="dead" onclick="setMagnetsFilter('dead')" data-i18n="btn_filter_dead">Morts API</button>
+          <button type="button" class="btn-sec sc-filter-btn" data-filter="unlinked" onclick="setMagnetsFilter('unlinked')" data-i18n="btn_filter_unlinked">Non symlinkés</button>
+        </div>
+      </div>
+
+      <!-- Barre d'outils filtres et sélection -->
+      <div class="toolbar" style="margin-top:12px;">
+        <div class="bulk-bar" style="flex:1;">
+          <input type="text" id="magnet-search-input" placeholder="🔍 Filtrer les magnets par titre..." onkeyup="filterMagnetsDisplay()" style="width:100%;max-width:320px;padding:7px 10px;margin-bottom:0;" data-i18n-placeholder="ph_search_magnets">
+          <button type="button" class="btn-sec" onclick="toggleExpandAllGroups()" id="btn-expand-groups" data-i18n="btn_expand_all">↕️ Déplier tout</button>
+          <button type="button" class="btn-sec" onclick="toggleSelectAllVisibleMagnets()" id="btn-select-all-mags" data-i18n="btn_select_visible">☑ Cocher visibles</button>
+        </div>
+        <div class="paths-bar">
+          <button type="button" class="btn-warn" onclick="cleanAllDuplicateMagnets()" data-i18n="btn_clean_duplicates">🧹 Nettoyer doublons</button>
+          <button type="button" class="btn-del" onclick="deleteSelectedMagnets()" id="btn-del-selected-mags" data-i18n="btn_delete_checked">🗑️ Supprimer cochés</button>
+        </div>
+      </div>
+
+      <div id="magnets-list-container" class="magnets-accordion-list" style="margin-top:12px;">
+        <div style="color:var(--text-muted);text-align:center;padding:25px;" data-i18n="msg_loading_magnets">Chargement des magnets...</div>
+      </div>
+    </div>
   </div>
 
   <!-- Onglet 2 : Paramètres avec sous-pages indépendantes -->
@@ -201,6 +299,34 @@
                 <span></span>
               </div>
               <div id="services-list">__SERVICE_ROWS__</div>
+
+              <!-- Intégration Radarr & Sonarr (pour relance automatique des liens morts) -->
+              <div style="margin-top:22px;border-top:1px solid var(--border-muted);padding-top:16px;">
+                <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Intégration Radarr &amp; Sonarr (Relance automatique des liens morts)</h4>
+                <div class="grid">
+                  <div class="field">
+                    <label data-i18n="lbl_radarr_url">URL Radarr</label>
+                    <input type="text" name="radarr_url" value="__RADARR_URL__" placeholder="http://127.0.0.1:7878">
+                  </div>
+                  <div class="field">
+                    <label data-i18n="lbl_radarr_key">Clé API Radarr</label>
+                    <input type="password" name="radarr_api_key" value="__RADARR_API_KEY__" placeholder="Ex: 745216da4a744808b76872d13f85cdb8">
+                  </div>
+                  <div class="field">
+                    <label data-i18n="lbl_sonarr_url">URL Sonarr</label>
+                    <input type="text" name="sonarr_url" value="__SONARR_URL__" placeholder="http://127.0.0.1:8989">
+                  </div>
+                  <div class="field">
+                    <label data-i18n="lbl_sonarr_key">Clé API Sonarr</label>
+                    <input type="password" name="sonarr_api_key" value="__SONARR_API_KEY__" placeholder="Ex: 059aeb77e7ba4ca7879b1061373fdfe1">
+                  </div>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
+                  <input type="text" name="media_scan_paths" value="__MEDIA_SCAN_PATHS__" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,...">
+                  <small class="hint" data-i18n="hint_scan_paths">Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.</small>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse
 
-from app.routers import qbittorrent, web
+from app.routers import qbittorrent, scanner, web
 from app.state import load_state, settings_db
 from app.worker import background_worker
 
@@ -63,3 +63,4 @@ async def auth_middleware(request: Request, call_next):
 # Enregistrement des routeurs
 app.include_router(qbittorrent.router)
 app.include_router(web.router)
+app.include_router(scanner.router)

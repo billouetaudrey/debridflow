@@ -112,6 +112,43 @@ const TRANSLATIONS = {
     tip_switch_light: "Passer en mode clair",
     tip_switch_dark: "Passer en mode sombre",
     home_tip: "Accueil (File d'attente)",
+
+    // Scanner & Liens Morts
+    tab_scanner: "Médiathèque & Liens",
+    sc_title: "🧲 Gestionnaire AllDebrid & Liens Morts Médiathèque",
+    sc_last_scan_unknown: "Dernier scan : Inconnu",
+    btn_scan_now: "🔄 Scanner la médiathèque & AllDebrid",
+    sc_stat_dead: "⚠️ Liens Morts Locaux",
+    sc_stat_magnets: "🧲 Total Magnets AD",
+    sc_stat_duplicates: "📑 Doublons AD",
+    sc_stat_unlinked: "❓ Non Symlinkés",
+    sc_stat_links: "🔗 Fichiers Détectés",
+    sc_dead_head: "⚠️ Liens Morts dans votre Médiathèque",
+    btn_research_all: "⚡ Relancer dans Radarr / Sonarr & Purger",
+    btn_clean_all_dead: "🗑️ Supprimer tous les liens morts",
+    msg_no_dead_links: "Aucun lien mort détecté dans la médiathèque. Lancez un scan pour vérifier.",
+    th_sc_media: "Média Radarr / Sonarr",
+    th_sc_deadpath: "Lien symbolique mort",
+    th_sc_target: "Cible manquante (Rclone / AD)",
+    th_sc_actions: "Actions",
+    sc_magnets_head: "🧲 Magnets AllDebrid & Doublons",
+    btn_filter_all: "Tous",
+    btn_filter_duplicates: "Doublons uniquement",
+    btn_filter_dead: "Morts API",
+    btn_filter_unlinked: "Non symlinkés",
+    ph_search_magnets: "🔍 Filtrer les magnets par titre...",
+    btn_expand_all: "↕️ Déplier tout",
+    btn_select_visible: "☑ Cocher visibles",
+    btn_clean_duplicates: "🧹 Nettoyer doublons",
+    btn_delete_checked: "🗑️ Supprimer cochés",
+    msg_loading_magnets: "Chargement des magnets...",
+    sec_arr_integration: "🔗 Intégration Radarr & Sonarr (Relance automatique des liens morts)",
+    lbl_radarr_url: "URL Radarr",
+    lbl_radarr_key: "Clé API Radarr",
+    lbl_sonarr_url: "URL Sonarr",
+    lbl_sonarr_key: "Clé API Sonarr",
+    lbl_scan_paths: "Dossiers Médiathèque à analyser (séparés par virgules)",
+    hint_scan_paths: "Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.",
   },
   en: {
     // Brand & Header
@@ -225,6 +262,43 @@ const TRANSLATIONS = {
     tip_switch_light: "Switch to light mode",
     tip_switch_dark: "Switch to dark mode",
     home_tip: "Home (Queue)",
+
+    // Scanner & Dead Links
+    tab_scanner: "Library & Links",
+    sc_title: "🧲 AllDebrid & Dead Links Manager",
+    sc_last_scan_unknown: "Last scan: Unknown",
+    btn_scan_now: "🔄 Scan library & AllDebrid",
+    sc_stat_dead: "⚠️ Local Dead Links",
+    sc_stat_magnets: "🧲 Total AD Magnets",
+    sc_stat_duplicates: "📑 AD Duplicates",
+    sc_stat_unlinked: "❓ Not Symlinked",
+    sc_stat_links: "🔗 Detected Files",
+    sc_dead_head: "⚠️ Dead Links in Media Library",
+    btn_research_all: "⚡ Trigger Search in Radarr / Sonarr & Purge",
+    btn_clean_all_dead: "🗑️ Delete all dead links",
+    msg_no_dead_links: "No dead links detected in your media library. Run a scan to check.",
+    th_sc_media: "Radarr / Sonarr Media",
+    th_sc_deadpath: "Dead Symbolic Link",
+    th_sc_target: "Missing Target (Rclone / AD)",
+    th_sc_actions: "Actions",
+    sc_magnets_head: "🧲 AllDebrid Magnets & Duplicates",
+    btn_filter_all: "All",
+    btn_filter_duplicates: "Duplicates only",
+    btn_filter_dead: "API Dead Links",
+    btn_filter_unlinked: "Not symlinked",
+    ph_search_magnets: "🔍 Filter magnets by title...",
+    btn_expand_all: "↕️ Expand all",
+    btn_select_visible: "☑ Check visible",
+    btn_clean_duplicates: "🧹 Clean duplicates",
+    btn_delete_checked: "🗑️ Delete checked",
+    msg_loading_magnets: "Loading magnets...",
+    sec_arr_integration: "🔗 Radarr & Sonarr Integration (Auto-trigger search on dead links)",
+    lbl_radarr_url: "Radarr URL",
+    lbl_radarr_key: "Radarr API Key",
+    lbl_sonarr_url: "Sonarr URL",
+    lbl_sonarr_key: "Sonarr API Key",
+    lbl_scan_paths: "Media Library scan folders (comma-separated)",
+    hint_scan_paths: "Folders scanned to detect broken symlinks / missing targets.",
   }
 };
 
@@ -401,9 +475,16 @@ function showTab(tab) {
   currentTab = tab;
   document.getElementById('tab-queue').style.display = tab === 'queue' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
+  const tabScanner = document.getElementById('tab-scanner');
+  if (tabScanner) tabScanner.style.display = tab === 'scanner' ? 'block' : 'none';
+
   document.getElementById('btn-queue').classList.toggle('active', tab === 'queue');
   document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
+  const btnScanner = document.getElementById('btn-scanner');
+  if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
+
   if (tab === 'queue') refreshQueue();
+  if (tab === 'scanner') loadScannerData();
 }
 
 function showSettingsPage(pageId) {
@@ -682,3 +763,425 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setInterval(refreshQueue, 2000);
 });
+
+// ==========================================
+// SCANNER & GESTIONNAIRE DE LIENS MORTS
+// ==========================================
+let scannerData = null;
+let currentMagnetsFilter = 'all';
+let isScanning = false;
+let allMagnetsExpanded = false;
+
+async function triggerScannerScan() {
+  const btn = document.getElementById('btn-start-scan');
+  const spinner = document.getElementById('scan-btn-spinner');
+  const text = document.getElementById('scan-btn-text');
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.style.display = 'inline';
+  if (text) text.textContent = 'Scan en cours...';
+
+  try {
+    await fetch('/api/scanner/start', { method: 'POST' });
+    isScanning = true;
+    pollScannerStatus();
+  } catch (err) {
+    alert('Erreur lors du lancement du scan : ' + err);
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.style.display = 'none';
+    if (text) text.textContent = t('btn_scan_now');
+  }
+}
+
+async function pollScannerStatus() {
+  try {
+    const res = await fetch('/api/scanner/status');
+    const data = await res.json();
+    if (data.status === 'scanning') {
+      setTimeout(pollScannerStatus, 1500);
+    } else {
+      isScanning = false;
+      const btn = document.getElementById('btn-start-scan');
+      const spinner = document.getElementById('scan-btn-spinner');
+      const text = document.getElementById('scan-btn-text');
+      if (btn) btn.disabled = false;
+      if (spinner) spinner.style.display = 'none';
+      if (text) text.textContent = t('btn_scan_now');
+      loadScannerData();
+    }
+  } catch (e) {
+    setTimeout(pollScannerStatus, 2000);
+  }
+}
+
+async function loadScannerData() {
+  try {
+    const res = await fetch('/api/scanner/data');
+    scannerData = await res.json();
+    renderScannerView();
+  } catch (err) {
+    console.error('Erreur chargement données scanner :', err);
+  }
+}
+
+function renderScannerView() {
+  if (!scannerData) return;
+  const stats = scannerData.stats || {};
+
+  // Compteurs statistiques
+  const deadCount = (scannerData.dead_symlinks || []).length;
+  const elDead = document.getElementById('sc-val-dead');
+  if (elDead) elDead.textContent = deadCount;
+  const elMags = document.getElementById('sc-val-magnets');
+  if (elMags) elMags.textContent = stats.total_magnets || 0;
+  const elDups = document.getElementById('sc-val-duplicates');
+  if (elDups) elDups.textContent = stats.duplicates || 0;
+  const elUnlinked = document.getElementById('sc-val-unlinked');
+  if (elUnlinked) elUnlinked.textContent = stats.unlinked || 0;
+  const elLinks = document.getElementById('sc-val-links');
+  if (elLinks) elLinks.textContent = stats.local_links || 0;
+
+  const elBadgeCount = document.getElementById('dead-links-badge-count');
+  if (elBadgeCount) elBadgeCount.textContent = deadCount;
+
+  // Date du dernier scan
+  const lastTimeEl = document.getElementById('scan-last-time');
+  if (lastTimeEl && scannerData.last_update) {
+    const d = new Date(scannerData.last_update * 1000);
+    lastTimeEl.textContent = `Dernier scan : ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+  }
+
+  // Rendu des Liens Morts
+  renderDeadLinks(scannerData.dead_symlinks || []);
+
+  // Rendu de la liste des Magnets
+  renderMagnetsList(scannerData.grouped_magnets || {});
+}
+
+function renderDeadLinks(deadList) {
+  const table = document.getElementById('dead-links-table');
+  const tbody = document.getElementById('dead-links-tbody');
+  const emptyMsg = document.getElementById('no-dead-links-msg');
+  const btnResearchAll = document.getElementById('btn-research-all');
+  const btnCleanAll = document.getElementById('btn-clean-all-dead');
+
+  if (!deadList || deadList.length === 0) {
+    if (table) table.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'block';
+    if (btnResearchAll) btnResearchAll.style.display = 'none';
+    if (btnCleanAll) btnCleanAll.style.display = 'none';
+    return;
+  }
+
+  if (table) table.style.display = 'table';
+  if (emptyMsg) emptyMsg.style.display = 'none';
+  if (btnResearchAll) btnResearchAll.style.display = 'inline-block';
+  if (btnCleanAll) btnCleanAll.style.display = 'inline-block';
+
+  tbody.innerHTML = deadList.map(item => {
+    let mediaBadge = '<span class="badge-tag unlinked">❓ Non identifié</span>';
+    let researchBtn = '';
+
+    if (item.media_type === 'radarr' && item.media_id) {
+      mediaBadge = `<span class="badge-tag radarr">🎬 Radarr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#f5a623;border-color:#f5a623;" onclick="researchDeadLink('radarr', ${item.media_id}, '${esc(item.path)}')">🔍 Relancer Radarr</button>`;
+    } else if (item.media_type === 'sonarr' && item.media_id) {
+      mediaBadge = `<span class="badge-tag sonarr">📺 Sonarr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#58a6ff;border-color:#58a6ff;" onclick="researchDeadLink('sonarr', ${item.media_id}, '${esc(item.path)}')">🔍 Relancer Sonarr</button>`;
+    }
+
+    return `<tr>
+      <td>${mediaBadge}</td>
+      <td style="font-family:monospace;font-size:12px;word-break:break-all;">${esc(item.path)}</td>
+      <td style="font-family:monospace;font-size:11px;color:#f85149;word-break:break-all;">${esc(item.target || 'Cible inexistante')}</td>
+      <td style="display:flex;gap:6px;align-items:center;">
+        ${researchBtn}
+        <button type="button" class="btn-del" onclick="cleanDeadSymlink('${esc(item.path)}')">🗑️ Purger</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function researchDeadLink(mediaType, mediaId, path) {
+  if (!confirm(`Relancer une recherche dans ${mediaType.toUpperCase()} et purger le lien mort local ?`)) return;
+  try {
+    const res = await fetch('/api/scanner/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ media_type: mediaType, media_id: mediaId, dead_path: path })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      alert(`Recherche relancée avec succès dans ${mediaType.toUpperCase()} !`);
+      loadScannerData();
+    } else {
+      alert(`Erreur : ${data.message}`);
+    }
+  } catch (e) {
+    alert('Erreur réseau lors de la relance : ' + e);
+  }
+}
+
+async function cleanDeadSymlink(path) {
+  if (!confirm(`Supprimer définitivement ce lien symbolique mort ?`)) return;
+  try {
+    const res = await fetch('/api/scanner/clean_dead_symlinks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: [path] })
+    });
+    const data = await res.json();
+    alert(`${data.deleted} lien(s) supprimé(s).`);
+    loadScannerData();
+  } catch (e) {
+    alert('Erreur : ' + e);
+  }
+}
+
+async function researchAllDeadLinks() {
+  const matched = (scannerData.dead_symlinks || []).filter(d => d.media_type === 'radarr' || d.media_type === 'sonarr');
+  if (matched.length === 0) return alert('Aucun lien mort associé à Radarr ou Sonarr.');
+  if (!confirm(`Voulez-vous relancer la recherche dans Radarr / Sonarr pour les ${matched.length} médias détectés et purger les liens morts ?`)) return;
+
+  const btn = document.getElementById('btn-research-all');
+  if (btn) { btn.disabled = true; btn.textContent = 'Traitement en cours...'; }
+
+  try {
+    const res = await fetch('/api/scanner/research_all_dead', { method: 'POST' });
+    const data = await res.json();
+    alert(data.message || `${data.count} recherche(s) relancée(s) !`);
+    loadScannerData();
+  } catch (e) {
+    alert('Erreur : ' + e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('btn_research_all'); }
+  }
+}
+
+async function cleanAllDeadSymlinks() {
+  const total = (scannerData.dead_symlinks || []).length;
+  if (!confirm(`Supprimer l'intégralité des ${total} liens morts détectés sur le disque ?`)) return;
+  try {
+    const res = await fetch('/api/scanner/clean_dead_symlinks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    alert(`${data.deleted} lien(s) mort(s) purgé(s) !`);
+    loadScannerData();
+  } catch (e) {
+    alert('Erreur : ' + e);
+  }
+}
+
+function formatSize(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+}
+
+function renderMagnetsList(grouped) {
+  const container = document.getElementById('magnets-list-container');
+  const groupKeys = Object.keys(grouped);
+
+  if (groupKeys.length === 0) {
+    container.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:25px;">Aucun magnet trouvé. Lancez un scan pour actualiser.</div>`;
+    return;
+  }
+
+  let html = '';
+  groupKeys.forEach((normTitle, gIdx) => {
+    const mags = grouped[normTitle];
+    const isSingle = mags.length === 1;
+    const groupId = 'group-' + gIdx;
+
+    if (isSingle) {
+      const mag = mags[0];
+      const localBadge = mag.is_local ? `<span class="badge-tag local">🔗 Symlinké</span>` : `<span class="badge-tag unlinked">Non symlinké</span>`;
+      const deadBadge = mag.is_dead ? `<span class="badge-tag dead">⚠️ Mort API</span>` : '';
+
+      html += `<div class="mag-group sc-mag-card" data-title="${esc(normTitle.toLowerCase())} ${esc(mag.name.toLowerCase())}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}" data-dup="0">
+        <div class="mag-item">
+          <div class="mag-info-left">
+            <input type="checkbox" class="sc-mag-chk" value="${mag.id}" data-name="${esc(mag.name)}">
+            <div>
+              <div style="font-weight:600;font-size:13px;">${esc(mag.name)}</div>
+              <div class="mag-meta">
+                <span>ID: #${mag.id}</span>
+                <span>Taille: ${formatSize(mag.size)}</span>
+                <span>Statut: ${mag.statusCode}</span>
+                ${localBadge} ${deadBadge}
+              </div>
+            </div>
+          </div>
+          <div class="mag-actions">
+            <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">Supprimer</button>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      let childrenHtml = '';
+      mags.forEach((mag, idx) => {
+        const isBest = idx === 0 ? `<span style="color:#58a6ff;font-size:11px;">(Conservé par défaut)</span>` : '';
+        const localBadge = mag.is_local ? `<span class="badge-tag local">🔗 Symlinké</span>` : `<span class="badge-tag unlinked">Non symlinké</span>`;
+        const deadBadge = mag.is_dead ? `<span class="badge-tag dead">⚠️ Mort API</span>` : '';
+
+        childrenHtml += `<div class="mag-item sc-mag-child" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
+          <div class="mag-info-left">
+            <input type="checkbox" class="sc-mag-chk" value="${mag.id}" data-name="${esc(mag.name)}" ${idx > 0 ? 'data-isdup="1"' : ''}>
+            <div>
+              <div style="font-weight:500;font-size:13px;">${esc(mag.name)} ${isBest}</div>
+              <div class="mag-meta">
+                <span>ID: #${mag.id}</span>
+                <span>Taille: ${formatSize(mag.size)}</span>
+                <span>Statut: ${mag.statusCode}</span>
+                ${localBadge} ${deadBadge}
+              </div>
+            </div>
+          </div>
+          <div class="mag-actions">
+            <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">Supprimer</button>
+          </div>
+        </div>`;
+      });
+
+      html += `<div class="mag-group sc-mag-card" id="${groupId}" data-title="${esc(normTitle.toLowerCase())}" data-dup="1">
+        <div class="mag-group-header" onclick="document.getElementById('${groupId}').classList.toggle('open')">
+          <div class="mag-group-title">
+            <span class="mag-chevron">▶</span>
+            <span>${esc(normTitle)}</span>
+            <span class="badge" style="background:#d29922;color:#121212;">${mags.length} versions</span>
+          </div>
+        </div>
+        <div class="mag-children">${childrenHtml}</div>
+      </div>`;
+    }
+  });
+
+  container.innerHTML = html;
+  filterMagnetsDisplay();
+}
+
+function setMagnetsFilter(filter) {
+  currentMagnetsFilter = filter;
+  document.querySelectorAll('.sc-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  filterMagnetsDisplay();
+}
+
+function filterMagnetsDisplay() {
+  const search = (document.getElementById('magnet-search-input')?.value || '').toLowerCase().trim();
+
+  document.querySelectorAll('.sc-mag-card').forEach(card => {
+    const title = card.getAttribute('data-title') || '';
+    const isDup = card.getAttribute('data-dup') === '1';
+    let matchFilter = true;
+
+    if (currentMagnetsFilter === 'duplicates') {
+      matchFilter = isDup;
+    } else if (currentMagnetsFilter === 'dead') {
+      const hasDead = card.querySelector('[data-dead="1"]') !== null;
+      matchFilter = hasDead;
+    } else if (currentMagnetsFilter === 'unlinked') {
+      const hasUnlinked = card.querySelector('[data-local="0"]') !== null;
+      matchFilter = hasUnlinked;
+    }
+
+    const matchSearch = !search || title.includes(search);
+    card.style.display = (matchFilter && matchSearch) ? 'block' : 'none';
+  });
+}
+
+function toggleExpandAllGroups() {
+  allMagnetsExpanded = !allMagnetsExpanded;
+  document.querySelectorAll('.mag-group').forEach(g => {
+    g.classList.toggle('open', allMagnetsExpanded);
+  });
+  const btn = document.getElementById('btn-expand-groups');
+  if (btn) btn.textContent = allMagnetsExpanded ? '↕️ Plier tout' : '↕️ Déplier tout';
+}
+
+function toggleSelectAllVisibleMagnets() {
+  const visibleChks = Array.from(document.querySelectorAll('.sc-mag-chk')).filter(chk => {
+    const card = chk.closest('.sc-mag-card');
+    return card && card.style.display !== 'none';
+  });
+  if (visibleChks.length === 0) return;
+  const allChecked = visibleChks.every(c => c.checked);
+  visibleChks.forEach(c => c.checked = !allChecked);
+  const btn = document.getElementById('btn-select-all-mags');
+  if (btn) btn.textContent = allChecked ? '☑ Cocher visibles' : '☐ Décocher tout';
+}
+
+async function deleteSingleMagnet(id, name) {
+  if (!confirm(`Supprimer ce magnet sur AllDebrid et purger ses liens locaux associés ?\n\n${name}`)) return;
+  try {
+    const res = await fetch('/api/scanner/delete_magnets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [{ id, name }] })
+    });
+    const data = await res.json();
+    alert(`Magnet #${id} et liens symboliques locaux supprimés avec succès.`);
+    loadScannerData();
+  } catch (e) {
+    alert('Erreur lors de la suppression : ' + e);
+  }
+}
+
+async function deleteSelectedMagnets() {
+  const checked = Array.from(document.querySelectorAll('.sc-mag-chk:checked')).map(c => ({
+    id: c.value,
+    name: c.dataset.name || ''
+  }));
+  if (checked.length === 0) return alert('Aucun magnet sélectionné.');
+  if (!confirm(`Supprimer définitivement ${checked.length} magnet(s) sélectionné(s) sur AllDebrid et leurs symlinks locaux ?`)) return;
+
+  const btn = document.getElementById('btn-del-selected-mags');
+  if (btn) { btn.disabled = true; btn.textContent = 'Suppression...'; }
+
+  try {
+    const res = await fetch('/api/scanner/delete_magnets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: checked })
+    });
+    const data = await res.json();
+    alert(`${data.deleted} magnet(s) supprimé(s) sur AllDebrid !`);
+    loadScannerData();
+  } catch (e) {
+    alert('Erreur : ' + e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('btn_delete_checked'); }
+  }
+}
+
+async function cleanAllDuplicateMagnets() {
+  const duplicates = [];
+  document.querySelectorAll('.sc-mag-card[data-dup="1"]').forEach(card => {
+    const children = card.querySelectorAll('.sc-mag-child');
+    for (let i = 1; i < children.length; i++) {
+      const chk = children[i].querySelector('.sc-mag-chk');
+      if (chk) duplicates.push({ id: chk.value, name: chk.dataset.name || '' });
+    }
+  });
+
+  if (duplicates.length === 0) return alert('Aucun doublon AllDebrid détecté à nettoyer.');
+  if (!confirm(`Supprimer ${duplicates.length} doublons inutiles sur AllDebrid ?\n\nLe meilleur fichier de chaque groupe sera conservé intact.`)) return;
+
+  try {
+    const res = await fetch('/api/scanner/delete_magnets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: duplicates })
+    });
+    const data = await res.json();
+    alert(`${data.deleted} doublons supprimés sur AllDebrid !`);
+    loadScannerData();
+  } catch (e) {
+    alert('Erreur : ' + e);
+  }
+}
+
