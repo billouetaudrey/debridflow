@@ -79,7 +79,9 @@ class ScannerService:
             try:
                 with open(SCANNER_CACHE_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.status = data.get("status", "idle")
+                    saved_status = data.get("status", "idle")
+                    # Ne jamais rester bloqué sur "scanning" après un redémarrage
+                    self.status = "ready" if saved_status == "ready" else "idle"
                     self.last_update = data.get("last_update", 0)
                     self.local_cache = data.get("local_cache", {})
                     self.dead_symlinks = data.get("dead_symlinks", [])
@@ -93,7 +95,7 @@ class ScannerService:
         try:
             SCANNER_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
             payload = {
-                "status": self.status,
+                "status": "ready" if self.status == "ready" else "idle",
                 "last_update": self.last_update,
                 "local_cache": self.local_cache,
                 "dead_symlinks": self.dead_symlinks,
