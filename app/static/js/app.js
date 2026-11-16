@@ -486,7 +486,6 @@ function showTab(tab) {
 
   document.getElementById('btn-queue').classList.toggle('active', tab === 'queue');
   document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
-  const btnScanner = document.getElementById('btn-scanner');
   if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
 
   if (tab === 'queue') refreshQueue();
