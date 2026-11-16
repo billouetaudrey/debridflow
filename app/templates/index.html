@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="__UI_LANGUAGE__">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyRDT</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('pyrdt_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+  <!-- Barre Supérieure -->
+  <div class="topbar">
+    <div class="brand" onclick="showTab('queue')" title="Accueil (File d'attente) / Home (Queue)">
+      <span class="status-orb __ORB_CLS__" id="status-orb" title="__API_DETAIL__"></span>
+      <div class="brand-text">
+        <h2>PyRDT</h2>
+        <div class="api-sub __ORB_CLS__" id="api-sub" title="__API_DETAIL__">__API_LABEL__</div>
+      </div>
+    </div>
+    
+    <div class="header-controls">
+      <div class="tabs">
+        <button id="btn-queue" class="tab-btn active" onclick="showTab('queue')" data-i18n="tab_queue">File d'attente</button>
+        <button id="btn-settings" class="tab-btn" onclick="showTab('settings')" data-i18n="tab_settings">Paramètres</button>
+      </div>
+
+      <!-- Bouton Thème (Clair / Nuit) -->
+      <button type="button" id="theme-btn" class="theme-btn" onclick="toggleTheme()" title="Basculer le thème">
+        <span id="theme-icon">☀️</span>
+      </button>
+      
+      <!-- Sélecteur Multilingue -->
+      <div class="lang-switcher">
+        <button type="button" class="lang-btn" data-lang="fr" onclick="setLanguage('fr')">🇫🇷 FR</button>
+        <button type="button" class="lang-btn" data-lang="en" onclick="setLanguage('en')">🇬🇧 EN</button>
+      </div>
+    </div>
+  </div>
+
+  __BANNER__
+
+  <!-- Onglet 1 : File d'attente -->
+  <div id="tab-queue" class="card">
+    <div class="toolbar">
+      <div class="bulk-bar">
+        <span id="sel-count" style="color:#8b949e;font-size:13px;margin-right:4px;">0 sélectionné(s)</span>
+        <button id="bulk-retry" class="btn-sec" disabled onclick="batchSelected('retry')" data-i18n="btn_retry">Relancer</button>
+        <button id="bulk-pause" class="btn-warn" disabled onclick="batchSelected('pause')" data-i18n="btn_pause">Pause</button>
+        <button id="bulk-del" class="btn-del" disabled onclick="deleteSelected()" data-i18n="btn_delete">Supprimer</button>
+      </div>
+      <div class="paths-bar">
+        <span style="color:#8b949e;font-size:12px;word-break:break-all;">
+          <code>__RCLONE_MOUNT_DIR__</code> &rarr; <code>__DOWNLOAD_BASE_DIR__/&lt;service&gt;</code>
+        </span>
+        <button class="btn-sec" onclick="purgeCompleted()" data-i18n="btn_purge_completed">Purger terminés</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px" data-text-all="Tout sélectionner"><input type="checkbox" id="chk-all" onclick="toggleAll(this)"></th>
+          <th data-i18n="th_id">ID (AD / Hash)</th>
+          <th data-i18n="th_name">Nom</th>
+          <th data-i18n="th_service">Service / Mode</th>
+          <th data-i18n="th_status">Statut</th>
+          <th data-i18n="th_actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="queue-tbody">__TABLE_BODY__</tbody>
+    </table>
+  </div>
+
+  <!-- Onglet 2 : Paramètres avec sous-pages indépendantes -->
+  <div id="tab-settings" class="card" style="display:none">
+    <div class="settings-layout">
+      <!-- Menu latéral des sous-pages de paramètres -->
+      <aside class="settings-sidebar">
+        <button type="button" class="settings-nav-item active" id="snav-alldebrid" onclick="showSettingsPage('alldebrid')">
+          <span class="icon">🔑</span>
+          <span data-i18n="nav_provider">Fournisseur &amp; API</span>
+        </button>
+        <button type="button" class="settings-nav-item" id="snav-storage" onclick="showSettingsPage('storage')">
+          <span class="icon">📁</span>
+          <span data-i18n="nav_storage">Dossiers &amp; Stockage</span>
+        </button>
+        <button type="button" class="settings-nav-item" id="snav-services" onclick="showSettingsPage('services')">
+          <span class="icon">⚙️</span>
+          <span data-i18n="nav_services">Services (*arr)</span>
+        </button>
+        <button type="button" class="settings-nav-item" id="snav-automation" onclick="showSettingsPage('automation')">
+          <span class="icon">⚡</span>
+          <span data-i18n="nav_automation">Automatisation</span>
+        </button>
+        <button type="button" class="settings-nav-item" id="snav-security" onclick="showSettingsPage('security')">
+          <span class="icon">🔒</span>
+          <span data-i18n="nav_security">Sécurité</span>
+        </button>
+        <button type="button" class="settings-nav-item" id="snav-system" onclick="showSettingsPage('system')">
+          <span class="icon">🌐</span>
+          <span data-i18n="nav_system">Système &amp; Langue</span>
+        </button>
+      </aside>
+
+      <!-- Contenu de la sous-page active -->
+      <main class="settings-content">
+        <form id="settings-form" method="post" action="/api/settings">
+          <input type="hidden" name="ui_language" id="ui_language" value="__UI_LANGUAGE__">
+
+          <!-- Page 1 : Fournisseur & API Debrid -->
+          <div id="setpage-alldebrid" class="settings-page">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">🔑</span>
+                  <span data-i18n="sec_provider">1. Fournisseur &amp; API Debrid</span>
+                </h3>
+              </div>
+              <div class="grid">
+                <div class="field full">
+                  <label data-i18n="lbl_provider">Fournisseur de Débridage (Provider)</label>
+                  <select name="provider" id="provider-select" onchange="onProviderChange(this.value)">
+                    __PROVIDER_OPTIONS__
+                  </select>
+                  <small class="hint" data-i18n="hint_provider">Choisissez votre fournisseur : AllDebrid, Real-Debrid, Premiumize, Debrid-Link, TorBox ou High-Way.</small>
+                </div>
+                <div class="field">
+                  <label id="lbl-api-key" data-i18n="lbl_api_key">__KEY_LABEL__</label>
+                  <input type="password" name="api_key" id="api_key_input" value="__API_KEY__" placeholder="Clé ou Token API" required>
+                  <small class="hint" id="hint-api-key">__KEY_HINT__</small>
+                </div>
+                <div class="field">
+                  <label data-i18n="lbl_agent">Nom de l'agent / User-Agent</label>
+                  <input type="text" name="agent" value="__AGENT__" required>
+                  <small class="hint" data-i18n="hint_agent">Identifiant envoyé à l'API (ex: PyRDT-Billou).</small>
+                </div>
+                <div class="field full">
+                  <label data-i18n="lbl_api_base">URL de l'API</label>
+                  <input type="text" name="api_base" id="api_base_input" value="__API_BASE__">
+                  <small class="hint" id="hint-api-base" data-i18n="hint_api_base">URL de base de l'API (pré-remplie automatiquement selon le service).</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page 2 : Dossiers & Stockage -->
+          <div id="setpage-storage" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">📁</span>
+                  <span data-i18n="sec_storage">2. Dossiers &amp; Stockage</span>
+                </h3>
+              </div>
+              <div class="grid">
+                <div class="field">
+                  <label data-i18n="lbl_rclone_mount">Chemin de montage Rclone (source magnets)</label>
+                  <input type="text" name="rclone_mount_dir" value="__RCLONE_MOUNT_DIR__" required>
+                  <small class="hint" data-i18n="hint_rclone_mount">Dossier monté par rclone (ex: /mnt/alldebrid/magnets).</small>
+                </div>
+                <div class="field">
+                  <label data-i18n="lbl_dl_dir">Dossier racine des téléchargements (DL)</label>
+                  <input type="text" name="download_base_dir" value="__DOWNLOAD_BASE_DIR__" required>
+                  <small class="hint" data-i18n="hint_dl_dir">Chaque service écrit dans son sous-dossier ici.</small>
+                </div>
+                <div class="field">
+                  <label data-i18n="lbl_allowed_exts">Extensions autorisées (séparées par virgules)</label>
+                  <input type="text" name="allowed_exts" value="__ALLOWED_EXTS__">
+                  <small class="hint" data-i18n="hint_allowed_exts">Fichiers vidéos, audios ou sous-titres acceptés.</small>
+                </div>
+                <div class="field">
+                  <label data-i18n="lbl_mount_timeout">Timeout montage Rclone (secondes)</label>
+                  <input type="number" min="5" name="mount_timeout" value="__MOUNT_TIMEOUT__">
+                  <small class="hint" data-i18n="hint_mount_timeout">Temps max d'attente d'apparition du fichier avant erreur.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page 3 : Services & Catégories *arr -->
+          <div id="setpage-services" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">⚙️</span>
+                  <span data-i18n="sec_services">3. Services, Catégories *arr &amp; Destinations</span>
+                </h3>
+                <button type="button" class="btn-sec" onclick="addServiceRow()" data-i18n="btn_add_service">+ Ajouter un service</button>
+              </div>
+              <small class="hint" data-i18n="hint_services">Par défaut, chaque service écrit dans &lt;Dossier racine DL&gt;/&lt;sous-dossier&gt;/ (vous pouvez aussi indiquer un chemin absolu commençant par /).</small>
+              
+              <div class="svc-head">
+                <span data-i18n="th_svc_cat">Catégorie *arr</span>
+                <span data-i18n="th_svc_mode">Mode de récupération</span>
+                <span data-i18n="th_svc_subpath">Sous-dossier dans DL (ou chemin /)</span>
+                <span></span>
+              </div>
+              <div id="services-list">__SERVICE_ROWS__</div>
+            </div>
+          </div>
+
+          <!-- Page 4 : Automatisation & Nettoyage -->
+          <div id="setpage-automation" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">⚡</span>
+                  <span data-i18n="sec_automation">4. Automatisation &amp; Nettoyage</span>
+                </h3>
+              </div>
+              <div class="chk-line">
+                <input type="checkbox" id="del_dl_done" name="delete_on_dl_complete" __CHECKED_DL_DONE__>
+                <label for="del_dl_done" data-i18n="lbl_del_dl_done">Supprimer automatiquement le magnet sur AllDebrid dès que le Téléchargement réel est terminé (n'affecte pas les Symlinks)</label>
+              </div>
+              <div class="chk-line">
+                <input type="checkbox" id="auto_clean" name="auto_clean_import" __CHECKED_AUTO__>
+                <label for="auto_clean" data-i18n="lbl_auto_clean">Purger automatiquement la liste des téléchargements et les fichiers/symlinks locaux temporaires après import *arr</label>
+              </div>
+              <div class="chk-line">
+                <input type="checkbox" id="del_prov" name="delete_on_provider" __CHECKED_DEL__>
+                <label for="del_prov" data-i18n="lbl_del_prov">Supprimer aussi automatiquement le magnet sur AllDebrid lors de la purge après import (y compris pour les Symlinks)</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page 5 : Sécurité & Authentification -->
+          <div id="setpage-security" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">🔒</span>
+                  <span data-i18n="sec_security">5. Sécurité &amp; Authentification</span>
+                </h3>
+              </div>
+              <div class="grid">
+                <div class="field">
+                  <label data-i18n="lbl_username">Nom d'utilisateur (Web &amp; Apps *arr — optionnel)</label>
+                  <input type="text" name="username" value="__USERNAME__" placeholder="Laisser vide = pas d'auth">
+                  <small class="hint" data-i18n="hint_username">Si renseigné, doit correspondre aux identifiants qBittorrent dans Sonarr/Radarr.</small>
+                </div>
+                <div class="field">
+                  <label data-i18n="lbl_password">Mot de passe (Web &amp; Apps *arr — optionnel)</label>
+                  <input type="password" name="password" value="__PASSWORD__" placeholder="Laisser vide = pas d'auth">
+                  <small class="hint" data-i18n="hint_password">Protège l'accès Web et l'API qBittorrent.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page 6 : Performances & Langue -->
+          <div id="setpage-system" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">🌐</span>
+                  <span data-i18n="sec_system">6. Performances &amp; Langue</span>
+                </h3>
+              </div>
+              <div class="grid">
+                <div class="field">
+                  <label data-i18n="lbl_poll_interval">Intervalle de vérification API (secondes)</label>
+                  <input type="number" step="0.5" min="1.5" name="poll_interval" value="__POLL_INTERVAL__">
+                  <small class="hint" data-i18n="hint_poll_interval">Fréquence d'interrogation AllDebrid (défaut : 3.0s).</small>
+                </div>
+                <div class="field">
+                  <label data-i18n="lbl_language">Langue de l'interface</label>
+                  <select id="lang-select" onchange="setLanguage(this.value)">
+                    <option value="fr">Français (French)</option>
+                    <option value="en">English (Anglais)</option>
+                  </select>
+                  <small class="hint" data-i18n="hint_language">Choisissez le français ou l'anglais pour l'affichage.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barre d'actions globale pour les paramètres -->
+          <div class="form-actions">
+            <button type="submit" class="btn-save" data-i18n="btn_save_settings">Enregistrer les paramètres</button>
+            <button type="button" id="btn-test-api" class="btn-test" onclick="testApi()" data-i18n="btn_test_api">Tester l'API AllDebrid</button>
+          </div>
+          <div id="test-result" class="test-box"></div>
+        </form>
+      </main>
+    </div>
+  </div>
+</div>
+
+<!-- Boîte modale de suppression -->
+<div id="del-modal" class="modal-bg">
+  <div class="modal">
+    <h3 data-i18n="modal_title">Options de suppression</h3>
+    <p id="del-modal-desc" style="color:#8b949e;font-size:13px;margin:0 0 14px 0;"></p>
+    <div class="chk-line">
+      <input type="checkbox" id="opt-del-files" __CHECKED_AUTO__>
+      <label for="opt-del-files" data-i18n="opt_del_files">Supprimer aussi les fichiers / liens symboliques locaux</label>
+    </div>
+    <div class="chk-line">
+      <input type="checkbox" id="opt-del-ad" __CHECKED_DEL__>
+      <label for="opt-del-ad" data-i18n="opt_del_ad">Supprimer aussi le magnet sur AllDebrid</label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+      <button class="btn-sec" onclick="closeDeleteModal()" data-i18n="btn_cancel">Annuler</button>
+      <button class="btn-del" onclick="confirmDelete()" data-i18n="btn_confirm_delete">Confirmer la suppression</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
