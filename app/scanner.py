@@ -65,6 +65,13 @@ class ScannerService:
             "api_dead": 0,
             "local_links": 0,
         }
+        self.progress: Dict[str, Any] = {
+            "stage": "",
+            "percent": 0,
+            "files_scanned": 0,
+            "dead_found": 0,
+            "current_folder": "",
+        }
         self._load_cache()
 
     def _load_cache(self) -> None:
@@ -102,6 +109,9 @@ class ScannerService:
     def _scan_filesystem_sync(self, scan_paths: List[Path]) -> tuple[Dict[str, List[str]], List[Dict[str, Any]]]:
         cache: Dict[str, List[str]] = {}
         dead: List[Dict[str, Any]] = []
+        total_folders = len(scan_paths)
+        files_scanned = 0
+        dead_found = 0
 
         def add_to_cache(key: str, p: str):
             if not key:
@@ -111,9 +121,13 @@ class ScannerService:
             if p not in cache[key]:
                 cache[key].append(p)
 
-        for base_path in scan_paths:
+        for f_idx, base_path in enumerate(scan_paths):
             if not base_path.is_dir() or not os.access(base_path, os.R_OK):
                 continue
+
+            folder_name = base_path.name
+            self.progress["current_folder"] = folder_name
+            self.progress["stage"] = f"Analyse des dossiers ({folder_name})..."
 
             try:
                 # Parcours avec limitation de profondeur
@@ -126,6 +140,14 @@ class ScannerService:
                     # Vérifier dossiers et fichiers
                     all_entries = files + dirs
                     for entry_name in all_entries:
+                        files_scanned += 1
+                        if files_scanned % 30 == 0:
+                            folder_pct = (f_idx / total_folders) if total_folders else 0
+                            self.progress["percent"] = min(60, int(5 + folder_pct * 55))
+                            self.progress["files_scanned"] = files_scanned
+                            self.progress["dead_found"] = dead_found
+                            self.progress["stage"] = f"Analyse {folder_name} : {files_scanned} fichiers ({dead_found} liens morts)..."
+
                         full_path = Path(root) / entry_name
                         try:
                             path_str = str(full_path)
@@ -149,6 +171,8 @@ class ScannerService:
 
                                 # Lien mort ?
                                 if not os.path.exists(full_path):
+                                    dead_found += 1
+                                    self.progress["dead_found"] = dead_found
                                     dead.append({
                                         "path": path_str,
                                         "filename": entry_name,
@@ -162,6 +186,9 @@ class ScannerService:
             except Exception as exc:
                 logger.warning(f"Erreur lors du scan de {base_path} : {exc}")
 
+        self.progress["files_scanned"] = files_scanned
+        self.progress["dead_found"] = dead_found
+        self.progress["percent"] = 65
         return cache, dead
 
     async def _match_arr_media(self, dead_symlinks: List[Dict[str, Any]]) -> None:
@@ -223,6 +250,13 @@ class ScannerService:
 
         self.status = "scanning"
         self.error_msg = ""
+        self.progress = {
+            "stage": "Démarrage de l'analyse...",
+            "percent": 5,
+            "files_scanned": 0,
+            "dead_found": 0,
+            "current_folder": "",
+        }
         self._save_cache()
 
         async def _run():
@@ -238,6 +272,8 @@ class ScannerService:
                 cache, dead = await asyncio.to_thread(self._scan_filesystem_sync, paths)
 
                 # 3. Réconciliation Radarr / Sonarr
+                self.progress["stage"] = "Interrogation et réconciliation Radarr & Sonarr..."
+                self.progress["percent"] = 68
                 await self._match_arr_media(dead)
 
                 # 4. Récupération des magnets AllDebrid
@@ -247,6 +283,8 @@ class ScannerService:
                 total_mags = 0
 
                 if api_key:
+                    self.progress["stage"] = "Téléchargement de la liste des magnets AllDebrid..."
+                    self.progress["percent"] = 78
                     async with httpx.AsyncClient(timeout=30.0) as client:
                         r = await client.get(
                             "https://api.alldebrid.com/v4.1/magnet/status",
@@ -257,6 +295,8 @@ class ScannerService:
                             if data.get("status") == "success":
                                 raw_mags = data.get("data", {}).get("magnets", [])
                                 total_mags = len(raw_mags)
+                                self.progress["stage"] = f"Traitement de {total_mags} magnets et détection des doublons..."
+                                self.progress["percent"] = 88
                                 for mag in raw_mags:
                                     orig_name = mag.get("filename") or mag.get("name") or "Nom indisponible"
                                     norm_name = normalize_filename(orig_name) or orig_name
@@ -293,6 +333,8 @@ class ScannerService:
                                     )
 
                 # Calcul des statistiques
+                self.progress["stage"] = "Finalisation et calcul des statistiques..."
+                self.progress["percent"] = 95
                 duplicates_count = sum(len(mags) - 1 for mags in grouped.values() if len(mags) > 1)
                 unlinked_count = sum(1 for mags in grouped.values() for m in mags if not m["is_local"])
                 api_dead_count = sum(1 for mags in grouped.values() for m in mags if m["is_dead"])
@@ -311,6 +353,8 @@ class ScannerService:
                 }
                 self.last_update = int(time.time())
                 self.status = "ready"
+                self.progress["stage"] = "Scan terminé avec succès"
+                self.progress["percent"] = 100
                 self._save_cache()
                 logger.info(
                     f"Scan médiathèque terminé : {len(dead)} lien(s) mort(s), {total_mags} magnet(s), {duplicates_count} doublon(s)."
@@ -319,6 +363,8 @@ class ScannerService:
                 logger.error(f"Erreur durant le scan scanner : {e}")
                 self.status = "error"
                 self.error_msg = str(e)
+                self.progress["stage"] = f"Erreur : {e}"
+                self.progress["percent"] = 0
                 self._save_cache()
 
         asyncio.create_task(_run())

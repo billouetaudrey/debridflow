@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PyRDT</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=2.3">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.4">
   <script>
     (function() {
       const savedTheme = localStorage.getItem('pyrdt_theme') || 'dark';
@@ -91,6 +91,17 @@
           <span id="scan-btn-spinner" style="display:none;">⏳ </span>
           <span id="scan-btn-text" data-i18n="btn_scan_now">🔄 Scanner la médiathèque &amp; AllDebrid</span>
         </button>
+      </div>
+    </div>
+
+    <!-- Barre de progression en temps réel -->
+    <div id="scanner-progress-container" style="display:none;margin:14px 0 6px 0;background:var(--bg-subpanel);border:1px solid var(--border-main);border-radius:8px;padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:8px;">
+        <span id="scanner-progress-stage" style="color:var(--text-bright);font-weight:600;">Démarrage du scan...</span>
+        <span id="scanner-progress-percent" style="color:#58a6ff;font-weight:700;">0%</span>
+      </div>
+      <div style="width:100%;height:8px;background:var(--border-muted);border-radius:4px;overflow:hidden;">
+        <div id="scanner-progress-fill" style="width:0%;height:100%;background:linear-gradient(90deg, #2ea043, #58a6ff);border-radius:4px;transition:width 0.3s ease;"></div>
       </div>
     </div>
 
@@ -445,6 +456,6 @@
   </div>
 </div>
 
-<script src="/static/js/app.js?v=2.3"></script>
+<script src="/static/js/app.js?v=2.4"></script>
 </body>
 </html>

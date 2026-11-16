@@ -786,17 +786,38 @@ let isScanning = false;
 let allMagnetsExpanded = false;
 let scannerPollTimer = null;
 
-function setScanButtonScanning(scanning) {
+function setScanButtonScanning(scanning, percent = 0, stage = '') {
   const btn = document.getElementById('btn-start-scan');
   const spinner = document.getElementById('scan-btn-spinner');
   const text = document.getElementById('scan-btn-text');
+  const progContainer = document.getElementById('scanner-progress-container');
+  const progStage = document.getElementById('scanner-progress-stage');
+  const progPercent = document.getElementById('scanner-progress-percent');
+  const progFill = document.getElementById('scanner-progress-fill');
+
   if (btn) btn.disabled = scanning;
   if (spinner) spinner.style.display = scanning ? 'inline' : 'none';
-  if (text) text.textContent = scanning ? 'Scan en cours...' : t('btn_scan_now');
+  if (text) text.textContent = scanning ? (percent > 0 ? `Scan en cours... (${percent}%)` : 'Scan en cours...') : t('btn_scan_now');
+
+  if (progContainer) {
+    if (scanning) {
+      progContainer.style.display = 'block';
+      if (progStage) progStage.textContent = stage || 'Démarrage du scan...';
+      if (progPercent) progPercent.textContent = (percent || 0) + '%';
+      if (progFill) progFill.style.width = (percent || 0) + '%';
+    } else {
+      if (progPercent) progPercent.textContent = '100%';
+      if (progFill) progFill.style.width = '100%';
+      if (progStage) progStage.textContent = 'Scan terminé avec succès !';
+      setTimeout(() => {
+        if (!isScanning) progContainer.style.display = 'none';
+      }, 1500);
+    }
+  }
 }
 
 async function triggerScannerScan() {
-  setScanButtonScanning(true);
+  setScanButtonScanning(true, 5, 'Démarrage du scan...');
   try {
     await fetch('/api/scanner/start', { method: 'POST' });
     isScanning = true;
@@ -814,15 +835,18 @@ async function pollScannerStatus() {
     const data = await res.json();
     if (data.status === 'scanning') {
       isScanning = true;
-      setScanButtonScanning(true);
-      scannerPollTimer = setTimeout(pollScannerStatus, 1500);
+      const prog = data.progress || {};
+      const pct = prog.percent || 0;
+      const stage = prog.stage || 'Scan en cours...';
+      setScanButtonScanning(true, pct, stage);
+      scannerPollTimer = setTimeout(pollScannerStatus, 1000);
     } else {
       isScanning = false;
       setScanButtonScanning(false);
       await loadScannerData();
     }
   } catch (e) {
-    scannerPollTimer = setTimeout(pollScannerStatus, 2500);
+    scannerPollTimer = setTimeout(pollScannerStatus, 2000);
   }
 }
 
@@ -831,11 +855,10 @@ async function checkScannerStatusOnLoad() {
     const res = await fetch('/api/scanner/status');
     const data = await res.json();
     if (data.status === 'scanning') {
-      if (!isScanning) {
-        isScanning = true;
-        setScanButtonScanning(true);
-        pollScannerStatus();
-      }
+      isScanning = true;
+      const prog = data.progress || {};
+      setScanButtonScanning(true, prog.percent || 0, prog.stage || '');
+      pollScannerStatus();
     } else {
       if (isScanning) {
         isScanning = false;

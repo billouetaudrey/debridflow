@@ -12,6 +12,7 @@ async def get_scanner_status():
     return JSONResponse(
         {
             "status": scanner_service.status,
+            "progress": scanner_service.progress,
             "last_update": scanner_service.last_update,
             "stats": scanner_service.stats,
             "error_msg": scanner_service.error_msg,
