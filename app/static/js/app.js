@@ -489,7 +489,10 @@ function showTab(tab) {
   if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
 
   if (tab === 'queue') refreshQueue();
-  if (tab === 'scanner') loadScannerData();
+  if (tab === 'scanner') {
+    loadScannerData();
+    checkScannerStatusOnLoad();
+  }
 }
 
 function showSettingsPage(pageId) {
@@ -767,6 +770,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   setInterval(refreshQueue, 2000);
+  setInterval(() => {
+    if (currentTab === 'scanner') {
+      checkScannerStatusOnLoad();
+    }
+  }, 4000);
 });
 
 // ==========================================
@@ -776,46 +784,66 @@ let scannerData = null;
 let currentMagnetsFilter = 'all';
 let isScanning = false;
 let allMagnetsExpanded = false;
+let scannerPollTimer = null;
 
-async function triggerScannerScan() {
+function setScanButtonScanning(scanning) {
   const btn = document.getElementById('btn-start-scan');
   const spinner = document.getElementById('scan-btn-spinner');
   const text = document.getElementById('scan-btn-text');
-  if (btn) btn.disabled = true;
-  if (spinner) spinner.style.display = 'inline';
-  if (text) text.textContent = 'Scan en cours...';
+  if (btn) btn.disabled = scanning;
+  if (spinner) spinner.style.display = scanning ? 'inline' : 'none';
+  if (text) text.textContent = scanning ? 'Scan en cours...' : t('btn_scan_now');
+}
 
+async function triggerScannerScan() {
+  setScanButtonScanning(true);
   try {
     await fetch('/api/scanner/start', { method: 'POST' });
     isScanning = true;
     pollScannerStatus();
   } catch (err) {
     alert('Erreur lors du lancement du scan : ' + err);
-    if (btn) btn.disabled = false;
-    if (spinner) spinner.style.display = 'none';
-    if (text) text.textContent = t('btn_scan_now');
+    setScanButtonScanning(false);
   }
 }
 
 async function pollScannerStatus() {
+  if (scannerPollTimer) clearTimeout(scannerPollTimer);
   try {
     const res = await fetch('/api/scanner/status');
     const data = await res.json();
     if (data.status === 'scanning') {
-      setTimeout(pollScannerStatus, 1500);
+      isScanning = true;
+      setScanButtonScanning(true);
+      scannerPollTimer = setTimeout(pollScannerStatus, 1500);
     } else {
       isScanning = false;
-      const btn = document.getElementById('btn-start-scan');
-      const spinner = document.getElementById('scan-btn-spinner');
-      const text = document.getElementById('scan-btn-text');
-      if (btn) btn.disabled = false;
-      if (spinner) spinner.style.display = 'none';
-      if (text) text.textContent = t('btn_scan_now');
-      loadScannerData();
+      setScanButtonScanning(false);
+      await loadScannerData();
     }
   } catch (e) {
-    setTimeout(pollScannerStatus, 2000);
+    scannerPollTimer = setTimeout(pollScannerStatus, 2500);
   }
+}
+
+async function checkScannerStatusOnLoad() {
+  try {
+    const res = await fetch('/api/scanner/status');
+    const data = await res.json();
+    if (data.status === 'scanning') {
+      if (!isScanning) {
+        isScanning = true;
+        setScanButtonScanning(true);
+        pollScannerStatus();
+      }
+    } else {
+      if (isScanning) {
+        isScanning = false;
+        setScanButtonScanning(false);
+        await loadScannerData();
+      }
+    }
+  } catch (e) {}
 }
 
 async function loadScannerData() {
@@ -1006,12 +1034,12 @@ function renderMagnetsList(grouped) {
       const localBadge = mag.is_local ? `<span class="badge-tag local">🔗 Symlinké</span>` : `<span class="badge-tag unlinked">Non symlinké</span>`;
       const deadBadge = mag.is_dead ? `<span class="badge-tag dead">⚠️ Mort API</span>` : '';
 
-      html += `<div class="mag-group sc-mag-card" data-title="${esc(normTitle.toLowerCase())} ${esc(mag.name.toLowerCase())}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}" data-dup="0">
-        <div class="mag-item">
+      html += `<div class="mag-group sc-mag-card" id="mag-single-${mag.id}" data-title="${esc(normTitle.toLowerCase())} ${esc(mag.name.toLowerCase())}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}" data-dup="0">
+        <div class="mag-item" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
           <div class="mag-info-left">
             <input type="checkbox" class="sc-mag-chk" value="${mag.id}" data-name="${esc(mag.name)}">
             <div>
-              <div style="font-weight:600;font-size:13px;">${esc(mag.name)}</div>
+              <div style="font-weight:600;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)}</div>
               <div class="mag-meta">
                 <span>ID: #${mag.id}</span>
                 <span>Taille: ${formatSize(mag.size)}</span>
@@ -1032,11 +1060,11 @@ function renderMagnetsList(grouped) {
         const localBadge = mag.is_local ? `<span class="badge-tag local">🔗 Symlinké</span>` : `<span class="badge-tag unlinked">Non symlinké</span>`;
         const deadBadge = mag.is_dead ? `<span class="badge-tag dead">⚠️ Mort API</span>` : '';
 
-        childrenHtml += `<div class="mag-item sc-mag-child" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
+        childrenHtml += `<div class="mag-item sc-mag-child" id="mag-child-${mag.id}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
           <div class="mag-info-left">
             <input type="checkbox" class="sc-mag-chk" value="${mag.id}" data-name="${esc(mag.name)}" ${idx > 0 ? 'data-isdup="1"' : ''}>
             <div>
-              <div style="font-weight:500;font-size:13px;">${esc(mag.name)} ${isBest}</div>
+              <div style="font-weight:500;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)} ${isBest}</div>
               <div class="mag-meta">
                 <span>ID: #${mag.id}</span>
                 <span>Taille: ${formatSize(mag.size)}</span>
@@ -1087,15 +1115,20 @@ function filterMagnetsDisplay() {
     if (currentMagnetsFilter === 'duplicates') {
       matchFilter = isDup;
     } else if (currentMagnetsFilter === 'dead') {
-      const hasDead = card.querySelector('[data-dead="1"]') !== null;
+      const hasDead = card.getAttribute('data-dead') === '1' || card.querySelector('[data-dead="1"]') !== null;
       matchFilter = hasDead;
     } else if (currentMagnetsFilter === 'unlinked') {
-      const hasUnlinked = card.querySelector('[data-local="0"]') !== null;
+      const hasUnlinked = card.getAttribute('data-local') === '0' || card.querySelector('[data-local="0"]') !== null;
       matchFilter = hasUnlinked;
     }
 
     const matchSearch = !search || title.includes(search);
-    card.style.display = (matchFilter && matchSearch) ? 'block' : 'none';
+    const visible = matchFilter && matchSearch;
+    card.style.display = visible ? 'block' : 'none';
+
+    if (visible && isDup && (currentMagnetsFilter === 'dead' || currentMagnetsFilter === 'unlinked')) {
+      card.classList.add('open');
+    }
   });
 }
 
@@ -1129,8 +1162,16 @@ async function deleteSingleMagnet(id, name) {
       body: JSON.stringify({ items: [{ id, name }] })
     });
     const data = await res.json();
-    alert(`Magnet #${id} et liens symboliques locaux supprimés avec succès.`);
-    loadScannerData();
+    if (data.status === 'success') {
+      const singleEl = document.getElementById(`mag-single-${id}`);
+      if (singleEl) singleEl.remove();
+      const childEl = document.getElementById(`mag-child-${id}`);
+      if (childEl) childEl.remove();
+      await loadScannerData();
+      pollScannerStatus();
+    } else {
+      alert(`Erreur : ${data.message || 'Échec de la suppression'}`);
+    }
   } catch (e) {
     alert('Erreur lors de la suppression : ' + e);
   }
@@ -1154,8 +1195,18 @@ async function deleteSelectedMagnets() {
       body: JSON.stringify({ items: checked })
     });
     const data = await res.json();
-    alert(`${data.deleted} magnet(s) supprimé(s) sur AllDebrid !`);
-    loadScannerData();
+    if (data.status === 'success') {
+      checked.forEach(item => {
+        const singleEl = document.getElementById(`mag-single-${item.id}`);
+        if (singleEl) singleEl.remove();
+        const childEl = document.getElementById(`mag-child-${item.id}`);
+        if (childEl) childEl.remove();
+      });
+      await loadScannerData();
+      pollScannerStatus();
+    } else {
+      alert(`Erreur : ${data.message || 'Échec de la suppression'}`);
+    }
   } catch (e) {
     alert('Erreur : ' + e);
   } finally {
@@ -1183,8 +1234,12 @@ async function cleanAllDuplicateMagnets() {
       body: JSON.stringify({ items: duplicates })
     });
     const data = await res.json();
-    alert(`${data.deleted} doublons supprimés sur AllDebrid !`);
-    loadScannerData();
+    if (data.status === 'success') {
+      await loadScannerData();
+      pollScannerStatus();
+    } else {
+      alert(`Erreur : ${data.message || 'Échec du nettoyage'}`);
+    }
   } catch (e) {
     alert('Erreur : ' + e);
   }

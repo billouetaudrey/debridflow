@@ -6,7 +6,7 @@ import re
 import time
 import urllib.parse
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import httpx
 
@@ -346,10 +346,13 @@ class ScannerService:
         api_key = settings_db.get("api_key", "").strip()
         agent = settings_db.get("agent", "PyRDT")
         deleted_count = 0
+        deleted_ids: Set[str] = set()
 
         async with httpx.AsyncClient(timeout=15.0) as client:
             for item in magnet_ids_and_names:
                 mag_id = item.get("id")
+                if not mag_id:
+                    continue
                 raw_name = item.get("name", "")
 
                 # 1. Suppression AllDebrid
@@ -359,9 +362,19 @@ class ScannerService:
                         params={"agent": agent, "apikey": api_key, "id": mag_id},
                     )
                     if r.status_code == 200:
-                        deleted_count += 1
-                except Exception:
-                    pass
+                        data = r.json()
+                        if data.get("status") == "success":
+                            deleted_count += 1
+                            deleted_ids.add(str(mag_id))
+                        elif data.get("error", {}).get("code") == "MAGNET_INVALID_ID":
+                            deleted_count += 1
+                            deleted_ids.add(str(mag_id))
+                        else:
+                            logger.warning(f"AllDebrid delete magnet {mag_id} returned: {data}")
+                    else:
+                        logger.warning(f"AllDebrid delete magnet {mag_id} HTTP error: {r.status_code}")
+                except Exception as e:
+                    logger.error(f"Erreur requête AllDebrid delete magnet {mag_id} : {e}")
 
                 # 2. Suppression locale simultanée des symlinks associés
                 simp = simplify_name(raw_name)
@@ -373,7 +386,22 @@ class ScannerService:
                     except OSError:
                         pass
 
-        # Déclencher un rescan rapide
+        # 3. Mettre à jour immédiatement la mémoire et le cache disque
+        if deleted_ids:
+            new_grouped: Dict[str, List[Dict[str, Any]]] = {}
+            for norm_name, mags in self.grouped_magnets.items():
+                remaining = [m for m in mags if str(m.get("id")) not in deleted_ids]
+                if remaining:
+                    new_grouped[norm_name] = remaining
+            self.grouped_magnets = new_grouped
+            self.total_magnets = sum(len(mags) for mags in self.grouped_magnets.values())
+            self.stats["total_magnets"] = self.total_magnets
+            self.stats["duplicates"] = sum(len(mags) - 1 for mags in self.grouped_magnets.values() if len(mags) > 1)
+            self.stats["unlinked"] = sum(1 for mags in self.grouped_magnets.values() for m in mags if not m.get("is_local"))
+            self.stats["api_dead"] = sum(1 for mags in self.grouped_magnets.values() for m in mags if m.get("is_dead"))
+            self._save_cache()
+
+        # 4. Lancer une réconciliation complète en tâche de fond
         await self.start_scan()
         return deleted_count
 
