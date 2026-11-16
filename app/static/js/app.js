@@ -51,6 +51,7 @@ const TRANSLATIONS = {
     nav_provider: "Fournisseur & API",
     nav_storage: "Dossiers & Stockage",
     nav_services: "Services (*arr)",
+    nav_scanner: "Médiathèque & Liens",
     nav_automation: "Automatisation",
     nav_security: "Sécurité",
     nav_system: "Système & Langue",
@@ -59,9 +60,10 @@ const TRANSLATIONS = {
     sec_provider: "1. Fournisseur & API Debrid",
     sec_storage: "2. Dossiers & Stockage",
     sec_services: "3. Services, Catégories *arr & Destinations",
-    sec_automation: "4. Automatisation & Nettoyage",
-    sec_security: "5. Sécurité & Authentification",
-    sec_system: "6. Performances & Langue",
+    sec_scanner_settings: "4. Médiathèque & Surveillance des Liens",
+    sec_automation: "5. Automatisation & Nettoyage",
+    sec_security: "6. Sécurité & Authentification",
+    sec_system: "7. Performances & Langue",
 
     // Fields & Labels
     lbl_provider: "Fournisseur de Débridage (Provider)",
@@ -142,6 +144,9 @@ const TRANSLATIONS = {
     btn_clean_duplicates: "🧹 Nettoyer doublons",
     btn_delete_checked: "🗑️ Supprimer cochés",
     msg_loading_magnets: "Chargement des magnets...",
+    btn_scan_stop: "Interrompre",
+    hint_enable_scanner_tab: "Active ou désactive l'accès à l'onglet et au tableau de bord Médiathèque.",
+    hint_webhook_info: "À renseigner dans Sonarr/Radarr (Settings > Connect > Webhook, déclencheur : On Download / On Import) pour analyser automatiquement après un téléchargement.",
     sec_arr_integration: "🔗 Intégration Radarr & Sonarr (Relance automatique des liens morts)",
     lbl_enable_scanner_tab: "Afficher l'onglet Médiathèque & Liens dans la barre de navigation",
     lbl_radarr_url: "URL Radarr",
@@ -202,6 +207,7 @@ const TRANSLATIONS = {
     nav_provider: "Provider & API",
     nav_storage: "Storage & Folders",
     nav_services: "Services (*arr)",
+    nav_scanner: "Media Library & Links",
     nav_automation: "Automation",
     nav_security: "Security",
     nav_system: "System & Language",
@@ -210,9 +216,10 @@ const TRANSLATIONS = {
     sec_provider: "1. Debrid Provider & API",
     sec_storage: "2. Folders & Storage",
     sec_services: "3. Services, *arr Categories & Destinations",
-    sec_automation: "4. Automation & Cleanup",
-    sec_security: "5. Security & Authentication",
-    sec_system: "6. Performance & Language",
+    sec_scanner_settings: "4. Media Library & Links Monitor",
+    sec_automation: "5. Automation & Cleanup",
+    sec_security: "6. Security & Authentication",
+    sec_system: "7. Performance & Language",
 
     // Fields & Labels
     lbl_provider: "Debrid Provider",
@@ -293,6 +300,9 @@ const TRANSLATIONS = {
     btn_clean_duplicates: "🧹 Clean duplicates",
     btn_delete_checked: "🗑️ Delete checked",
     msg_loading_magnets: "Loading magnets...",
+    btn_scan_stop: "Stop Scan",
+    hint_enable_scanner_tab: "Enable or disable access to the Media Library tab and dashboard.",
+    hint_webhook_info: "Configure in Sonarr/Radarr (Settings > Connect > Webhook, trigger: On Download / On Import) to automatically scan after a download.",
     sec_arr_integration: "🔗 Radarr & Sonarr Integration (Auto-trigger search on dead links)",
     lbl_enable_scanner_tab: "Show Media Library & Links tab in navigation bar",
     lbl_radarr_url: "Radarr URL",
@@ -496,7 +506,7 @@ function showTab(tab) {
 }
 
 function showSettingsPage(pageId) {
-  const pages = ['alldebrid', 'storage', 'services', 'automation', 'security', 'system'];
+  const pages = ['alldebrid', 'storage', 'services', 'scanner', 'automation', 'security', 'system'];
   if (!pages.includes(pageId)) pageId = 'alldebrid';
   sessionStorage.setItem('pyrdt_settings_page', pageId);
 
@@ -506,6 +516,9 @@ function showSettingsPage(pageId) {
     const navBtn = document.getElementById('snav-' + p);
     if (navBtn) navBtn.classList.toggle('active', p === pageId);
   });
+
+  const whEl = document.getElementById('webhook-url-display');
+  if (whEl) whEl.textContent = window.location.origin + '/api/scanner/webhook';
 }
 
 function addServiceRow(svcName = '', svcMode = 'download', svcSubpath = '') {
@@ -788,6 +801,7 @@ let scannerPollTimer = null;
 
 function setScanButtonScanning(scanning, percent = 0, stage = '') {
   const btn = document.getElementById('btn-start-scan');
+  const btnStop = document.getElementById('btn-stop-scan');
   const spinner = document.getElementById('scan-btn-spinner');
   const text = document.getElementById('scan-btn-text');
   const progContainer = document.getElementById('scanner-progress-container');
@@ -796,6 +810,7 @@ function setScanButtonScanning(scanning, percent = 0, stage = '') {
   const progFill = document.getElementById('scanner-progress-fill');
 
   if (btn) btn.disabled = scanning;
+  if (btnStop) btnStop.style.display = scanning ? 'inline-block' : 'none';
   if (spinner) spinner.style.display = scanning ? 'inline' : 'none';
   if (text) text.textContent = scanning ? (percent > 0 ? `Scan en cours... (${percent}%)` : 'Scan en cours...') : t('btn_scan_now');
 
@@ -825,6 +840,34 @@ async function triggerScannerScan() {
   } catch (err) {
     alert('Erreur lors du lancement du scan : ' + err);
     setScanButtonScanning(false);
+  }
+}
+
+async function stopScannerScan() {
+  const btnStop = document.getElementById('btn-stop-scan');
+  if (btnStop) {
+    btnStop.disabled = true;
+    btnStop.innerHTML = '<span>⏳ </span>' + (i18n[currentLang]?.btn_scan_stop || 'Interrompre');
+  }
+  try {
+    await fetch('/api/scanner/stop', { method: 'POST' });
+    isScanning = false;
+    setScanButtonScanning(false);
+    if (scannerPollTimer) clearTimeout(scannerPollTimer);
+    const progStage = document.getElementById('scanner-progress-stage');
+    if (progStage) progStage.textContent = 'Scan interrompu par l\'utilisateur.';
+    const progContainer = document.getElementById('scanner-progress-container');
+    setTimeout(() => {
+      if (!isScanning && progContainer) progContainer.style.display = 'none';
+    }, 2000);
+    await loadScannerData();
+  } catch (err) {
+    alert('Erreur lors de l\'interruption du scan : ' + err);
+  } finally {
+    if (btnStop) {
+      btnStop.disabled = false;
+      btnStop.innerHTML = '<span>⏹️ </span>' + (i18n[currentLang]?.btn_scan_stop || 'Interrompre');
+    }
   }
 }
 
@@ -978,15 +1021,32 @@ async function researchDeadLink(mediaType, mediaId, path) {
 }
 
 async function cleanDeadSymlink(path) {
-  if (!confirm(`Supprimer définitivement ce lien symbolique mort ?`)) return;
+  const item = (scannerData.dead_symlinks || []).find(d => d.path === path);
+  const mediaType = item && item.media_type && item.media_type !== 'unknown' ? item.media_type.toUpperCase() : null;
+  const mediaTitle = item && item.media_title ? ` (${item.media_title})` : '';
+
+  if (!confirm(`Supprimer définitivement ce lien symbolique mort sur le disque ?`)) return;
+
+  let deleteFromArr = false;
+  if (mediaType) {
+    deleteFromArr = confirm(
+      `Ce média est associé à ${mediaType}${mediaTitle}.\n\n` +
+      `Voulez-vous ÉGALEMENT supprimer ce titre de votre bibliothèque ${mediaType} ?`
+    );
+  }
+
   try {
     const res = await fetch('/api/scanner/clean_dead_symlinks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paths: [path] })
+      body: JSON.stringify({ paths: [path], delete_from_arr: deleteFromArr })
     });
     const data = await res.json();
-    alert(`${data.deleted} lien(s) supprimé(s).`);
+    let msg = `${data.deleted} lien(s) supprimé(s) sur le disque.`;
+    if (data.deleted_arr > 0) {
+      msg += `\n${data.deleted_arr} élément(s) supprimé(s) dans ${mediaType || 'Radarr/Sonarr'}.`;
+    }
+    alert(msg);
     loadScannerData();
   } catch (e) {
     alert('Erreur : ' + e);
@@ -1015,15 +1075,30 @@ async function researchAllDeadLinks() {
 
 async function cleanAllDeadSymlinks() {
   const total = (scannerData.dead_symlinks || []).length;
+  if (total === 0) return alert('Aucun lien mort à supprimer.');
   if (!confirm(`Supprimer l'intégralité des ${total} liens morts détectés sur le disque ?`)) return;
+
+  const arrItems = (scannerData.dead_symlinks || []).filter(d => d.media_type === 'radarr' || d.media_type === 'sonarr');
+  let deleteFromArr = false;
+  if (arrItems.length > 0) {
+    deleteFromArr = confirm(
+      `${arrItems.length} des liens morts sont associés à Radarr ou Sonarr.\n\n` +
+      `Voulez-vous ÉGALEMENT supprimer ces médias de votre bibliothèque Radarr / Sonarr ?`
+    );
+  }
+
   try {
     const res = await fetch('/api/scanner/clean_dead_symlinks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify({ delete_from_arr: deleteFromArr })
     });
     const data = await res.json();
-    alert(`${data.deleted} lien(s) mort(s) purgé(s) !`);
+    let msg = `${data.deleted} lien(s) mort(s) purgé(s) sur le disque !`;
+    if (data.deleted_arr > 0) {
+      msg += `\n${data.deleted_arr} média(s) supprimé(s) dans Radarr / Sonarr.`;
+    }
+    alert(msg);
     loadScannerData();
   } catch (e) {
     alert('Erreur : ' + e);

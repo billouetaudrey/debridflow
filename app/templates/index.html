@@ -91,6 +91,10 @@
           <span id="scan-btn-spinner" style="display:none;">⏳ </span>
           <span id="scan-btn-text" data-i18n="btn_scan_now">🔄 Scanner la médiathèque &amp; AllDebrid</span>
         </button>
+        <button type="button" id="btn-stop-scan" class="btn-main" onclick="stopScannerScan()" style="display:none;background:#da3633;border-color:#f85149;margin-left:8px;">
+          <span>⏹️ </span>
+          <span data-i18n="btn_scan_stop">Interrompre</span>
+        </button>
       </div>
     </div>
 
@@ -204,6 +208,10 @@
           <span class="icon">⚙️</span>
           <span data-i18n="nav_services">Services (*arr)</span>
         </button>
+        <button type="button" class="settings-nav-item" id="snav-scanner" onclick="showSettingsPage('scanner')">
+          <span class="icon">🔍</span>
+          <span data-i18n="nav_scanner">Médiathèque &amp; Liens</span>
+        </button>
         <button type="button" class="settings-nav-item" id="snav-automation" onclick="showSettingsPage('automation')">
           <span class="icon">⚡</span>
           <span data-i18n="nav_automation">Automatisation</span>
@@ -312,16 +320,34 @@
                 <span></span>
               </div>
               <div id="services-list">__SERVICE_ROWS__</div>
+            </div>
+          </div>
 
-              <!-- Intégration Radarr & Sonarr (pour relance automatique des liens morts) -->
-              <div style="margin-top:22px;border-top:1px solid var(--border-muted);padding-top:16px;">
-                <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Intégration Radarr &amp; Sonarr (Relance automatique des liens morts)</h4>
-                
-                <div class="chk-line" style="margin-bottom:14px;">
-                  <input type="checkbox" id="chk_enable_scanner" name="enable_scanner_tab" __CHECKED_SCANNER_TAB__>
-                  <label for="chk_enable_scanner" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
-                </div>
+          <!-- Page 4 : Médiathèque & Surveillance des Liens -->
+          <div id="setpage-scanner" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">🔍</span>
+                  <span data-i18n="sec_scanner_settings">Médiathèque &amp; Surveillance des Liens</span>
+                </h3>
+              </div>
 
+              <!-- Option principale : Activer ou Désactiver l'onglet -->
+              <div class="chk-line" style="margin-bottom:16px;background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);">
+                <input type="checkbox" id="chk_enable_scanner" name="enable_scanner_tab" __CHECKED_SCANNER_TAB__ style="width:18px;height:18px;cursor:pointer;">
+                <label for="chk_enable_scanner" style="font-weight:600;font-size:14px;cursor:pointer;" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
+                <div style="margin-left:26px;font-size:12px;color:var(--text-muted);margin-top:4px;" data-i18n="hint_enable_scanner_tab">Active ou désactive l'accès à l'onglet et au tableau de bord Médiathèque.</div>
+              </div>
+
+              <div class="field full" style="margin-bottom:14px;">
+                <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
+                <input type="text" name="media_scan_paths" value="__MEDIA_SCAN_PATHS__" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,...">
+                <small class="hint" data-i18n="hint_scan_paths">Chemins réels ou montages locaux où se trouvent vos films et séries à surveiller.</small>
+              </div>
+
+              <div style="margin-top:18px;border-top:1px solid var(--border-muted);padding-top:14px;">
+                <h4 style="margin:0 0 10px 0;font-size:13px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Connexion Radarr &amp; Sonarr (Relance automatique des recherches &amp; synchronisation)</h4>
                 <div class="grid">
                   <div class="field">
                     <label data-i18n="lbl_radarr_url">URL Radarr</label>
@@ -340,11 +366,11 @@
                     <input type="password" name="sonarr_api_key" value="__SONARR_API_KEY__" placeholder="Ex: 059aeb77e7ba4ca7879b1061373fdfe1">
                   </div>
                 </div>
-                <div class="field" style="margin-top:12px;">
-                  <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
-                  <input type="text" name="media_scan_paths" value="__MEDIA_SCAN_PATHS__" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,...">
-                  <small class="hint" data-i18n="hint_scan_paths">Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.</small>
-                </div>
+              </div>
+
+              <div style="margin-top:16px;background:var(--bg-card);padding:12px;border-radius:6px;border:1px solid var(--border-muted);font-size:12px;">
+                <strong>ℹ️ URL Webhook Sonarr / Radarr :</strong> <code id="webhook-url-display" style="color:var(--text-accent);">http://&lt;IP_DE_VOTRE_SERVEUR&gt;:6505/api/scanner/webhook</code>
+                <div style="color:var(--text-muted);margin-top:4px;" data-i18n="hint_webhook_info">À renseigner dans Sonarr/Radarr (Settings &gt; Connect &gt; Webhook, déclencheur : On Download / On Import) pour analyser automatiquement après un téléchargement.</div>
               </div>
             </div>
           </div>

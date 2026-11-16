@@ -76,6 +76,8 @@ class ScannerService:
         self._last_scan_end: float = 0.0
         self._min_cooldown: float = 45.0
         self._debounce_task: Optional[asyncio.Task] = None
+        self._stop_requested: bool = False
+        self._current_scan_task: Optional[asyncio.Task] = None
         self._load_cache()
 
     def _load_cache(self) -> None:
@@ -138,6 +140,9 @@ class ScannerService:
             try:
                 # Parcours avec limitation de profondeur
                 for root, dirs, files in os.walk(base_path, followlinks=False):
+                    if self._stop_requested:
+                        logger.info("Scanner: arrêt anticipé du parcours disque (interruption).")
+                        break
                     rel = Path(root).relative_to(base_path)
                     if len(rel.parts) > 5:
                         dirs.clear()
@@ -146,6 +151,8 @@ class ScannerService:
                     # Vérifier dossiers et fichiers
                     all_entries = files + dirs
                     for entry_name in all_entries:
+                        if self._stop_requested:
+                            break
                         files_scanned += 1
                         if files_scanned % 30 == 0:
                             folder_pct = (f_idx / total_folders) if total_folders else 0
@@ -279,6 +286,7 @@ class ScannerService:
             self._debounce_task.cancel()
             self._debounce_task = None
         self._pending_scan = False
+        self._stop_requested = False
 
         self.status = "scanning"
         self.error_msg = ""
@@ -293,6 +301,10 @@ class ScannerService:
 
         async def _run():
             try:
+                if self._stop_requested:
+                    self._abort_scan()
+                    return
+
                 # 1. Chemins à scanner
                 raw_paths = settings_db.get(
                     "media_scan_paths",
@@ -303,10 +315,18 @@ class ScannerService:
                 # 2. Scan fichiers en thread
                 cache, dead = await asyncio.to_thread(self._scan_filesystem_sync, paths)
 
+                if self._stop_requested:
+                    self._abort_scan()
+                    return
+
                 # 3. Réconciliation Radarr / Sonarr
                 self.progress["stage"] = "Interrogation et réconciliation Radarr & Sonarr..."
                 self.progress["percent"] = 68
                 await self._match_arr_media(dead)
+
+                if self._stop_requested:
+                    self._abort_scan()
+                    return
 
                 # 4. Récupération des magnets AllDebrid
                 api_key = settings_db.get("api_key", "").strip()
@@ -330,6 +350,9 @@ class ScannerService:
                                 self.progress["stage"] = f"Traitement de {total_mags} magnets et détection des doublons..."
                                 self.progress["percent"] = 88
                                 for mag in raw_mags:
+                                    if self._stop_requested:
+                                        self._abort_scan()
+                                        return
                                     orig_name = mag.get("filename") or mag.get("name") or "Nom indisponible"
                                     norm_name = normalize_filename(orig_name) or orig_name
 
@@ -363,6 +386,10 @@ class ScannerService:
                                         ),
                                         reverse=True,
                                     )
+
+                if self._stop_requested:
+                    self._abort_scan()
+                    return
 
                 # Calcul des statistiques
                 self.progress["stage"] = "Finalisation et calcul des statistiques..."
@@ -401,6 +428,9 @@ class ScannerService:
                         await asyncio.sleep(15)
                         await self.start_scan(force=True)
                     asyncio.create_task(_run_pending_delayed())
+            except asyncio.CancelledError:
+                logger.info("Scanner: tâche de scan annulée.")
+                self._abort_scan()
             except Exception as e:
                 logger.error(f"Erreur durant le scan scanner : {e}")
                 self.status = "error"
@@ -410,27 +440,138 @@ class ScannerService:
                 self.progress["percent"] = 0
                 self._save_cache()
 
-        asyncio.create_task(_run())
+        self._current_scan_task = asyncio.create_task(_run())
         return {"status": "scanning"}
 
-    async def clean_dead_symlinks(self, target_paths: Optional[List[str]] = None) -> int:
-        deleted = 0
+    def _abort_scan(self) -> None:
+        self.status = "ready"
+        self._pending_scan = False
+        self._stop_requested = False
+        self.progress["stage"] = "Scan interrompu par l'utilisateur."
+        self.progress["percent"] = 0
+        self._save_cache()
+        logger.info("Scanner: scan interrompu avec succès.")
+
+    async def stop_scan(self) -> Dict[str, Any]:
+        logger.info("Scanner: demande d'interruption du scan reçue.")
+        self._stop_requested = True
+        self._pending_scan = False
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
+            self._debounce_task = None
+        if self._current_scan_task and not self._current_scan_task.done():
+            self._current_scan_task.cancel()
+        self._abort_scan()
+        return {"status": "stopped", "message": "Scan interrompu"}
+
+    async def clean_dead_symlinks(
+        self,
+        target_paths: Optional[List[str]] = None,
+        delete_from_arr: bool = False
+    ) -> Dict[str, Any]:
         paths_to_clean = target_paths if target_paths else [d["path"] for d in self.dead_symlinks]
+        dead_map = {d["path"]: d for d in self.dead_symlinks}
+        deleted_local = 0
+
+        # 1. Suppression des symlinks locaux
         for p_str in paths_to_clean:
             try:
                 p = Path(p_str)
                 if p.is_symlink() and not p.exists():
                     p.unlink(missing_ok=True)
-                    deleted += 1
+                    deleted_local += 1
             except OSError:
                 pass
 
-        # Mettre à jour la liste des liens morts
+        # 2. Suppression dans Radarr / Sonarr si demandée
+        arr_deleted = 0
+        if delete_from_arr:
+            radarr_url = settings_db.get("radarr_url", "http://127.0.0.1:7878").rstrip("/")
+            radarr_key = settings_db.get("radarr_api_key", "").strip()
+            sonarr_url = settings_db.get("sonarr_url", "http://127.0.0.1:8989").rstrip("/")
+            sonarr_key = settings_db.get("sonarr_api_key", "").strip()
+
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                for p_str in paths_to_clean:
+                    item = dead_map.get(p_str)
+                    if not item:
+                        continue
+                    m_type = item.get("media_type")
+                    m_id = item.get("media_id")
+                    if not m_id:
+                        continue
+
+                    if m_type == "radarr" and radarr_key:
+                        try:
+                            r = await client.delete(
+                                f"{radarr_url}/api/v3/movie/{m_id}",
+                                headers={"X-Api-Key": radarr_key},
+                                params={"deleteFiles": "false", "addImportExclusion": "false"},
+                            )
+                            if r.status_code in (200, 204):
+                                arr_deleted += 1
+                                logger.info(f"Scanner: film supprimé de Radarr (ID: {m_id}, Titre: {item.get('media_title')})")
+                            else:
+                                logger.warning(f"Scanner: suppression Radarr movie {m_id} statut: {r.status_code}")
+                        except Exception as e:
+                            logger.error(f"Scanner: erreur suppression Radarr : {e}")
+
+                    elif m_type == "sonarr" and sonarr_key:
+                        try:
+                            r_ep = await client.get(
+                                f"{sonarr_url}/api/v3/episodefile",
+                                headers={"X-Api-Key": sonarr_key},
+                                params={"seriesId": m_id},
+                            )
+                            deleted_ep = False
+                            if r_ep.status_code == 200:
+                                ep_files = r_ep.json()
+                                p_name = Path(p_str).name
+                                matched_ep = next(
+                                    (ef for ef in ep_files if ef.get("path") == p_str or Path(ef.get("path", "")).name == p_name),
+                                    None,
+                                )
+                                if matched_ep:
+                                    r_del = await client.delete(
+                                        f"{sonarr_url}/api/v3/episodefile/{matched_ep['id']}",
+                                        headers={"X-Api-Key": sonarr_key},
+                                    )
+                                    if r_del.status_code in (200, 204):
+                                        arr_deleted += 1
+                                        deleted_ep = True
+                                        logger.info(f"Scanner: fichier d'épisode {matched_ep['id']} supprimé de Sonarr")
+                                    if len(ep_files) <= 1:
+                                        await client.delete(
+                                            f"{sonarr_url}/api/v3/series/{m_id}",
+                                            headers={"X-Api-Key": sonarr_key},
+                                            params={"deleteFiles": "false", "addImportListExclusion": "false"},
+                                        )
+                                        logger.info(f"Scanner: série vide {m_id} supprimée de Sonarr.")
+                                    else:
+                                        await client.post(
+                                            f"{sonarr_url}/api/v3/command",
+                                            headers={"X-Api-Key": sonarr_key},
+                                            json={"name": "RescanSeries", "seriesId": int(m_id)},
+                                        )
+
+                            if not deleted_ep:
+                                r_s = await client.delete(
+                                    f"{sonarr_url}/api/v3/series/{m_id}",
+                                    headers={"X-Api-Key": sonarr_key},
+                                    params={"deleteFiles": "false", "addImportListExclusion": "false"},
+                                )
+                                if r_s.status_code in (200, 204):
+                                    arr_deleted += 1
+                                    logger.info(f"Scanner: série {m_id} supprimée de Sonarr ({item.get('media_title')})")
+                        except Exception as e:
+                            logger.error(f"Scanner: erreur suppression Sonarr : {e}")
+
+        # 3. Mettre à jour la liste des liens morts
         cleaned_set = set(paths_to_clean)
         self.dead_symlinks = [d for d in self.dead_symlinks if d["path"] not in cleaned_set]
         self.stats["dead_symlinks"] = len(self.dead_symlinks)
         self._save_cache()
-        return deleted
+        return {"deleted": deleted_local, "deleted_arr": arr_deleted}
 
     async def delete_magnets(self, magnet_ids_and_names: List[Dict[str, Any]]) -> int:
         api_key = settings_db.get("api_key", "").strip()

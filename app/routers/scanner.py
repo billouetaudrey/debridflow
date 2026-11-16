@@ -27,6 +27,13 @@ async def start_scanner(force: bool = False):
     return JSONResponse(result)
 
 
+@router.api_route("/stop", methods=["GET", "POST"])
+@router.api_route("/cancel", methods=["GET", "POST"])
+async def stop_scanner():
+    result = await scanner_service.stop_scan()
+    return JSONResponse(result)
+
+
 @router.get("/data")
 async def get_scanner_data():
     return JSONResponse(
@@ -44,8 +51,9 @@ async def get_scanner_data():
 @router.post("/clean_dead_symlinks")
 async def clean_dead_symlinks(payload: Dict[str, Any] = Body(default={})):
     paths = payload.get("paths")
-    deleted = await scanner_service.clean_dead_symlinks(paths)
-    return JSONResponse({"status": "success", "deleted": deleted})
+    delete_from_arr = bool(payload.get("delete_from_arr", False))
+    result = await scanner_service.clean_dead_symlinks(paths, delete_from_arr=delete_from_arr)
+    return JSONResponse({"status": "success", **result})
 
 
 @router.post("/delete_magnets")
