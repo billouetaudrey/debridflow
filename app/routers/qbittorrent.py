@@ -305,3 +305,245 @@ async def qb_torrents_retry(hashes: str = Form(...)):
                 torrents_db[h]["ready_since"] = now_ts
         save_state()
     return PlainTextResponse("Ok.")
+
+
+@router.post("/api/v2/torrents/setCategory")
+async def qb_torrents_set_category(hashes: str = Form(...), category: str = Form("")):
+    target_hashes = [h.strip().lower() for h in hashes.split("|") if h.strip()]
+    cat = category.strip()
+    async with state_lock:
+        for h in target_hashes:
+            if h in torrents_db:
+                torrents_db[h]["category"] = cat
+        save_state()
+    return PlainTextResponse("Ok.")
+
+
+@router.post("/api/v2/torrents/recheck")
+async def qb_torrents_recheck(hashes: str = Form(...)):
+    return PlainTextResponse("Ok.")
+
+
+@router.get("/api/v2/torrents/tags")
+@router.post("/api/v2/torrents/tags")
+async def qb_torrents_tags():
+    return JSONResponse([])
+
+
+@router.get("/api/v2/app/buildInfo")
+async def qb_build_info():
+    return JSONResponse(
+        {
+            "qt": "6.6.0",
+            "libtorrent": "2.0.10",
+            "boost": "1.83.0",
+            "openssl": "3.1.4",
+            "bitness": 64,
+        }
+    )
+
+
+# --- Nzb360 / WebUI Synchronization & Transfer Endpoints ---
+
+@router.get("/api/v2/sync/maindata")
+@router.post("/api/v2/sync/maindata")
+async def qb_sync_maindata(rid: Optional[int] = 0):
+    async with state_lock:
+        torrents_dict = {}
+        total_dl = 0
+        for h, item in torrents_db.items():
+            size = int(item.get("size") or 0)
+            progress = float(item.get("progress") or 0.0)
+            downloaded = size if progress >= 1.0 else int(size * progress)
+            total_dl += downloaded
+            raw_state = item.get("state") or "downloading"
+            if raw_state == "copying":
+                qb_state = "checkingDL"
+            elif raw_state in ("stalledUP", "uploading", "completed", "pausedUP") or progress >= 1.0:
+                qb_state = "pausedUP"
+            else:
+                qb_state = raw_state
+
+            torrents_dict[h] = {
+                "name": item.get("name") or h,
+                "size": size,
+                "progress": progress,
+                "dlspeed": 0,
+                "upspeed": 0,
+                "priority": 1,
+                "num_seeds": 1,
+                "num_leechs": 0,
+                "ratio": 1.0,
+                "ratio_limit": 1.0,
+                "max_ratio": 1.0,
+                "seeding_time": 86400,
+                "seeding_time_limit": 0,
+                "max_seeding_time": 0,
+                "time_active": 86400,
+                "has_seed_limit_reached": True,
+                "eta": 0 if progress >= 1.0 else 10,
+                "state": qb_state,
+                "category": item.get("category") or "",
+                "save_path": item.get("save_path") or str(settings_db["download_base_dir"]),
+                "content_path": item.get("content_path") or str(settings_db["download_base_dir"]),
+                "added_on": item.get("added_on", 0),
+                "completion_on": item.get("completion_on", -1),
+                "amount_left": max(0, size - downloaded),
+                "completed": downloaded,
+                "total_size": size,
+            }
+
+        cats = {
+            cat_name: {"name": cat_name, "savePath": cat_data.get("savePath", "")}
+            for cat_name, cat_data in categories_db.items()
+        }
+
+    return JSONResponse(
+        {
+            "rid": (rid or 0) + 1,
+            "full_update": True,
+            "torrents": torrents_dict,
+            "torrents_removed": [],
+            "categories": cats,
+            "categories_removed": [],
+            "tags": [],
+            "tags_removed": [],
+            "server_state": {
+                "connection_status": "connected",
+                "dht_nodes": 0,
+                "dl_info_data": total_dl,
+                "dl_info_speed": 0,
+                "dl_rate_limit": 0,
+                "up_info_data": total_dl,
+                "up_info_speed": 0,
+                "up_rate_limit": 0,
+                "free_space_on_disk": 1000 * 1024 * 1024 * 1024,
+                "total_buffers_size": 0,
+                "total_wasted_session": 0,
+                "global_ratio": "1.0",
+                "use_alt_speed_limits": False,
+                "refresh_interval": 2000,
+            },
+        }
+    )
+
+
+@router.get("/api/v2/transfer/info")
+@router.post("/api/v2/transfer/info")
+async def qb_transfer_info():
+    return JSONResponse(
+        {
+            "connection_status": "connected",
+            "dht_nodes": 0,
+            "dl_info_data": 0,
+            "dl_info_speed": 0,
+            "dl_rate_limit": 0,
+            "up_info_data": 0,
+            "up_info_speed": 0,
+            "up_rate_limit": 0,
+        }
+    )
+
+
+@router.get("/api/v2/transfer/downloadLimit")
+@router.post("/api/v2/transfer/downloadLimit")
+async def qb_transfer_download_limit():
+    return PlainTextResponse("0")
+
+
+@router.get("/api/v2/transfer/uploadLimit")
+@router.post("/api/v2/transfer/uploadLimit")
+async def qb_transfer_upload_limit():
+    return PlainTextResponse("0")
+
+
+@router.get("/api/v2/transfer/speedLimitsMode")
+@router.post("/api/v2/transfer/speedLimitsMode")
+async def qb_transfer_speed_limits_mode():
+    return PlainTextResponse("0")
+
+
+@router.post("/api/v2/transfer/setDownloadLimit")
+async def qb_transfer_set_download_limit():
+    return PlainTextResponse("Ok.")
+
+
+@router.post("/api/v2/transfer/setUploadLimit")
+async def qb_transfer_set_upload_limit():
+    return PlainTextResponse("Ok.")
+
+
+@router.post("/api/v2/transfer/toggleSpeedLimitsMode")
+@router.post("/api/v2/transfer/setSpeedLimitsMode")
+async def qb_transfer_toggle_speed_limits_mode():
+    return PlainTextResponse("Ok.")
+
+
+@router.post("/api/v2/transfer/banPeers")
+async def qb_transfer_ban_peers():
+    return PlainTextResponse("Ok.")
+
+
+@router.get("/api/v2/torrents/properties")
+@router.post("/api/v2/torrents/properties")
+async def qb_torrents_properties(hash: str):
+    async with state_lock:
+        item = torrents_db.get(hash.lower())
+    if not item:
+        return JSONResponse({}, status_code=404)
+    size = int(item.get("size") or 0)
+    progress = float(item.get("progress") or 0.0)
+    downloaded = size if progress >= 1.0 else int(size * progress)
+    return JSONResponse(
+        {
+            "save_path": item.get("save_path") or str(settings_db["download_base_dir"]),
+            "creation_date": item.get("added_on", 0),
+            "piece_size": 1024 * 1024,
+            "pieces_num": max(1, size // (1024 * 1024)),
+            "pieces_have": int(max(1, size // (1024 * 1024)) * progress),
+            "comment": f"PyRDT Transfer ({item.get('transfer_mode', 'symlink')})",
+            "total_wasted": 0,
+            "total_uploaded": downloaded,
+            "total_downloaded": downloaded,
+            "up_limit": -1,
+            "dl_limit": -1,
+            "time_elapsed": 86400,
+            "seeding_time": 86400,
+            "nb_connections": 1,
+            "nb_connections_limit": 100,
+            "peers": 0,
+            "peers_total": 0,
+            "seeds": 1,
+            "seeds_total": 1,
+            "dl_speed": 0,
+            "up_speed": 0,
+            "eta": 0,
+            "addition_date": item.get("added_on", 0),
+            "completion_on": item.get("completion_on", -1),
+        }
+    )
+
+
+@router.get("/api/v2/torrents/trackers")
+@router.post("/api/v2/torrents/trackers")
+async def qb_torrents_trackers(hash: str):
+    return JSONResponse(
+        [
+            {
+                "url": "**PyRDT Debrid**",
+                "status": 2,
+                "tier": 0,
+                "num_peers": 0,
+                "num_seeds": 1,
+                "num_leeches": 0,
+                "num_downloaded": 1,
+                "msg": "OK",
+            }
+        ]
+    )
+
+
+@router.get("/api/v2/torrents/pieceStates")
+@router.post("/api/v2/torrents/pieceStates")
+async def qb_torrents_piece_states(hash: str):
+    return JSONResponse([2] * 20)
