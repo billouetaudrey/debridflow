@@ -72,6 +72,10 @@ class ScannerService:
             "dead_found": 0,
             "current_folder": "",
         }
+        self._pending_scan: bool = False
+        self._last_scan_end: float = 0.0
+        self._min_cooldown: float = 45.0
+        self._debounce_task: Optional[asyncio.Task] = None
         self._load_cache()
 
     def _load_cache(self) -> None:
@@ -246,9 +250,35 @@ class ScannerService:
                     item["media_title"] = s.get("title", "")
                     break
 
-    async def start_scan(self) -> None:
+    async def start_scan(self, force: bool = False) -> Dict[str, Any]:
+        now = time.time()
+
+        # 1. Si un scan est déjà en cours, on regroupe (coalescing)
         if self.status == "scanning":
-            return
+            self._pending_scan = True
+            logger.info("Scanner: scan déjà en cours, prochaine demande mise en file d'attente (coalescing).")
+            return {"status": "scanning", "queued": True}
+
+        # 2. Sécurité anti-flood / Cooldown pour les appels automatiques (webhooks multiples)
+        elapsed = now - self._last_scan_end
+        if not force and self._last_scan_end > 0 and elapsed < self._min_cooldown:
+            remaining = int(self._min_cooldown - elapsed)
+            logger.info(f"Scanner: cooldown actif ({remaining}s restantes). Demande différée.")
+            self._pending_scan = True
+            if not self._debounce_task or self._debounce_task.done():
+                async def _delayed():
+                    await asyncio.sleep(remaining + 2)
+                    if self._pending_scan and self.status != "scanning":
+                        self._pending_scan = False
+                        await self.start_scan(force=True)
+                self._debounce_task = asyncio.create_task(_delayed())
+            return {"status": "delayed", "cooldown_remaining": remaining}
+
+        # Annuler toute tâche différée car on démarre maintenant
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
+            self._debounce_task = None
+        self._pending_scan = False
 
         self.status = "scanning"
         self.error_msg = ""
@@ -355,21 +385,33 @@ class ScannerService:
                 }
                 self.last_update = int(time.time())
                 self.status = "ready"
+                self._last_scan_end = time.time()
                 self.progress["stage"] = "Scan terminé avec succès"
                 self.progress["percent"] = 100
                 self._save_cache()
                 logger.info(
                     f"Scan médiathèque terminé : {len(dead)} lien(s) mort(s), {total_mags} magnet(s), {duplicates_count} doublon(s)."
                 )
+
+                # Si de nouveaux téléchargements sont arrivés pendant l'analyse
+                if self._pending_scan:
+                    self._pending_scan = False
+                    async def _run_pending_delayed():
+                        logger.info("Scanner: exécution différée du scan pour les téléchargements reçus pendant le scan précédent (tampon 15s)...")
+                        await asyncio.sleep(15)
+                        await self.start_scan(force=True)
+                    asyncio.create_task(_run_pending_delayed())
             except Exception as e:
                 logger.error(f"Erreur durant le scan scanner : {e}")
                 self.status = "error"
                 self.error_msg = str(e)
+                self._last_scan_end = time.time()
                 self.progress["stage"] = f"Erreur : {e}"
                 self.progress["percent"] = 0
                 self._save_cache()
 
         asyncio.create_task(_run())
+        return {"status": "scanning"}
 
     async def clean_dead_symlinks(self, target_paths: Optional[List[str]] = None) -> int:
         deleted = 0

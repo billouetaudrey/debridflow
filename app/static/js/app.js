@@ -819,7 +819,7 @@ function setScanButtonScanning(scanning, percent = 0, stage = '') {
 async function triggerScannerScan() {
   setScanButtonScanning(true, 5, 'Démarrage du scan...');
   try {
-    await fetch('/api/scanner/start', { method: 'POST' });
+    await fetch('/api/scanner/start?force=true', { method: 'POST' });
     isScanning = true;
     pollScannerStatus();
   } catch (err) {

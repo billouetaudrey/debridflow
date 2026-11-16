@@ -22,9 +22,9 @@ async def get_scanner_status():
 
 @router.api_route("/start", methods=["GET", "POST"])
 @router.api_route("/webhook", methods=["GET", "POST"])
-async def start_scanner():
-    await scanner_service.start_scan()
-    return JSONResponse({"status": "scanning"})
+async def start_scanner(force: bool = False):
+    result = await scanner_service.start_scan(force=force)
+    return JSONResponse(result)
 
 
 @router.get("/data")
