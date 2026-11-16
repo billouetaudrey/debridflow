@@ -30,7 +30,7 @@ Idéal pour Linux, serveurs NAS (Synology, QNAP, Unraid) ou Docker Desktop.
 
 1. Clonez ou téléchargez le dossier du projet :
    ```bash
-   git clone https://github.com/votre-user/pyrdt.git
+   git clone https://github.com/billouetaudrey/pyrdt.git
    cd pyrdt
    ```
 2. Vérifiez le fichier `docker-compose.yml` (ajustez les chemins vers vos disques et vos montages rclone) :
