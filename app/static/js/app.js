@@ -483,15 +483,15 @@ const TRANSLATIONS = {
     ob_tab_services: "4. Services",
     ob_tab_automation: "5. Automation",
     ob_tab_notifications: "6. Notifications",
-    ob_tab_bondl: "7. Bon DL",
+    ob_tab_bondl: "7. Happy DL",
     ob_btn_prev: "← Previous",
     ob_btn_next: "Next →",
     ob_btn_skip: "Skip setup",
-    ob_btn_finish: "🚀 Save & Finish (Bon DL !)",
+    ob_btn_finish: "🚀 Save & Finish (Happy DL!)",
     ob_relaunch_title: "Initial setup wizard (Onboarding)",
     ob_relaunch_btn: "🚀 Relaunch wizard",
     ob_relaunch_hint: "Relaunches the step-by-step guide to review or edit all your settings.",
-    ob_summary_title: "🎉 All set! Bon DL",
+    ob_summary_title: "🎉 All set! Happy Downloading",
     ob_summary_desc: "Your PyRDT configuration is ready. Click below to apply your settings and start downloading.",
     ob_hint_step1: "Customize the appearance and visual comfort of PyRDT. You can change theme and language at any time.",
     ob_hint_step2: "Connect your Debrid account to debrid and download files at maximum speed.",
@@ -516,7 +516,7 @@ const TRANSLATIONS = {
     recap_dl_dir_title: "📁 Downloads Folder:",
     recap_services_title: "🎬 Configured *arr Services:",
     recap_tg_title: "🔔 Telegram Notifications:",
-    ob_btn_finish_alt: "Bon DL! Launch PyRDT 🚀",
+    ob_btn_finish_alt: "Happy DL! Launch PyRDT 🚀",
     ob_active: "Active",
     ob_disabled: "Disabled",
     ob_services_count: "{n} service(s)",
@@ -776,10 +776,25 @@ function showTab(tab) {
   document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
   if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
 
+  if (window.location.search) {
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {}
+  }
+
   if (tab === 'queue') refreshQueue();
   if (tab === 'scanner') {
     loadScannerData();
     checkScannerStatusOnLoad();
+  }
+}
+
+function goHome() {
+  showTab('queue');
+  if (window.location.search) {
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {}
   }
 }
 
@@ -1612,11 +1627,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (urlParams.has('saved')) {
     showTab('settings');
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {}
+
+    const alertEl = document.querySelector('.alert');
+    if (alertEl) {
+      setTimeout(() => {
+        alertEl.style.transition = 'opacity 0.6s ease';
+        alertEl.style.opacity = '0';
+        setTimeout(() => {
+          alertEl.style.display = 'none';
+        }, 600);
+      }, 4000);
+    }
   }
 
   const autoOb = (document.body.dataset.onboardingAuto === 'true' && !localStorage.getItem('pyrdt_onboarding_completed')) || urlParams.has('onboarding');
   if (autoOb && !urlParams.has('saved')) {
     openOnboarding(false);
+    if (urlParams.has('onboarding')) {
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {}
+    }
   }
 
   setInterval(refreshQueue, 2000);
