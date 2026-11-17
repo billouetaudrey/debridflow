@@ -241,13 +241,17 @@
           <span class="icon">🔒</span>
           <span data-i18n="nav_security">Sécurité</span>
         </button>
-        <button type="button" class="settings-nav-item" id="snav-system" onclick="showSettingsPage('system')">
-          <span class="icon">🌐</span>
-          <span data-i18n="nav_system">Système &amp; Langue</span>
+        <button type="button" class="settings-nav-item" id="snav-appearance" onclick="showSettingsPage('appearance')">
+          <span class="icon">🎨</span>
+          <span data-i18n="nav_appearance">Styles &amp; Affichage</span>
         </button>
         <button type="button" class="settings-nav-item" id="snav-notifications" onclick="showSettingsPage('notifications')">
           <span class="icon">🔔</span>
           <span data-i18n="nav_notifications">Notifications</span>
+        </button>
+        <button type="button" class="settings-nav-item" id="snav-system" onclick="showSettingsPage('system')">
+          <span class="icon">⚙️</span>
+          <span data-i18n="nav_system">Performances &amp; Système</span>
         </button>
       </aside>
 
@@ -327,13 +331,6 @@
                   <input type="number" step="0.5" min="0" name="download_speed_limit" value="__DOWNLOAD_SPEED_LIMIT__" placeholder="0 = illimité">
                   <small class="hint" data-i18n="hint_speed_limit">Limite le débit de copie/téléchargement physique (0 = illimité).</small>
                 </div>
-                <div class="field" style="margin-top:4px;">
-                  <div class="chk-line">
-                    <input type="checkbox" id="hide_last_download_name" name="hide_last_download_name" __CHECKED_HIDE_LAST_DL_NAME__>
-                    <label for="hide_last_download_name" style="font-weight:600;" data-i18n="lbl_hide_last_dl_name">Masquer par défaut le nom du dernier téléchargement</label>
-                  </div>
-                  <small class="hint" data-i18n="hint_hide_last_dl_name">Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.</small>
-                </div>
               </div>
             </div>
           </div>
@@ -368,13 +365,6 @@
                   <span class="settings-section-icon">🔍</span>
                   <span data-i18n="sec_scanner_settings">Médiathèque &amp; Surveillance des Liens</span>
                 </h3>
-              </div>
-
-              <!-- Option principale : Activer ou Désactiver l'onglet -->
-              <div class="chk-line" style="margin-bottom:16px;background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);">
-                <input type="checkbox" id="chk_enable_scanner" name="enable_scanner_tab" __CHECKED_SCANNER_TAB__ style="width:18px;height:18px;cursor:pointer;">
-                <label for="chk_enable_scanner" style="font-weight:600;font-size:14px;cursor:pointer;" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
-                <div style="margin-left:26px;font-size:12px;color:var(--text-muted);margin-top:4px;" data-i18n="hint_enable_scanner_tab">Active ou désactive l'accès à l'onglet et au tableau de bord Médiathèque.</div>
               </div>
 
               <div class="field full" style="margin-bottom:14px;">
@@ -460,28 +450,51 @@
             </div>
           </div>
 
-          <!-- Page 6 : Performances & Langue -->
-          <div id="setpage-system" class="settings-page" style="display:none">
+          <!-- Page 7 : Styles & Affichage -->
+          <div id="setpage-appearance" class="settings-page" style="display:none">
             <div class="settings-section">
               <div class="settings-section-header">
                 <h3 class="settings-section-title">
-                  <span class="settings-section-icon">🌐</span>
-                  <span data-i18n="sec_system">6. Performances &amp; Langue</span>
+                  <span class="settings-section-icon">🎨</span>
+                  <span data-i18n="sec_appearance">7. Styles &amp; Affichage</span>
                 </h3>
               </div>
+
+              <!-- Thème & Langue -->
               <div class="grid">
                 <div class="field">
-                  <label data-i18n="lbl_poll_interval">Intervalle de vérification API (secondes)</label>
-                  <input type="number" step="0.5" min="1.5" name="poll_interval" value="__POLL_INTERVAL__">
-                  <small class="hint" data-i18n="hint_poll_interval">Fréquence d'interrogation AllDebrid (défaut : 3.0s).</small>
+                  <label data-i18n="lbl_theme_choice">Thème de l'interface</label>
+                  <select id="theme-select" onchange="applyTheme(this.value)">
+                    <option value="dark">🌙 Sombre (Dark Mode)</option>
+                    <option value="light">☀️ Clair (Light Mode)</option>
+                  </select>
+                  <small class="hint" data-i18n="hint_theme_choice">Bascule entre le mode sombre et le mode clair.</small>
                 </div>
                 <div class="field">
                   <label data-i18n="lbl_language">Langue de l'interface</label>
                   <select id="lang-select" onchange="setLanguage(this.value)">
-                    <option value="fr">Français (French)</option>
-                    <option value="en">English (Anglais)</option>
+                    <option value="fr">🇫🇷 Français (French)</option>
+                    <option value="en">🇬🇧 English (Anglais)</option>
                   </select>
                   <small class="hint" data-i18n="hint_language">Choisissez le français ou l'anglais pour l'affichage.</small>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;border-top:1px solid var(--border-muted);padding-top:16px;">
+                <h4 style="font-size:13px;margin:0 0 12px 0;color:var(--text-bright);" data-i18n="title_display_options">Options d'affichage &amp; Confidentialité :</h4>
+
+                <!-- Masquer le nom du dernier téléchargement -->
+                <div class="chk-line" style="margin-bottom:12px;background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);">
+                  <input type="checkbox" id="hide_last_download_name" name="hide_last_download_name" __CHECKED_HIDE_LAST_DL_NAME__ style="cursor:pointer;">
+                  <label for="hide_last_download_name" style="font-weight:600;cursor:pointer;" data-i18n="lbl_hide_last_dl_name">Masquer par défaut le nom du dernier téléchargement</label>
+                  <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_hide_last_dl_name">Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.</small>
+                </div>
+
+                <!-- Activer / Désactiver l'onglet Médiathèque -->
+                <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);">
+                  <input type="checkbox" id="chk_enable_scanner" name="enable_scanner_tab" __CHECKED_SCANNER_TAB__ style="cursor:pointer;">
+                  <label for="chk_enable_scanner" style="font-weight:600;cursor:pointer;" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
+                  <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_enable_scanner_tab">Active ou masque l'accès à l'onglet et au tableau de bord Médiathèque.</small>
                 </div>
               </div>
             </div>
@@ -550,6 +563,25 @@
                     <input type="checkbox" id="telegram_notify_error" name="telegram_notify_error" __CHECKED_TG_ERROR__>
                     <label for="telegram_notify_error" data-i18n="lbl_tg_error">Erreurs critiques (débridage, timeout rclone, copie)</label>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page 9 : Performances & Système -->
+          <div id="setpage-system" class="settings-page" style="display:none">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <h3 class="settings-section-title">
+                  <span class="settings-section-icon">⚙️</span>
+                  <span data-i18n="sec_system">9. Performances &amp; Système</span>
+                </h3>
+              </div>
+              <div class="grid">
+                <div class="field">
+                  <label data-i18n="lbl_poll_interval">Intervalle de vérification API (secondes)</label>
+                  <input type="number" step="0.5" min="1.5" name="poll_interval" value="__POLL_INTERVAL__">
+                  <small class="hint" data-i18n="hint_poll_interval">Fréquence d'interrogation du fournisseur Debrid (défaut : 3.0s).</small>
                 </div>
               </div>
             </div>

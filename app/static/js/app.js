@@ -54,8 +54,9 @@ const TRANSLATIONS = {
     nav_scanner: "Médiathèque & Liens",
     nav_automation: "Automatisation",
     nav_security: "Sécurité",
-    nav_system: "Système & Langue",
+    nav_appearance: "Styles & Affichage",
     nav_notifications: "Notifications",
+    nav_system: "Performances & Système",
 
     // Settings Section Titles
     sec_provider: "1. Fournisseur & API Debrid",
@@ -64,8 +65,9 @@ const TRANSLATIONS = {
     sec_scanner_settings: "4. Médiathèque & Surveillance des Liens",
     sec_automation: "5. Automatisation & Nettoyage",
     sec_security: "6. Sécurité & Authentification",
-    sec_system: "7. Performances & Langue",
+    sec_appearance: "7. Styles & Affichage",
     sec_notifications: "8. Notifications Telegram",
+    sec_system: "9. Performances & Système",
 
     // Fields & Labels
     lbl_provider: "Fournisseur de Débridage (Provider)",
@@ -108,8 +110,11 @@ const TRANSLATIONS = {
 
     lbl_poll_interval: "Intervalle de vérification API (secondes)",
     hint_poll_interval: "Fréquence d'interrogation du fournisseur (défaut : 3.0s).",
+    lbl_theme_choice: "Thème de l'interface",
+    hint_theme_choice: "Bascule entre le mode sombre et le mode clair.",
     lbl_language: "Langue de l'interface",
     hint_language: "Choisissez le français ou l'anglais pour l'affichage.",
+    title_display_options: "Options d'affichage & Confidentialité :",
 
     btn_save_settings: "Enregistrer les paramètres",
     alert_saved: "Paramètres enregistrés et appliqués immédiatement.",
@@ -240,8 +245,9 @@ const TRANSLATIONS = {
     nav_scanner: "Media Library & Links",
     nav_automation: "Automation",
     nav_security: "Security",
-    nav_system: "System & Language",
+    nav_appearance: "Styles & Display",
     nav_notifications: "Notifications",
+    nav_system: "Performance & System",
 
     // Settings Section Titles
     sec_provider: "1. Debrid Provider & API",
@@ -250,8 +256,9 @@ const TRANSLATIONS = {
     sec_scanner_settings: "4. Media Library & Links Monitor",
     sec_automation: "5. Automation & Cleanup",
     sec_security: "6. Security & Authentication",
-    sec_system: "7. Performance & Language",
+    sec_appearance: "7. Styles & Display",
     sec_notifications: "8. Telegram Notifications",
+    sec_system: "9. Performance & System",
 
     // Fields & Labels
     lbl_provider: "Debrid Provider",
@@ -294,8 +301,11 @@ const TRANSLATIONS = {
 
     lbl_poll_interval: "API Polling Interval (seconds)",
     hint_poll_interval: "Provider query frequency (default: 3.0s).",
+    lbl_theme_choice: "Interface Theme",
+    hint_theme_choice: "Toggle between dark mode and light mode.",
     lbl_language: "Interface Language",
     hint_language: "Choose French or English for display.",
+    title_display_options: "Display & Privacy Options:",
 
     btn_save_settings: "Save settings",
     alert_saved: "Settings saved and applied immediately.",
@@ -529,6 +539,10 @@ function applyTheme(theme) {
   if (btn) {
     btn.title = currentTheme === 'light' ? t('tip_switch_dark') : t('tip_switch_light');
   }
+  const sel = document.getElementById('theme-select');
+  if (sel) {
+    sel.value = currentTheme;
+  }
 }
 
 function toggleTheme() {
@@ -567,7 +581,7 @@ function showTab(tab) {
 }
 
 function showSettingsPage(pageId) {
-  const pages = ['alldebrid', 'storage', 'services', 'scanner', 'automation', 'security', 'system', 'notifications'];
+  const pages = ['alldebrid', 'storage', 'services', 'scanner', 'automation', 'security', 'appearance', 'notifications', 'system'];
   if (!pages.includes(pageId)) pageId = 'alldebrid';
   sessionStorage.setItem('pyrdt_settings_page', pageId);
 
@@ -583,6 +597,12 @@ function showSettingsPage(pageId) {
 
   const tgChk = document.getElementById('telegram_enabled');
   if (tgChk) toggleTelegramOptions(tgChk.checked);
+
+  const themeSel = document.getElementById('theme-select');
+  if (themeSel) themeSel.value = currentTheme;
+
+  const langSel = document.getElementById('lang-select');
+  if (langSel) langSel.value = currentLang;
 }
 
 function addServiceRow(svcName = '', svcMode = 'download', svcSubpath = '') {
