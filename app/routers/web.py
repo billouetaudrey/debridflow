@@ -72,6 +72,7 @@ async def ui_queue_feed():
             "api_health": dict(api_health),
             "last_download_stat": last_stat,
             "download_speed_limit": float(settings_db.get("download_speed_limit", 0)),
+            "hide_last_download_name": bool(settings_db.get("hide_last_download_name", True)),
         },
         headers={"Cache-Control": "no-store"},
     )
@@ -141,6 +142,7 @@ async def update_settings(
     delete_on_provider: Optional[str] = Form(None),
     delete_on_dl_complete: Optional[str] = Form(None),
     download_speed_limit: float = Form(0.0),
+    hide_last_download_name: Optional[str] = Form(None),
     enable_scanner_tab: Optional[str] = Form(None),
     allowed_exts: str = Form(""),
     username: str = Form(""),
@@ -198,6 +200,7 @@ async def update_settings(
         settings_db["delete_on_provider"] = delete_on_provider == "on"
         settings_db["delete_on_dl_complete"] = delete_on_dl_complete == "on"
         settings_db["download_speed_limit"] = max(0.0, float(download_speed_limit))
+        settings_db["hide_last_download_name"] = hide_last_download_name == "on"
         settings_db["allowed_exts"] = allowed_exts.strip() or DEFAULT_SETTINGS["allowed_exts"]
         settings_db["username"] = username.strip()
         settings_db["password"] = password.strip()
@@ -368,6 +371,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__RCLONE_MOUNT_DIR__", html.escape(s["rclone_mount_dir"]))
         .replace("__DOWNLOAD_BASE_DIR__", html.escape(s["download_base_dir"]))
         .replace("__DOWNLOAD_SPEED_LIMIT__", str(s.get("download_speed_limit", 0)))
+        .replace("__CHECKED_HIDE_LAST_DL_NAME__", "checked" if s.get("hide_last_download_name", True) else "")
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))
         .replace("__API_KEY__", html.escape(s["api_key"]))

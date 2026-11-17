@@ -66,10 +66,16 @@
     </div>
     <!-- Résumé de vitesse du dernier téléchargement terminé -->
     <div id="last-download-stat-bar" style="display:none;margin-bottom:12px;padding:9px 14px;background:var(--bg-subpanel);border:1px solid var(--border-muted);border-radius:8px;font-size:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-      <div>
+      <div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;">
         <span style="color:#58a6ff;font-weight:700;">⚡ <span data-i18n="lbl_last_download">Dernier téléchargement :</span></span>
-        <span id="last-dl-name" style="font-weight:600;margin-left:4px;color:var(--text-bright);"></span>
-        <span id="last-dl-details" style="color:var(--text-muted);margin-left:6px;"></span>
+        <span id="last-dl-toggle-btn" onclick="toggleLastDlName()" style="cursor:pointer;padding:2px 8px;background:var(--bg-card);border:1px dashed var(--border-muted);border-radius:4px;color:var(--text-muted);font-size:11px;user-select:none;display:inline-flex;align-items:center;gap:4px;" title="Cliquer pour afficher / masquer le nom">
+          <span id="last-dl-toggle-icon">👁️</span>
+          <span id="last-dl-toggle-text" data-i18n="lbl_show_last_dl">Afficher le nom</span>
+        </span>
+        <span id="last-dl-info-revealed" style="display:none;align-items:center;gap:6px;">
+          <span id="last-dl-name" style="font-weight:600;color:var(--text-bright);"></span>
+          <span id="last-dl-details" style="color:var(--text-muted);"></span>
+        </span>
       </div>
       <div>
         <span style="color:var(--text-muted);margin-right:4px;" data-i18n="lbl_avg_speed">Vitesse moyenne :</span>
@@ -320,6 +326,13 @@
                   <label data-i18n="lbl_speed_limit">Limite de vitesse de téléchargement (Mo/s)</label>
                   <input type="number" step="0.5" min="0" name="download_speed_limit" value="__DOWNLOAD_SPEED_LIMIT__" placeholder="0 = illimité">
                   <small class="hint" data-i18n="hint_speed_limit">Limite le débit de copie/téléchargement physique (0 = illimité).</small>
+                </div>
+                <div class="field" style="margin-top:4px;">
+                  <div class="chk-line">
+                    <input type="checkbox" id="hide_last_download_name" name="hide_last_download_name" __CHECKED_HIDE_LAST_DL_NAME__>
+                    <label for="hide_last_download_name" style="font-weight:600;" data-i18n="lbl_hide_last_dl_name">Masquer par défaut le nom du dernier téléchargement</label>
+                  </div>
+                  <small class="hint" data-i18n="hint_hide_last_dl_name">Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.</small>
                 </div>
               </div>
             </div>

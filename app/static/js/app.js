@@ -160,8 +160,12 @@ const TRANSLATIONS = {
     hint_scan_paths: "Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.",
     lbl_speed_limit: "Limite de vitesse de téléchargement (Mo/s)",
     hint_speed_limit: "Limite le débit de copie/téléchargement physique (0 = illimité).",
+    lbl_hide_last_dl_name: "Masquer par défaut le nom du dernier téléchargement",
+    hint_hide_last_dl_name: "Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.",
     lbl_last_download: "Dernier téléchargement :",
     lbl_avg_speed: "Vitesse moyenne :",
+    lbl_show_last_dl: "Afficher le nom",
+    lbl_hide_last_dl: "Masquer",
 
     // Notifications Telegram
     lbl_tg_enable: "Activer les notifications Telegram",
@@ -342,8 +346,12 @@ const TRANSLATIONS = {
     hint_scan_paths: "Folders scanned to detect broken symlinks / missing targets.",
     lbl_speed_limit: "Download Speed Limit (MB/s)",
     hint_speed_limit: "Limits physical download rate (0 = unlimited).",
+    lbl_hide_last_dl_name: "Hide last download name by default",
+    hint_hide_last_dl_name: "Keeps speed visible, but hides media title until clicked.",
     lbl_last_download: "Last download:",
     lbl_avg_speed: "Average speed:",
+    lbl_show_last_dl: "Show name",
+    lbl_hide_last_dl: "Hide",
 
     // Telegram Notifications
     lbl_tg_enable: "Enable Telegram Notifications",
@@ -503,6 +511,7 @@ function setLanguage(lang) {
   }
 
   updateSelection();
+  updateLastDlDisplay();
   refreshQueue();
 }
 
@@ -668,6 +677,25 @@ function formatSpeed(bytesPerSec) {
   return mbs.toFixed(2) + ' ' + uMB;
 }
 
+let lastDlNameRevealed = null;
+let serverHideLastDlName = true;
+
+function updateLastDlDisplay() {
+  const isRevealed = lastDlNameRevealed !== null ? lastDlNameRevealed : !serverHideLastDlName;
+  const infoEl = document.getElementById('last-dl-info-revealed');
+  const iconEl = document.getElementById('last-dl-toggle-icon');
+  const textEl = document.getElementById('last-dl-toggle-text');
+  if (infoEl) infoEl.style.display = isRevealed ? 'inline-flex' : 'none';
+  if (iconEl) iconEl.textContent = isRevealed ? '🙈' : '👁️';
+  if (textEl) textEl.textContent = isRevealed ? t('lbl_hide_last_dl') : t('lbl_show_last_dl');
+}
+
+function toggleLastDlName() {
+  const currentRevealed = lastDlNameRevealed !== null ? lastDlNameRevealed : !serverHideLastDlName;
+  lastDlNameRevealed = !currentRevealed;
+  updateLastDlDisplay();
+}
+
 function renderQueue(items) {
   const tbody = document.getElementById('queue-tbody');
   const checkedSet = new Set(getSelectedHashes());
@@ -751,6 +779,9 @@ async function refreshQueue() {
       if (currentTab === 'queue') {
         renderQueue(items);
       }
+      if (data.hide_last_download_name !== undefined) {
+        serverHideLastDlName = Boolean(data.hide_last_download_name);
+      }
       const lastStat = data.last_download_stat;
       const statBar = document.getElementById('last-download-stat-bar');
       if (statBar) {
@@ -766,6 +797,7 @@ async function refreshQueue() {
             detailsEl.textContent = `(${sizeStr}${durStr ? ' en ' + durStr : ''})`;
           }
           if (speedEl) speedEl.textContent = formatSpeed(lastStat.avg_speed);
+          updateLastDlDisplay();
         } else {
           statBar.style.display = 'none';
         }
