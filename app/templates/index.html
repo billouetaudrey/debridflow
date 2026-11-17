@@ -13,7 +13,7 @@
     })();
   </script>
 </head>
-<body>
+<body data-onboarding-auto="__ONBOARDING_AUTO_OPEN__">
 <div class="wrap">
   <!-- Barre Supérieure -->
   <div class="topbar">
@@ -261,6 +261,7 @@
         <form id="settings-form" method="post" action="/api/settings">
           <input type="hidden" name="ui_language" id="ui_language" value="__UI_LANGUAGE__">
           <input type="hidden" name="ui_theme" id="ui_theme" value="__UI_THEME__">
+          <input type="hidden" name="onboarding_completed" id="onboarding_completed" value="">
 
           <!-- Page 1 : Fournisseur & API Debrid -->
           <div id="setpage-alldebrid" class="settings-page">
@@ -498,6 +499,15 @@
                   <label for="chk_enable_scanner" style="font-weight:600;cursor:pointer;" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
                   <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_enable_scanner_tab">Active ou masque l'accès à l'onglet et au tableau de bord Médiathèque.</small>
                 </div>
+
+                <!-- Bouton Assistant Onboarding -->
+                <div style="margin-top:12px;background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                  <div>
+                    <div style="font-weight:600;font-size:13px;" data-i18n="ob_relaunch_title">Assistant de configuration initiale (Onboarding)</div>
+                    <small class="hint" style="margin:2px 0 0;" data-i18n="ob_relaunch_hint">Relance le guide pas à pas pour revoir ou modifier l'ensemble de vos paramètres.</small>
+                  </div>
+                  <button type="button" class="btn-secondary" onclick="openOnboarding(true)" style="padding:6px 14px;font-size:12px;cursor:pointer;" data-i18n="ob_relaunch_btn">🚀 Relancer l'assistant</button>
+                </div>
               </div>
             </div>
           </div>
@@ -586,6 +596,27 @@
                   <small class="hint" data-i18n="hint_poll_interval">Fréquence d'interrogation du fournisseur Debrid (défaut : 3.0s).</small>
                 </div>
               </div>
+
+              <div style="margin-top:22px;border-top:1px solid var(--border-muted);padding-top:16px;">
+                <h4 style="font-size:13px;margin:0 0 12px 0;color:var(--text-bright);" data-i18n="sec_reset">Zone de Réinitialisation &amp; Assistant :</h4>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div>
+                      <div style="font-weight:600;font-size:13px;" data-i18n="ob_relaunch_title">Assistant de configuration initiale (Onboarding)</div>
+                      <small class="hint" style="margin:2px 0 0;" data-i18n="ob_relaunch_hint">Relance le guide pas à pas pour revoir ou modifier l'ensemble de vos paramètres.</small>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="openOnboarding(true)" style="padding:6px 14px;font-size:12px;cursor:pointer;" data-i18n="ob_relaunch_btn">🚀 Relancer l'assistant</button>
+                  </div>
+
+                  <div style="background:rgba(248,81,73,0.06);padding:14px;border-radius:8px;border:1px solid rgba(248,81,73,0.3);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div>
+                      <div style="font-weight:700;font-size:13px;color:#f85149;" data-i18n="title_reset_settings">Supprimer tous les paramètres &amp; Réafficher l'Onboarding</div>
+                      <small class="hint" style="margin:2px 0 0;" data-i18n="hint_reset_settings">Réinitialise tous les paramètres de PyRDT à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.</small>
+                    </div>
+                    <button type="button" class="btn-del" onclick="resetSettingsAndRelaunchOnboarding()" style="padding:7px 16px;font-size:12px;cursor:pointer;" data-i18n="btn_reset_settings">🗑️ Supprimer &amp; Relancer l'onboarding</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -617,6 +648,296 @@
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
       <button class="btn-sec" onclick="closeDeleteModal()" data-i18n="btn_cancel">Annuler</button>
       <button class="btn-del" onclick="confirmDelete()" data-i18n="btn_confirm_delete">Confirmer la suppression</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Onboarding Premier Lancement -->
+<div id="onboarding-modal" class="modal-bg" style="display:none; z-index: 1000;">
+  <div class="modal onboarding-modal-box">
+    <!-- Header -->
+    <div class="ob-header">
+      <div class="ob-header-top">
+        <div class="ob-title-wrap">
+          <h2><span style="font-size:22px;">🚀</span> <span data-i18n="ob_title">Bienvenue sur PyRDT</span></h2>
+          <p data-i18n="ob_subtitle">Assistant de première configuration pas à pas</p>
+        </div>
+        <button type="button" onclick="skipOnboarding()" title="Fermer / Passer" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px 8px;">✕</button>
+      </div>
+      <div class="ob-progress-bar-bg">
+        <div id="ob-progress-bar" class="ob-progress-bar-fill" style="width: 14.28%;"></div>
+      </div>
+      <!-- Tab navigation pills -->
+      <div class="ob-tabs-nav" id="ob-tabs-nav">
+        <button type="button" class="ob-tab-btn active" id="ob-nav-1" onclick="showObStep(1)">🎨 <span data-i18n="ob_tab_styles">1. Styles</span></button>
+        <button type="button" class="ob-tab-btn" id="ob-nav-2" onclick="showObStep(2)">🔑 <span data-i18n="ob_tab_provider">2. Fournisseur</span></button>
+        <button type="button" class="ob-tab-btn" id="ob-nav-3" onclick="showObStep(3)">📁 <span data-i18n="ob_tab_storage">3. Stockage</span></button>
+        <button type="button" class="ob-tab-btn" id="ob-nav-4" onclick="showObStep(4)">🎬 <span data-i18n="ob_tab_services">4. Services</span></button>
+        <button type="button" class="ob-tab-btn" id="ob-nav-5" onclick="showObStep(5)">🤖 <span data-i18n="ob_tab_automation">5. Automatisation</span></button>
+        <button type="button" class="ob-tab-btn" id="ob-nav-6" onclick="showObStep(6)">🔔 <span data-i18n="ob_tab_notifications">6. Notifications</span></button>
+        <button type="button" class="ob-tab-btn" id="ob-nav-7" onclick="showObStep(7)">🎉 <span data-i18n="ob_tab_bondl">7. Bon DL</span></button>
+      </div>
+    </div>
+
+    <!-- Body Pages -->
+    <div class="ob-body">
+      <!-- Step 1: Styles & Affichage -->
+      <div id="ob-page-1" class="ob-page active">
+        <div class="ob-section-hint" data-i18n="ob_hint_step1">Personnalisez l'apparence et le confort visuel de PyRDT. Vous pouvez changer le thème ou la langue à tout moment.</div>
+        <div class="grid">
+          <div class="field">
+            <label data-i18n="lbl_theme_choice">Thème de l'interface</label>
+            <select id="ob_theme" onchange="applyTheme(this.value)">
+              <option value="dark">🌙 Sombre (Dark Mode)</option>
+              <option value="light">☀️ Clair (Light Mode)</option>
+            </select>
+            <small class="hint" data-i18n="hint_theme_choice">Bascule entre le mode sombre et le mode clair.</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_language">Langue de l'interface</label>
+            <select id="ob_lang" onchange="setLanguage(this.value)">
+              <option value="fr">🇫🇷 Français (French)</option>
+              <option value="en">🇬🇧 English (Anglais)</option>
+            </select>
+            <small class="hint" data-i18n="hint_language">Choisissez le français ou l'anglais pour l'affichage.</small>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;border-top:1px solid var(--border-muted);padding-top:14px;">
+          <h4 style="font-size:13px;margin:0 0 12px 0;color:var(--text-bright);" data-i18n="title_display_options">Options d'affichage &amp; Confidentialité :</h4>
+          <div class="chk-line" style="margin-bottom:12px;background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);">
+            <input type="checkbox" id="ob_hide_last_download_name" style="cursor:pointer;">
+            <label for="ob_hide_last_download_name" style="font-weight:600;cursor:pointer;" data-i18n="lbl_hide_last_dl_name">Masquer par défaut le nom du dernier téléchargement</label>
+            <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_hide_last_dl_name">Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.</small>
+          </div>
+          <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);">
+            <input type="checkbox" id="ob_enable_scanner" style="cursor:pointer;">
+            <label for="ob_enable_scanner" style="font-weight:600;cursor:pointer;" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
+            <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_enable_scanner_tab">Active ou masque l'accès à l'onglet et au tableau de bord Médiathèque.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Fournisseur Debrid & API -->
+      <div id="ob-page-2" class="ob-page">
+        <div class="ob-section-hint" data-i18n="ob_hint_step2">Connectez votre compte Debrid pour débrider et récupérer vos fichiers à vitesse maximale.</div>
+        <div class="grid">
+          <div class="field full">
+            <label data-i18n="lbl_provider">Fournisseur de Débridage (Provider)</label>
+            <select id="ob_provider" onchange="onObProviderChange(this.value)">
+              <option value="alldebrid">AllDebrid</option>
+              <option value="realdebrid">Real-Debrid</option>
+              <option value="premiumize">Premiumize.me</option>
+              <option value="debridlink">Debrid-Link</option>
+              <option value="torbox">TorBox</option>
+              <option value="highway">High-Way</option>
+            </select>
+            <small class="hint" data-i18n="hint_provider">Choisissez votre fournisseur Debrid principal.</small>
+          </div>
+          <div class="field full">
+            <label id="ob-key-label" data-i18n="lbl_api_key">Clé / Token API</label>
+            <input type="password" id="ob_api_key" placeholder="Votre clé secrète API...">
+            <small class="hint" id="ob-key-hint" data-i18n="hint_api_key">Clé ou Token secret généré chez votre fournisseur.</small>
+          </div>
+          <div class="field full" style="margin-top:4px;">
+            <button type="button" class="btn-secondary" id="ob-btn-test-api" onclick="testObApi()" data-i18n="btn_test_api">Tester la connexion API</button>
+            <span id="ob-test-result" class="test-box" style="display:none;margin-left:10px;"></span>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_agent">Nom de l'agent / User-Agent</label>
+            <input type="text" id="ob_agent" placeholder="PyRDT-Billou">
+            <small class="hint" data-i18n="hint_agent">Identifiant envoyé aux API.</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_api_base">URL de l'API</label>
+            <input type="text" id="ob_api_base" placeholder="https://api.alldebrid.com/v4">
+            <small class="hint" data-i18n="hint_api_base">Pré-remplie automatiquement selon le service.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Stockage & Dossiers -->
+      <div id="ob-page-3" class="ob-page">
+        <div class="ob-section-hint" data-i18n="ob_hint_step3">Configurez les chemins où Rclone monte le disque distant et où PyRDT stocke les téléchargements et liens symboliques.</div>
+        <div class="grid">
+          <div class="field">
+            <label data-i18n="lbl_rclone_mount">Chemin de montage Rclone (source magnets)</label>
+            <input type="text" id="ob_rclone_mount_dir" placeholder="/mnt/alldebrid/magnets">
+            <small class="hint" data-i18n="hint_rclone_mount">Dossier monté par rclone.</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_dl_dir">Dossier racine des téléchargements (DL)</label>
+            <input type="text" id="ob_download_base_dir" placeholder="/mnt/virtual/Medias/DL">
+            <small class="hint" data-i18n="hint_dl_dir">Chaque service écrit dans son sous-dossier ici.</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_mount_timeout">Timeout montage Rclone (secondes)</label>
+            <input type="number" id="ob_mount_timeout" min="5" value="60">
+            <small class="hint" data-i18n="hint_mount_timeout">Temps max d'attente d'apparition du fichier avant erreur.</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_speed_limit">Limite de vitesse de téléchargement (Mo/s)</label>
+            <input type="number" step="0.5" min="0" id="ob_download_speed_limit" value="0">
+            <small class="hint" data-i18n="hint_speed_limit">Limite le débit physique (0 = illimité).</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_poll_interval">Intervalle de vérification API (secondes)</label>
+            <input type="number" step="0.5" min="1.5" id="ob_poll_interval" value="3.0">
+            <small class="hint" data-i18n="hint_poll_interval">Fréquence d'interrogation du fournisseur Debrid.</small>
+          </div>
+          <div class="field full">
+            <label data-i18n="lbl_allowed_exts">Extensions autorisées (séparées par virgules)</label>
+            <input type="text" id="ob_allowed_exts" placeholder=".mkv,.mp4,.avi,.mov,.srt,...">
+            <small class="hint" data-i18n="hint_allowed_exts">Fichiers vidéos, audios ou sous-titres acceptés.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Services (*arr) -->
+      <div id="ob-page-4" class="ob-page">
+        <div class="ob-section-hint" data-i18n="ob_hint_step4">Configurez les catégories correspondant à Sonarr, Radarr, etc. Choisissez le mode <b>Symlink</b> (instantané) ou <b>Téléchargement réel</b> (copie sur disque).</div>
+        <div id="ob-services-list" style="margin-bottom:14px;">
+          <!-- Dynamically populated rows -->
+        </div>
+        <button type="button" class="btn-secondary" onclick="addObServiceRow()" data-i18n="btn_add_service">+ Ajouter un service</button>
+      </div>
+
+      <!-- Step 5: Automatisation & Sécurité -->
+      <div id="ob-page-5" class="ob-page">
+        <div class="ob-section-hint" data-i18n="ob_hint_step5">Ajustez le comportement de nettoyage automatique et protégez l'accès à PyRDT.</div>
+        <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:16px;">
+          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);">Options de nettoyage :</h4>
+          <div class="chk-line">
+            <input type="checkbox" id="ob_del_dl_done" style="cursor:pointer;">
+            <label for="ob_del_dl_done" data-i18n="lbl_del_dl_done">Supprimer automatiquement le magnet chez le fournisseur dès que le Téléchargement réel est terminé</label>
+          </div>
+          <div class="chk-line">
+            <input type="checkbox" id="ob_auto_clean" style="cursor:pointer;">
+            <label for="ob_auto_clean" data-i18n="lbl_auto_clean">Purger automatiquement la liste et les fichiers temporaires après import *arr</label>
+          </div>
+          <div class="chk-line">
+            <input type="checkbox" id="ob_del_prov" style="cursor:pointer;">
+            <label for="ob_del_prov" data-i18n="lbl_del_prov">Supprimer aussi automatiquement le magnet chez le fournisseur lors de la purge après import</label>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);">
+          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);">Authentification (Optionnelle) :</h4>
+          <div class="grid">
+            <div class="field">
+              <label data-i18n="lbl_username">Nom d'utilisateur (Web &amp; Apps *arr)</label>
+              <input type="text" id="ob_username" placeholder="Laisser vide = pas d'auth">
+              <small class="hint" data-i18n="hint_username">Identifiants qBittorrent dans Sonarr/Radarr.</small>
+            </div>
+            <div class="field">
+              <label data-i18n="lbl_password">Mot de passe (Web &amp; Apps *arr)</label>
+              <input type="password" id="ob_password" placeholder="Laisser vide = pas d'auth">
+              <small class="hint" data-i18n="hint_password">Protège l'accès Web et l'API.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Médiathèque & Notifications -->
+      <div id="ob-page-6" class="ob-page">
+        <div class="ob-section-hint" data-i18n="ob_hint_step6">Activez la surveillance des liens morts dans votre médiathèque et recevez des alertes en temps réel sur Telegram.</div>
+        
+        <!-- Médiathèque -->
+        <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:14px;">
+          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);">Surveillance Médiathèque &amp; Radarr / Sonarr :</h4>
+          <div class="field full">
+            <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
+            <input type="text" id="ob_media_scan_paths" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series">
+            <small class="hint" data-i18n="hint_scan_paths">Dossiers scannés pour détecter les symlinks brisés.</small>
+          </div>
+          <div class="grid" style="margin-top:10px;">
+            <div class="field">
+              <label data-i18n="lbl_radarr_url">URL Radarr</label>
+              <input type="text" id="ob_radarr_url" placeholder="http://127.0.0.1:7878">
+            </div>
+            <div class="field">
+              <label data-i18n="lbl_radarr_key">Clé API Radarr</label>
+              <input type="password" id="ob_radarr_api_key">
+            </div>
+            <div class="field">
+              <label data-i18n="lbl_sonarr_url">URL Sonarr</label>
+              <input type="text" id="ob_sonarr_url" placeholder="http://127.0.0.1:8989">
+            </div>
+            <div class="field">
+              <label data-i18n="lbl_sonarr_key">Clé API Sonarr</label>
+              <input type="password" id="ob_sonarr_api_key">
+            </div>
+          </div>
+        </div>
+
+        <!-- Telegram -->
+        <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);">
+          <div class="chk-line" style="margin-bottom:10px;">
+            <input type="checkbox" id="ob_telegram_enabled" onchange="toggleObTelegramOptions(this.checked)" style="cursor:pointer;">
+            <label for="ob_telegram_enabled" style="font-weight:700;color:var(--text-bright);" data-i18n="lbl_tg_enable">Activer les notifications Telegram</label>
+          </div>
+          <div id="ob-tg-details" style="opacity:0.4;pointer-events:none;transition:opacity 0.2s;">
+            <div class="grid">
+              <div class="field">
+                <label data-i18n="lbl_tg_bot_token">Token du Bot Telegram</label>
+                <input type="password" id="ob_telegram_bot_token" placeholder="123456789:ABCDefgh...">
+              </div>
+              <div class="field">
+                <label data-i18n="lbl_tg_chat_id">Chat ID / Channel ID</label>
+                <input type="text" id="ob_telegram_chat_id" placeholder="-100123456789 ou 987654321">
+              </div>
+            </div>
+            <div style="margin-top:10px;">
+              <button type="button" class="btn-secondary" id="ob-btn-test-tg" onclick="testObTelegram()" data-i18n="btn_test_tg">📲 Envoyer un message de test</button>
+              <span id="ob-tg-test-result" class="test-box" style="display:none;margin-left:10px;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7: Bon DL -->
+      <div id="ob-page-7" class="ob-page">
+        <div style="text-align:center;padding:15px 0 10px;">
+          <div style="font-size:48px;line-height:1;margin-bottom:8px;">🍿🎉</div>
+          <h3 style="font-size:24px;font-weight:800;color:#3fb950;margin:0 0 8px 0;" data-i18n="ob_summary_title">🎉 Tout est prêt ! Bon DL</h3>
+          <p style="color:var(--text-muted);font-size:14px;max-width:540px;margin:0 auto 20px;" data-i18n="ob_summary_desc">Votre configuration PyRDT est prête. Cliquez ci-dessous pour appliquer vos réglages et démarrer vos téléchargements.</p>
+        </div>
+
+        <div class="ob-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;">
+          <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">🔑 Fournisseur Debrid :</div>
+            <div id="ob-recap-provider" style="font-weight:700;color:var(--text-bright);font-size:15px;">AllDebrid</div>
+          </div>
+          <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📁 Dossier Téléchargements :</div>
+            <div id="ob-recap-dl-dir" style="font-weight:700;color:var(--text-bright);font-size:13px;word-break:break-all;">/mnt/virtual/Medias/DL</div>
+          </div>
+          <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">🎬 Services *arr configurés :</div>
+            <div id="ob-recap-services" style="font-weight:700;color:var(--text-bright);font-size:15px;">3 service(s)</div>
+          </div>
+          <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">🔔 Notifications Telegram :</div>
+            <div id="ob-recap-tg" style="font-weight:700;color:var(--text-bright);font-size:15px;">Désactivées</div>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:20px;">
+          <button type="button" class="btn-save" onclick="finishOnboarding()" style="font-size:16px;padding:12px 32px;background:#238636;border-color:#2ea043;cursor:pointer;" data-i18n="ob_btn_finish">
+            🚀 Enregistrer &amp; Terminer (Bon DL !)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="ob-footer">
+      <button type="button" class="btn-sec" onclick="skipOnboarding()" data-i18n="ob_btn_skip">Passer la configuration</button>
+      <div class="ob-nav-btns">
+        <button type="button" id="ob-btn-prev" class="btn-secondary" onclick="prevObStep()" style="display:none;" data-i18n="ob_btn_prev">← Précédent</button>
+        <button type="button" id="ob-btn-next" class="btn-save" onclick="nextObStep()" data-i18n="ob_btn_next">Suivant →</button>
+        <button type="button" id="ob-btn-finish" class="btn-save" onclick="finishOnboarding()" style="display:none;background:#238636;border-color:#2ea043;" data-i18n="ob_btn_finish">🚀 Enregistrer &amp; Terminer (Bon DL !)</button>
+      </div>
     </div>
   </div>
 </div>

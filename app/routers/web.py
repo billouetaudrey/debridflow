@@ -166,6 +166,7 @@ async def update_settings(
     service_names: Optional[List[str]] = Form(None),
     service_modes_list: Optional[List[str]] = Form(None),
     service_subpaths: Optional[List[str]] = Form(None),
+    onboarding_completed: Optional[str] = Form(None),
 ):
     new_services: Dict[str, Dict[str, str]] = {}
     if service_names and service_modes_list:
@@ -227,6 +228,8 @@ async def update_settings(
         settings_db["telegram_notify_download_complete"] = telegram_notify_download_complete == "on"
         settings_db["telegram_notify_clean_dead"] = telegram_notify_clean_dead == "on"
         settings_db["telegram_notify_error"] = telegram_notify_error == "on"
+        if onboarding_completed == "on":
+            settings_db["onboarding_completed"] = True
         settings_db["services"] = new_services
         rebuild_categories()
         save_state()
@@ -236,6 +239,32 @@ async def update_settings(
 
     logger.info(f"Paramètres mis à jour via l'interface web (fournisseur={clean_prov}, {len(new_services)} service(s), langue={clean_lang}, thème={clean_theme}).")
     return RedirectResponse(url="/?saved=1", status_code=303)
+
+
+@router.post("/api/settings/onboarding-complete")
+async def complete_onboarding():
+    async with state_lock:
+        settings_db["onboarding_completed"] = True
+        save_state()
+    return JSONResponse({"ok": True, "message": "Onboarding terminé"})
+
+
+@router.post("/api/settings/reset")
+async def reset_settings():
+    async with state_lock:
+        settings_db.clear()
+        for k, v in DEFAULT_SETTINGS.items():
+            if k == "services":
+                settings_db["services"] = {k2: dict(v2) for k2, v2 in DEFAULT_SERVICES.items()}
+            elif isinstance(v, dict):
+                settings_db[k] = dict(v)
+            else:
+                settings_db[k] = v
+        settings_db["onboarding_completed"] = False
+        rebuild_categories()
+        save_state()
+    logger.info("Paramètres réinitialisés aux valeurs d'usine et onboarding réactivé.")
+    return JSONResponse({"ok": True, "message": "Paramètres réinitialisés avec succès"})
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -359,6 +388,7 @@ async def web_dashboard(saved: Optional[str] = None):
     ui_theme = s.get("ui_theme") or "dark"
     if ui_theme not in ("dark", "light"):
         ui_theme = "dark"
+    onboarding_auto = "false" if s.get("onboarding_completed", False) else "true"
     current_prov = normalize_provider_name(s.get("provider", "alldebrid"))
     prov_meta = SUPPORTED_PROVIDERS.get(current_prov, SUPPORTED_PROVIDERS["alldebrid"])
 
@@ -391,6 +421,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__PASSWORD__", html.escape(s["password"]))
         .replace("__UI_LANGUAGE__", html.escape(ui_lang))
         .replace("__UI_THEME__", html.escape(ui_theme))
+        .replace("__ONBOARDING_AUTO_OPEN__", onboarding_auto)
         .replace("__SELECTED_THEME_DARK__", "selected" if ui_theme == "dark" else "")
         .replace("__SELECTED_THEME_LIGHT__", "selected" if ui_theme == "light" else "")
         .replace("__SELECTED_LANG_FR__", "selected" if ui_lang == "fr" else "")

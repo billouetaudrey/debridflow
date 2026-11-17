@@ -662,3 +662,116 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
 .badge-tag.radarr { background: rgba(245, 166, 35, 0.2); color: #f5a623; border: 1px solid rgba(245, 166, 35, 0.4); }
 .badge-tag.sonarr { background: rgba(88, 166, 255, 0.2); color: #58a6ff; border: 1px solid rgba(88, 166, 255, 0.4); }
 
+/* Onboarding Wizard Modal */
+.onboarding-modal-box {
+  width: 820px;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.ob-header {
+  padding: 18px 24px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-card);
+}
+.ob-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ob-title-wrap h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ob-title-wrap p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.ob-progress-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: var(--border-muted);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.ob-progress-bar-fill {
+  height: 100%;
+  background: #238636;
+  transition: width 0.3s ease;
+}
+.ob-tabs-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.ob-tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+.ob-tab-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-subpanel);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.ob-tab-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-main);
+}
+.ob-tab-btn.active {
+  background: #1f6feb;
+  border-color: #388bfd;
+  color: #ffffff;
+}
+.ob-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 320px;
+}
+.ob-page {
+  display: none;
+}
+.ob-page.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+.ob-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-muted);
+  background: var(--bg-card);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ob-nav-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.ob-section-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.45;
+}
+
