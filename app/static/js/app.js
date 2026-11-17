@@ -55,6 +55,7 @@ const TRANSLATIONS = {
     nav_automation: "Automatisation",
     nav_security: "Sécurité",
     nav_system: "Système & Langue",
+    nav_notifications: "Notifications",
 
     // Settings Section Titles
     sec_provider: "1. Fournisseur & API Debrid",
@@ -64,6 +65,7 @@ const TRANSLATIONS = {
     sec_automation: "5. Automatisation & Nettoyage",
     sec_security: "6. Sécurité & Authentification",
     sec_system: "7. Performances & Langue",
+    sec_notifications: "8. Notifications Telegram",
 
     // Fields & Labels
     lbl_provider: "Fournisseur de Débridage (Provider)",
@@ -160,6 +162,25 @@ const TRANSLATIONS = {
     hint_speed_limit: "Limite le débit de copie/téléchargement physique (0 = illimité).",
     lbl_last_download: "Dernier téléchargement :",
     lbl_avg_speed: "Vitesse moyenne :",
+
+    // Notifications Telegram
+    lbl_tg_enable: "Activer les notifications Telegram",
+    hint_tg_enable: "Envoie des alertes en temps réel sur votre bot Telegram lors des scans, liens morts, téléchargements et erreurs.",
+    lbl_tg_bot_token: "Token du Bot Telegram",
+    hint_tg_bot_token: "Token secret obtenu auprès de @BotFather.",
+    lbl_tg_chat_id: "Chat ID / Channel ID",
+    hint_tg_chat_id: "Votre ID de discussion Telegram (obtenu via @userinfobot ou @GetMyChatID_Bot).",
+    btn_test_tg: "📲 Envoyer un message de test",
+    testing_tg: "Envoi du message de test...",
+    title_tg_events: "Événements à notifier :",
+    lbl_tg_scan_start: "Scan de médiathèque démarré",
+    lbl_tg_scan_complete: "Scan de médiathèque terminé (résumé complet)",
+    lbl_tg_dead_link: "Alerte : Liens morts détectés dans la médiathèque",
+    lbl_tg_dl_complete: "Téléchargement réel ou Symlink terminé (avec taille et vitesse)",
+    lbl_tg_clean_dead: "Suppression / Purge de liens morts effectuée",
+    lbl_tg_error: "Erreurs critiques (débridage, timeout rclone, copie)",
+    tg_test_ok: "Notification de test reçue avec succès !",
+    tg_test_err: "Échec de l'envoi vers Telegram.",
   },
   en: {
     // Brand & Header
@@ -216,6 +237,7 @@ const TRANSLATIONS = {
     nav_automation: "Automation",
     nav_security: "Security",
     nav_system: "System & Language",
+    nav_notifications: "Notifications",
 
     // Settings Section Titles
     sec_provider: "1. Debrid Provider & API",
@@ -225,6 +247,7 @@ const TRANSLATIONS = {
     sec_automation: "5. Automation & Cleanup",
     sec_security: "6. Security & Authentication",
     sec_system: "7. Performance & Language",
+    sec_notifications: "8. Telegram Notifications",
 
     // Fields & Labels
     lbl_provider: "Debrid Provider",
@@ -321,6 +344,25 @@ const TRANSLATIONS = {
     hint_speed_limit: "Limits physical download rate (0 = unlimited).",
     lbl_last_download: "Last download:",
     lbl_avg_speed: "Average speed:",
+
+    // Telegram Notifications
+    lbl_tg_enable: "Enable Telegram Notifications",
+    hint_tg_enable: "Sends real-time alerts to your Telegram bot upon scans, dead links, downloads, and errors.",
+    lbl_tg_bot_token: "Telegram Bot Token",
+    hint_tg_bot_token: "Secret token obtained from @BotFather.",
+    lbl_tg_chat_id: "Chat ID / Channel ID",
+    hint_tg_chat_id: "Your Telegram Chat ID (obtained via @userinfobot or @GetMyChatID_Bot).",
+    btn_test_tg: "📲 Send Test Message",
+    testing_tg: "Sending test message...",
+    title_tg_events: "Events to notify:",
+    lbl_tg_scan_start: "Media library scan started",
+    lbl_tg_scan_complete: "Media library scan completed (full summary)",
+    lbl_tg_dead_link: "Alert: Dead links detected in media library",
+    lbl_tg_dl_complete: "Real Download or Symlink completed (with size and speed)",
+    lbl_tg_clean_dead: "Dead links deletion / purge performed",
+    lbl_tg_error: "Critical errors (debrid, rclone timeout, copy failure)",
+    tg_test_ok: "Test notification received successfully!",
+    tg_test_err: "Telegram sending failed.",
   }
 };
 
@@ -516,7 +558,7 @@ function showTab(tab) {
 }
 
 function showSettingsPage(pageId) {
-  const pages = ['alldebrid', 'storage', 'services', 'scanner', 'automation', 'security', 'system'];
+  const pages = ['alldebrid', 'storage', 'services', 'scanner', 'automation', 'security', 'system', 'notifications'];
   if (!pages.includes(pageId)) pageId = 'alldebrid';
   sessionStorage.setItem('pyrdt_settings_page', pageId);
 
@@ -529,6 +571,9 @@ function showSettingsPage(pageId) {
 
   const whEl = document.getElementById('webhook-url-display');
   if (whEl) whEl.textContent = window.location.origin + '/api/scanner/webhook';
+
+  const tgChk = document.getElementById('telegram_enabled');
+  if (tgChk) toggleTelegramOptions(tgChk.checked);
 }
 
 function addServiceRow(svcName = '', svcMode = 'download', svcSubpath = '') {
@@ -812,6 +857,73 @@ async function purgeCompleted() {
   fd.append('deleteProvider', 'false');
   await fetch('/api/v2/torrents/delete', { method: 'POST', body: fd });
   await refreshQueue();
+}
+
+function toggleTelegramOptions(enabled) {
+  const container = document.getElementById('tg-details-container');
+  if (container) {
+    container.style.opacity = enabled ? '1' : '0.4';
+    container.style.pointerEvents = enabled ? 'auto' : 'none';
+  }
+}
+
+async function testTelegramNotification() {
+  const btn = document.getElementById('btn-test-tg');
+  const box = document.getElementById('tg-test-result');
+  const botToken = (document.getElementById('telegram_bot_token')?.value || '').trim();
+  const chatId = (document.getElementById('telegram_chat_id')?.value || '').trim();
+
+  if (!botToken || !chatId) {
+    if (box) {
+      box.style.display = 'block';
+      box.style.background = 'rgba(248, 81, 73, 0.15)';
+      box.style.color = '#f85149';
+      box.style.border = '1px solid rgba(248, 81, 73, 0.4)';
+      box.textContent = currentLang === 'en' ? 'Please fill in Bot Token and Chat ID.' : 'Veuillez renseigner le Token du Bot et le Chat ID.';
+    }
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t('testing_tg');
+  }
+  if (box) box.style.display = 'none';
+
+  try {
+    const fd = new FormData();
+    fd.append('bot_token', botToken);
+    fd.append('chat_id', chatId);
+    const res = await fetch('/api/settings/test-telegram', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (box) {
+      box.style.display = 'block';
+      if (data.ok) {
+        box.style.background = 'rgba(63, 185, 80, 0.15)';
+        box.style.color = '#3fb950';
+        box.style.border = '1px solid rgba(63, 185, 80, 0.4)';
+        box.textContent = data.message || t('tg_test_ok');
+      } else {
+        box.style.background = 'rgba(248, 81, 73, 0.15)';
+        box.style.color = '#f85149';
+        box.style.border = '1px solid rgba(248, 81, 73, 0.4)';
+        box.textContent = data.error || t('tg_test_err');
+      }
+    }
+  } catch (err) {
+    if (box) {
+      box.style.display = 'block';
+      box.style.background = 'rgba(248, 81, 73, 0.15)';
+      box.style.color = '#f85149';
+      box.style.border = '1px solid rgba(248, 81, 73, 0.4)';
+      box.textContent = t('tg_test_err') + ' : ' + err;
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t('btn_test_tg');
+    }
+  }
 }
 
 // Initialisation au chargement du DOM

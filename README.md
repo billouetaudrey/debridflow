@@ -26,6 +26,9 @@
   * Thème sombre (**Dark Mode**) et thème clair (**Light Mode**).
   * Multilingue (**Français 🇫🇷 / Anglais 🇬🇧**) avec bascule instantanée.
   * Paramètres modulaires avec possibilité d'activer/désactiver des fonctionnalités (ex: onglet scanner).
+* 🔔 **Système de Notifications Telegram** :
+  * Alertes en temps réel sur votre bot Telegram lors des scans de médiathèque, détection de liens morts, fin de téléchargement/symlink (avec vitesse moyenne et taille), purges et erreurs critiques.
+  * Entièrement paramétrable dans l'interface (**Paramètres > Notifications**) avec activation sélective par type d'événement et bouton d'envoi de message de test.
 * 🧹 **Automatisation & Nettoyage** :
   * Purge automatique des fichiers/symlinks temporaires dès que Sonarr/Radarr a finalisé l'importation.
   * Suppression automatique des torrents/magnets sur le cloud du fournisseur après téléchargement.

@@ -425,6 +425,12 @@ class ScannerService:
                     "/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,/mnt/virtual/Medias/Replay,/mnt/virtual/Medias/Enfants,/mnt/virtual/Medias/Animes",
                 )
                 paths = [Path(p.strip()) for p in raw_paths.split(",") if p.strip()]
+                scan_start_time = time.time()
+                try:
+                    from app.notifications import notifier
+                    await notifier.notify_scan_start(is_full=force_full, paths=paths)
+                except Exception as notif_err:
+                    logger.warning(f"Scanner: erreur notif scan start : {notif_err}")
 
                 # 2. Scan fichiers en thread avec cache incrémental
                 cache, dead = await asyncio.to_thread(self._scan_filesystem_sync, paths, force_full)
@@ -437,6 +443,13 @@ class ScannerService:
                 self.progress["stage"] = "Interrogation et réconciliation Radarr & Sonarr..."
                 self.progress["percent"] = 68
                 await self._match_arr_media(dead)
+
+                if dead:
+                    try:
+                        from app.notifications import notifier
+                        await notifier.notify_dead_links_detected(len(dead), dead)
+                    except Exception as notif_err:
+                        logger.warning(f"Scanner: erreur notif dead links : {notif_err}")
 
                 if self._stop_requested:
                     self._abort_scan()
@@ -530,6 +543,12 @@ class ScannerService:
                 self.progress["stage"] = "Scan terminé avec succès"
                 self.progress["percent"] = 100
                 self._save_cache()
+                scan_duration = time.time() - scan_start_time
+                try:
+                    from app.notifications import notifier
+                    await notifier.notify_scan_complete(stats=self.stats, duration=scan_duration)
+                except Exception as notif_err:
+                    logger.warning(f"Scanner: erreur notif scan complete : {notif_err}")
                 logger.info(
                     f"Scan médiathèque terminé : {len(dead)} lien(s) mort(s), {total_mags} magnet(s), {duplicates_count} doublon(s)."
                 )
@@ -553,6 +572,11 @@ class ScannerService:
                 self.progress["stage"] = f"Erreur : {e}"
                 self.progress["percent"] = 0
                 self._save_cache()
+                try:
+                    from app.notifications import notifier
+                    await notifier.notify_error("Scan de Médiathèque", str(e))
+                except Exception:
+                    pass
 
         self._current_scan_task = asyncio.create_task(_run())
         return {"status": "scanning"}
@@ -685,6 +709,12 @@ class ScannerService:
         self.dead_symlinks = [d for d in self.dead_symlinks if d["path"] not in cleaned_set]
         self.stats["dead_symlinks"] = len(self.dead_symlinks)
         self._save_cache()
+        if deleted_local > 0:
+            try:
+                from app.notifications import notifier
+                await notifier.notify_dead_links_cleaned(deleted_local, deleted_arr=arr_deleted > 0)
+            except Exception as notif_err:
+                logger.warning(f"Scanner: erreur notif clean dead : {notif_err}")
         return {"deleted": deleted_local, "deleted_arr": arr_deleted}
 
     async def delete_magnets(self, magnet_ids_and_names: List[Dict[str, Any]]) -> int:

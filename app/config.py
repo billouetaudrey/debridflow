@@ -52,6 +52,15 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "radarr_api_key": os.getenv("RADARR_API_KEY", ""),
     "sonarr_url": os.getenv("SONARR_URL", "http://127.0.0.1:8989"),
     "sonarr_api_key": os.getenv("SONARR_API_KEY", ""),
+    "telegram_enabled": os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
+    "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
+    "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", "").strip(),
+    "telegram_notify_scan_start": os.getenv("TELEGRAM_NOTIFY_SCAN_START", "true").lower() == "true",
+    "telegram_notify_scan_complete": os.getenv("TELEGRAM_NOTIFY_SCAN_COMPLETE", "true").lower() == "true",
+    "telegram_notify_dead_link": os.getenv("TELEGRAM_NOTIFY_DEAD_LINK", "true").lower() == "true",
+    "telegram_notify_download_complete": os.getenv("TELEGRAM_NOTIFY_DOWNLOAD_COMPLETE", "true").lower() == "true",
+    "telegram_notify_clean_dead": os.getenv("TELEGRAM_NOTIFY_CLEAN_DEAD", "true").lower() == "true",
+    "telegram_notify_error": os.getenv("TELEGRAM_NOTIFY_ERROR", "true").lower() == "true",
 }
 
 logging.basicConfig(

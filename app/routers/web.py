@@ -117,6 +117,16 @@ async def test_api_connection(
     )
 
 
+@router.post("/api/settings/test-telegram")
+async def test_telegram_connection(
+    bot_token: str = Form(""),
+    chat_id: str = Form(""),
+):
+    from app.notifications import notifier
+    res = await notifier.test_notification(bot_token=bot_token, chat_id=chat_id)
+    return JSONResponse(res)
+
+
 @router.post("/api/settings")
 async def update_settings(
     provider: str = Form("alldebrid"),
@@ -141,6 +151,15 @@ async def update_settings(
     radarr_api_key: str = Form(""),
     sonarr_url: str = Form(""),
     sonarr_api_key: str = Form(""),
+    telegram_enabled: Optional[str] = Form(None),
+    telegram_bot_token: str = Form(""),
+    telegram_chat_id: str = Form(""),
+    telegram_notify_scan_start: Optional[str] = Form(None),
+    telegram_notify_scan_complete: Optional[str] = Form(None),
+    telegram_notify_dead_link: Optional[str] = Form(None),
+    telegram_notify_download_complete: Optional[str] = Form(None),
+    telegram_notify_clean_dead: Optional[str] = Form(None),
+    telegram_notify_error: Optional[str] = Form(None),
     service_names: Optional[List[str]] = Form(None),
     service_modes_list: Optional[List[str]] = Form(None),
     service_subpaths: Optional[List[str]] = Form(None),
@@ -190,6 +209,15 @@ async def update_settings(
         settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
         settings_db["sonarr_api_key"] = sonarr_api_key.strip()
         settings_db["enable_scanner_tab"] = enable_scanner_tab == "on"
+        settings_db["telegram_enabled"] = telegram_enabled == "on"
+        settings_db["telegram_bot_token"] = telegram_bot_token.strip()
+        settings_db["telegram_chat_id"] = telegram_chat_id.strip()
+        settings_db["telegram_notify_scan_start"] = telegram_notify_scan_start == "on"
+        settings_db["telegram_notify_scan_complete"] = telegram_notify_scan_complete == "on"
+        settings_db["telegram_notify_dead_link"] = telegram_notify_dead_link == "on"
+        settings_db["telegram_notify_download_complete"] = telegram_notify_download_complete == "on"
+        settings_db["telegram_notify_clean_dead"] = telegram_notify_clean_dead == "on"
+        settings_db["telegram_notify_error"] = telegram_notify_error == "on"
         settings_db["services"] = new_services
         rebuild_categories()
         save_state()
@@ -361,5 +389,14 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__CHECKED_DL_DONE__", "checked" if s.get("delete_on_dl_complete") else "")
         .replace("__CHECKED_AUTO__", "checked" if s.get("auto_clean_import") else "")
         .replace("__CHECKED_DEL__", "checked" if s.get("delete_on_provider") else "")
+        .replace("__TELEGRAM_BOT_TOKEN__", html.escape(str(s.get("telegram_bot_token", ""))))
+        .replace("__TELEGRAM_CHAT_ID__", html.escape(str(s.get("telegram_chat_id", ""))))
+        .replace("__CHECKED_TG_ENABLED__", "checked" if s.get("telegram_enabled", False) else "")
+        .replace("__CHECKED_TG_SCAN_START__", "checked" if s.get("telegram_notify_scan_start", True) else "")
+        .replace("__CHECKED_TG_SCAN_COMPLETE__", "checked" if s.get("telegram_notify_scan_complete", True) else "")
+        .replace("__CHECKED_TG_DEAD_LINK__", "checked" if s.get("telegram_notify_dead_link", True) else "")
+        .replace("__CHECKED_TG_DL_COMPLETE__", "checked" if s.get("telegram_notify_download_complete", True) else "")
+        .replace("__CHECKED_TG_CLEAN_DEAD__", "checked" if s.get("telegram_notify_clean_dead", True) else "")
+        .replace("__CHECKED_TG_ERROR__", "checked" if s.get("telegram_notify_error", True) else "")
     )
     return HTMLResponse(page)

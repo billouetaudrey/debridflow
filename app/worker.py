@@ -105,6 +105,18 @@ async def background_worker() -> None:
                 logger.info(f"Fichier(s) téléchargé(s) ({len(mounted_files)} fichier(s)) -> {content_path} (Vitesse moy : {speed_str} en {duration:.1f}s)")
             else:
                 logger.info(f"Symlink(s) créé(s) ({len(mounted_files)} fichier(s)) -> {content_path}")
+            try:
+                from app.notifications import notifier
+                await notifier.notify_download_complete(
+                    name=item_snapshot["name"],
+                    category=item_snapshot.get("category", ""),
+                    mode=mode,
+                    size_bytes=total_copied if mode == "download" else item_snapshot.get("size", 0),
+                    duration=round(duration, 1),
+                    avg_speed=avg_speed,
+                )
+            except Exception as notif_err:
+                logger.warning(f"Worker: erreur notif download complete : {notif_err}")
         except Exception as exc:
             logger.error(f"Erreur transfert ({mode}) pour {item_snapshot.get('name')} : {exc}")
             async with state_lock:
@@ -112,6 +124,14 @@ async def background_worker() -> None:
                     torrents_db[info_hash]["state"] = "error"
                     torrents_db[info_hash]["error_msg"] = f"Erreur copie/symlink : {exc}"
                     save_state()
+            try:
+                from app.notifications import notifier
+                await notifier.notify_error(
+                    title=f"Erreur transfert ({mode}) : {item_snapshot.get('name')}",
+                    message=str(exc),
+                )
+            except Exception:
+                pass
         finally:
             copying_hashes.discard(info_hash)
 
@@ -182,12 +202,18 @@ async def background_worker() -> None:
                     ad_size = int(ad_info.get("size") or item.get("size") or 0)
 
                     if status_code >= 5:
+                        err_text = ad_info.get("status", "Erreur Fournisseur Debrid")
                         async with state_lock:
                             if info_hash in torrents_db:
                                 torrents_db[info_hash]["state"] = "error"
-                                torrents_db[info_hash]["error_msg"] = ad_info.get("status", "Erreur AllDebrid")
+                                torrents_db[info_hash]["error_msg"] = err_text
                                 save_state()
-                        logger.warning(f"Échec AllDebrid [{info_hash[:8]}] : {ad_info.get('status')}")
+                        logger.warning(f"Échec Debrid [{info_hash[:8]}] : {err_text}")
+                        try:
+                            from app.notifications import notifier
+                            await notifier.notify_error(f"Échec débridage : {ad_filename}", err_text)
+                        except Exception:
+                            pass
                         continue
 
                     if status_code != 4:
@@ -231,6 +257,11 @@ async def background_worker() -> None:
                                     torrents_db[info_hash]["error_msg"] = f"Introuvable dans rclone après {waited}s"
                                     save_state()
                             logger.error(f"Timeout rclone ({waited}s) pour {ad_filename}")
+                            try:
+                                from app.notifications import notifier
+                                await notifier.notify_error(f"Timeout Rclone : {ad_filename}", f"Fichier introuvable dans le montage après {waited}s.")
+                            except Exception:
+                                pass
                             continue
 
                         logger.info(f"Attente montage rclone ({waited}s/{mount_timeout}s) : {ad_filename}")
