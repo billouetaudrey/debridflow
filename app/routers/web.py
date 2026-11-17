@@ -53,16 +53,28 @@ async def ui_queue_feed():
                 "hash": h,
                 "ad_id": item.get("ad_id", "-"),
                 "name": item.get("name") or h,
+                "size": int(item.get("size") or 0),
                 "category": item.get("category") or "",
                 "transfer_mode": item.get("transfer_mode") or resolve_service(item.get("category", ""))[0],
                 "save_path": item.get("save_path") or "",
                 "state": item.get("state") or "downloading",
                 "progress": float(item.get("progress") or 0.0),
+                "dlspeed": int(item.get("dlspeed") or 0),
+                "avg_speed": int(item.get("avg_speed") or 0),
                 "error_msg": item.get("error_msg") or "",
             }
             for h, item in items_sorted
         ]
-    return JSONResponse({"items": payload, "api_health": dict(api_health)}, headers={"Cache-Control": "no-store"})
+        last_stat = dict(settings_db.get("last_download_stat", {}))
+    return JSONResponse(
+        {
+            "items": payload,
+            "api_health": dict(api_health),
+            "last_download_stat": last_stat,
+            "download_speed_limit": float(settings_db.get("download_speed_limit", 0)),
+        },
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.post("/api/test")
@@ -118,6 +130,7 @@ async def update_settings(
     auto_clean_import: Optional[str] = Form(None),
     delete_on_provider: Optional[str] = Form(None),
     delete_on_dl_complete: Optional[str] = Form(None),
+    download_speed_limit: float = Form(0.0),
     enable_scanner_tab: Optional[str] = Form(None),
     allowed_exts: str = Form(""),
     username: str = Form(""),
@@ -165,6 +178,7 @@ async def update_settings(
         settings_db["auto_clean_import"] = auto_clean_import == "on"
         settings_db["delete_on_provider"] = delete_on_provider == "on"
         settings_db["delete_on_dl_complete"] = delete_on_dl_complete == "on"
+        settings_db["download_speed_limit"] = max(0.0, float(download_speed_limit))
         settings_db["allowed_exts"] = allowed_exts.strip() or DEFAULT_SETTINGS["allowed_exts"]
         settings_db["username"] = username.strip()
         settings_db["password"] = password.strip()
@@ -325,6 +339,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__KEY_HINT__", html.escape(prov_meta["key_hint"]))
         .replace("__RCLONE_MOUNT_DIR__", html.escape(s["rclone_mount_dir"]))
         .replace("__DOWNLOAD_BASE_DIR__", html.escape(s["download_base_dir"]))
+        .replace("__DOWNLOAD_SPEED_LIMIT__", str(s.get("download_speed_limit", 0)))
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))
         .replace("__API_KEY__", html.escape(s["api_key"]))

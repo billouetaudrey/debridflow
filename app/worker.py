@@ -41,12 +41,39 @@ async def background_worker() -> None:
         dest_dir: Path,
     ) -> None:
         try:
-            content_path, linked_paths = await asyncio.to_thread(
-                materialize_files_for_torrent, item_snapshot, mounted_files, mode, dest_dir
+            def on_progress(bytes_copied: int, total_expected: int, instant_speed: float):
+                if info_hash in torrents_db:
+                    torrents_db[info_hash]["dlspeed"] = int(instant_speed)
+                    if total_expected > 0:
+                        torrents_db[info_hash]["progress"] = min(0.99, round(bytes_copied / total_expected, 4))
+                        rem = max(0, total_expected - bytes_copied)
+                        torrents_db[info_hash]["eta"] = int(rem / instant_speed) if instant_speed > 0 else 0
+
+            speed_limit_mb = float(settings_db.get("download_speed_limit", 0))
+            speed_limit_bytes = int(speed_limit_mb * 1024 * 1024)
+
+            content_path, linked_paths, total_copied, duration = await asyncio.to_thread(
+                materialize_files_for_torrent,
+                item_snapshot,
+                mounted_files,
+                mode,
+                dest_dir,
+                speed_limit_bytes,
+                on_progress if mode == "download" else None,
             )
             now_done = int(time.time())
             ad_id = int(item_snapshot.get("ad_id") or 0)
             deleted_on_ad = False
+
+            avg_speed = int(total_copied / duration) if duration > 0 and total_copied > 0 else 0
+            if mode == "download":
+                settings_db["last_download_stat"] = {
+                    "name": item_snapshot["name"],
+                    "size": total_copied,
+                    "duration": round(duration, 1),
+                    "avg_speed": avg_speed,
+                    "timestamp": now_done,
+                }
 
             if mode == "download" and settings_db.get("delete_on_dl_complete") and ad_id and settings_db.get("api_key"):
                 await alldebrid_delete_magnet(http_client, ad_id)
@@ -59,6 +86,8 @@ async def background_worker() -> None:
                             "name": item_snapshot["name"],
                             "size": item_snapshot["size"],
                             "progress": 1.0,
+                            "dlspeed": 0,
+                            "avg_speed": avg_speed,
                             "state": "pausedUP",
                             "transfer_mode": mode,
                             "save_path": str(dest_dir),
@@ -71,8 +100,11 @@ async def background_worker() -> None:
                         }
                     )
                     save_state()
-            label_mode = "Fichier(s) téléchargé(s)" if mode == "download" else "Symlink(s) créé(s)"
-            logger.info(f"{label_mode} ({len(mounted_files)} fichier(s)) -> {content_path}")
+            if mode == "download":
+                speed_str = f"{avg_speed / (1024*1024):.2f} Mo/s" if avg_speed >= 1024*1024 else f"{avg_speed / 1024:.1f} Ko/s"
+                logger.info(f"Fichier(s) téléchargé(s) ({len(mounted_files)} fichier(s)) -> {content_path} (Vitesse moy : {speed_str} en {duration:.1f}s)")
+            else:
+                logger.info(f"Symlink(s) créé(s) ({len(mounted_files)} fichier(s)) -> {content_path}")
         except Exception as exc:
             logger.error(f"Erreur transfert ({mode}) pour {item_snapshot.get('name')} : {exc}")
             async with state_lock:

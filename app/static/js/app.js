@@ -119,7 +119,8 @@ const TRANSLATIONS = {
     tab_scanner: "Médiathèque & Liens",
     sc_title: "🧲 Gestionnaire AllDebrid & Liens Morts Médiathèque",
     sc_last_scan_unknown: "Dernier scan : Inconnu",
-    btn_scan_now: "🔄 Scanner la médiathèque & AllDebrid",
+    btn_scan_now: "🔄 Scanner (Rapide)",
+    btn_scan_force: "⚡ Scan complet",
     sc_stat_dead: "⚠️ Liens Morts Locaux",
     sc_stat_magnets: "🧲 Total Magnets AD",
     sc_stat_duplicates: "📑 Doublons AD",
@@ -155,6 +156,10 @@ const TRANSLATIONS = {
     lbl_sonarr_key: "Clé API Sonarr",
     lbl_scan_paths: "Dossiers Médiathèque à analyser (séparés par virgules)",
     hint_scan_paths: "Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.",
+    lbl_speed_limit: "Limite de vitesse de téléchargement (Mo/s)",
+    hint_speed_limit: "Limite le débit de copie/téléchargement physique (0 = illimité).",
+    lbl_last_download: "Dernier téléchargement :",
+    lbl_avg_speed: "Vitesse moyenne :",
   },
   en: {
     // Brand & Header
@@ -275,7 +280,8 @@ const TRANSLATIONS = {
     tab_scanner: "Library & Links",
     sc_title: "🧲 AllDebrid & Dead Links Manager",
     sc_last_scan_unknown: "Last scan: Unknown",
-    btn_scan_now: "🔄 Scan library & AllDebrid",
+    btn_scan_now: "🔄 Scan (Fast)",
+    btn_scan_force: "⚡ Full scan",
     sc_stat_dead: "⚠️ Local Dead Links",
     sc_stat_magnets: "🧲 Total AD Magnets",
     sc_stat_duplicates: "📑 AD Duplicates",
@@ -311,6 +317,10 @@ const TRANSLATIONS = {
     lbl_sonarr_key: "Sonarr API Key",
     lbl_scan_paths: "Media Library scan folders (comma-separated)",
     hint_scan_paths: "Folders scanned to detect broken symlinks / missing targets.",
+    lbl_speed_limit: "Download Speed Limit (MB/s)",
+    hint_speed_limit: "Limits physical download rate (0 = unlimited).",
+    lbl_last_download: "Last download:",
+    lbl_avg_speed: "Average speed:",
   }
 };
 
@@ -601,6 +611,18 @@ function copyId(txt) {
   if (navigator.clipboard) navigator.clipboard.writeText(txt);
 }
 
+function formatSpeed(bytesPerSec) {
+  if (!bytesPerSec || bytesPerSec <= 0) return currentLang === 'en' ? '0 MB/s' : '0 Mo/s';
+  const mbs = bytesPerSec / (1024 * 1024);
+  const uMB = currentLang === 'en' ? 'MB/s' : 'Mo/s';
+  const uKB = currentLang === 'en' ? 'KB/s' : 'Ko/s';
+  if (mbs < 1) {
+    const kbs = bytesPerSec / 1024;
+    return kbs.toFixed(1) + ' ' + uKB;
+  }
+  return mbs.toFixed(2) + ' ' + uMB;
+}
+
 function renderQueue(items) {
   const tbody = document.getElementById('queue-tbody');
   const checkedSet = new Set(getSelectedHashes());
@@ -637,6 +659,11 @@ function renderQueue(items) {
     } else if (state === 'copying') {
       badgeCls = 'run';
       stateTxt = `${esc(t('st_copying'))} (${pct}%)`;
+      if (item.dlspeed && item.dlspeed > 0) {
+        stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
+      }
+    } else if (isDl && item.dlspeed && item.dlspeed > 0) {
+      stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
     }
 
     const fullId = esc(item.hash);
@@ -678,6 +705,25 @@ async function refreshQueue() {
       updateHeaderStatus(items, data.api_health);
       if (currentTab === 'queue') {
         renderQueue(items);
+      }
+      const lastStat = data.last_download_stat;
+      const statBar = document.getElementById('last-download-stat-bar');
+      if (statBar) {
+        if (lastStat && lastStat.name && lastStat.avg_speed) {
+          statBar.style.display = 'flex';
+          const nameEl = document.getElementById('last-dl-name');
+          const detailsEl = document.getElementById('last-dl-details');
+          const speedEl = document.getElementById('last-dl-speed');
+          if (nameEl) nameEl.textContent = lastStat.name;
+          if (detailsEl) {
+            const sizeStr = formatSize(lastStat.size || 0);
+            const durStr = lastStat.duration ? `${lastStat.duration}s` : '';
+            detailsEl.textContent = `(${sizeStr}${durStr ? ' en ' + durStr : ''})`;
+          }
+          if (speedEl) speedEl.textContent = formatSpeed(lastStat.avg_speed);
+        } else {
+          statBar.style.display = 'none';
+        }
       }
     }
   } catch (e) {
@@ -801,6 +847,7 @@ let scannerPollTimer = null;
 
 function setScanButtonScanning(scanning, percent = 0, stage = '') {
   const btn = document.getElementById('btn-start-scan');
+  const btnForce = document.getElementById('btn-force-scan');
   const btnStop = document.getElementById('btn-stop-scan');
   const spinner = document.getElementById('scan-btn-spinner');
   const text = document.getElementById('scan-btn-text');
@@ -810,6 +857,7 @@ function setScanButtonScanning(scanning, percent = 0, stage = '') {
   const progFill = document.getElementById('scanner-progress-fill');
 
   if (btn) btn.disabled = scanning;
+  if (btnForce) btnForce.disabled = scanning;
   if (btnStop) btnStop.style.display = scanning ? 'inline-block' : 'none';
   if (spinner) spinner.style.display = scanning ? 'inline' : 'none';
   if (text) text.textContent = scanning ? (percent > 0 ? `Scan en cours... (${percent}%)` : 'Scan en cours...') : t('btn_scan_now');
@@ -831,10 +879,11 @@ function setScanButtonScanning(scanning, percent = 0, stage = '') {
   }
 }
 
-async function triggerScannerScan() {
-  setScanButtonScanning(true, 5, 'Démarrage du scan...');
+async function triggerScannerScan(forceFull = false) {
+  setScanButtonScanning(true, 5, forceFull ? 'Démarrage du scan complet...' : 'Démarrage du scan...');
   try {
-    await fetch('/api/scanner/start?force=true', { method: 'POST' });
+    const url = forceFull ? '/api/scanner/start?force=true&force_full=true' : '/api/scanner/start?force=true';
+    await fetch(url, { method: 'POST' });
     isScanning = true;
     pollScannerStatus();
   } catch (err) {
@@ -847,7 +896,7 @@ async function stopScannerScan() {
   const btnStop = document.getElementById('btn-stop-scan');
   if (btnStop) {
     btnStop.disabled = true;
-    btnStop.innerHTML = '<span>⏳ </span>' + (i18n[currentLang]?.btn_scan_stop || 'Interrompre');
+    btnStop.innerHTML = '<span>⏳ </span>' + t('btn_scan_stop');
   }
   try {
     await fetch('/api/scanner/stop', { method: 'POST' });
@@ -866,7 +915,7 @@ async function stopScannerScan() {
   } finally {
     if (btnStop) {
       btnStop.disabled = false;
-      btnStop.innerHTML = '<span>⏹️ </span>' + (i18n[currentLang]?.btn_scan_stop || 'Interrompre');
+      btnStop.innerHTML = '<span>⏹️ </span>' + t('btn_scan_stop');
     }
   }
 }

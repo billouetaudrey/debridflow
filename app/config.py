@@ -35,6 +35,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "auto_clean_import": os.getenv("AUTO_CLEAN_IMPORT", "true").lower() == "true",
     "delete_on_provider": os.getenv("DELETE_ON_PROVIDER", "false").lower() == "true",
     "delete_on_dl_complete": os.getenv("DELETE_ON_DL_COMPLETE", "true").lower() == "true",
+    "download_speed_limit": float(os.getenv("DOWNLOAD_SPEED_LIMIT", "0")),
+    "last_download_stat": {},
     "allowed_exts": ".mkv,.mp4,.avi,.mov,.wmv,.m4v,.ts,.webm,.srt,.ass,.ssa,.sub,.vtt",
     "username": os.getenv("PYRDT_USER", "").strip(),
     "password": os.getenv("PYRDT_PASS", "").strip(),

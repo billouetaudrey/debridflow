@@ -78,6 +78,8 @@ class ScannerService:
         self._debounce_task: Optional[asyncio.Task] = None
         self._stop_requested: bool = False
         self._current_scan_task: Optional[asyncio.Task] = None
+        self.dir_mtimes: Dict[str, float] = {}
+        self.file_entries: Dict[str, List[Dict[str, Any]]] = {}
         self._load_cache()
 
     def _load_cache(self) -> None:
@@ -94,6 +96,8 @@ class ScannerService:
                     self.grouped_magnets = data.get("grouped_magnets", {})
                     self.total_magnets = data.get("total_magnets", 0)
                     self.stats = data.get("stats", self.stats)
+                    self.dir_mtimes = data.get("dir_mtimes", {})
+                    self.file_entries = data.get("file_entries", {})
             except Exception as e:
                 logger.warning(f"Erreur chargement cache scanner : {e}")
 
@@ -108,18 +112,154 @@ class ScannerService:
                 "grouped_magnets": self.grouped_magnets,
                 "total_magnets": self.total_magnets,
                 "stats": self.stats,
+                "dir_mtimes": self.dir_mtimes,
+                "file_entries": self.file_entries,
             }
             with open(SCANNER_CACHE_FILE, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Erreur sauvegarde cache scanner : {e}")
 
-    def _scan_filesystem_sync(self, scan_paths: List[Path]) -> tuple[Dict[str, List[str]], List[Dict[str, Any]]]:
+    def _scan_filesystem_sync(
+        self, scan_paths: List[Path], force_full: bool = False
+    ) -> tuple[Dict[str, List[str]], List[Dict[str, Any]]]:
+        # 1. Charger la liste des magnets montés dans rclone en 0.3s (évite des milliers d'appels réseau)
+        rclone_mount = Path(settings_db.get("rclone_mount_dir", "/mnt/alldebrid/magnets"))
+        active_magnets: Set[str] = set()
+        try:
+            if rclone_mount.is_dir():
+                active_magnets = set(os.listdir(rclone_mount))
+        except Exception as e:
+            logger.warning(f"Scanner: impossible de lister le dossier rclone {rclone_mount} : {e}")
+
+        # Si un scan complet est forcé, vider le cache de répertoires
+        if force_full:
+            self.dir_mtimes.clear()
+            self.file_entries.clear()
+
+        reused_folders = 0
+        updated_folders = 0
+
+        # 2. Parcours incrémental par horodatage (mtime)
+        for f_idx, base_path in enumerate(scan_paths):
+            if not base_path.is_dir() or not os.access(base_path, os.R_OK):
+                continue
+
+            folder_name = base_path.name
+            self.progress["current_folder"] = folder_name
+            self.progress["stage"] = f"Vérification des dossiers ({folder_name})..."
+
+            try:
+                with os.scandir(base_path) as it:
+                    entries_list = list(it)
+
+                total_entries = len(entries_list)
+                for e_idx, entry in enumerate(entries_list):
+                    if self._stop_requested:
+                        logger.info("Scanner: arrêt anticipé (interruption demandée).")
+                        break
+
+                    if e_idx % 25 == 0:
+                        pct = min(58, int(10 + (e_idx / max(1, total_entries)) * 48))
+                        self.progress["percent"] = pct
+                        self.progress["stage"] = f"Indexation {folder_name} ({e_idx}/{total_entries})..."
+
+                    entry_path_str = entry.path
+
+                    # Cas 1 : Sous-dossier (ex: dossier de film ou série)
+                    if entry.is_dir(follow_symlinks=False):
+                        try:
+                            st = entry.stat()
+                            mtime = st.st_mtime
+                        except OSError:
+                            continue
+
+                        cached_mtime = self.dir_mtimes.get(entry_path_str, 0.0)
+
+                        # Si le dossier est inchangé et déjà en cache -> réutilisation instantanée !
+                        if not force_full and cached_mtime > 0 and mtime <= cached_mtime and entry_path_str in self.file_entries:
+                            reused_folders += 1
+                            continue
+
+                        # Le dossier est nouveau ou modifié -> indexation de ses fichiers
+                        updated_folders += 1
+                        dir_items: List[Dict[str, Any]] = []
+                        try:
+                            for root, dirs, files in os.walk(entry.path, followlinks=False):
+                                if self._stop_requested:
+                                    break
+                                rel = Path(root).relative_to(entry.path)
+                                if len(rel.parts) > 4:
+                                    dirs.clear()
+                                    continue
+                                for fname in files + dirs:
+                                    fpath = Path(root) / fname
+                                    fpath_str = str(fpath)
+                                    is_link = fpath.is_symlink()
+                                    target = ""
+                                    if is_link:
+                                        try:
+                                            target = os.readlink(fpath)
+                                        except OSError:
+                                            target = ""
+
+                                    simp_keys = [simplify_name(fname)]
+                                    if target:
+                                        simp_keys.append(simplify_name(Path(target).name))
+                                        for part in Path(target).parts:
+                                            pl = part.lower()
+                                            if pl not in ("/", "mnt", "alldebrid", "magnets", "virtual", "medias", "films", "series"):
+                                                simp_keys.append(simplify_name(part))
+
+                                    dir_items.append({
+                                        "path": fpath_str,
+                                        "name": fname,
+                                        "is_symlink": is_link,
+                                        "target": target,
+                                        "simp_keys": [k for k in set(simp_keys) if k],
+                                    })
+                        except Exception as e:
+                            logger.warning(f"Scanner: erreur indexation dossier {entry_path_str} : {e}")
+
+                        self.file_entries[entry_path_str] = dir_items
+                        self.dir_mtimes[entry_path_str] = mtime
+
+                    # Cas 2 : Fichier direct à la racine
+                    elif entry.is_file(follow_symlinks=False) or entry.is_symlink():
+                        is_link = entry.is_symlink()
+                        target = ""
+                        if is_link:
+                            try:
+                                target = os.readlink(entry.path)
+                            except OSError:
+                                target = ""
+                        simp_keys = [simplify_name(entry.name)]
+                        if target:
+                            simp_keys.append(simplify_name(Path(target).name))
+                        self.file_entries[entry_path_str] = [{
+                            "path": entry_path_str,
+                            "name": entry.name,
+                            "is_symlink": is_link,
+                            "target": target,
+                            "simp_keys": [k for k in set(simp_keys) if k],
+                        }]
+
+            except Exception as exc:
+                logger.warning(f"Erreur lors du scan de {base_path} : {exc}")
+
+        # Nettoyage des dossiers supprimés du disque
+        all_cached_dirs = list(self.file_entries.keys())
+        for cdir in all_cached_dirs:
+            if not os.path.exists(cdir):
+                self.file_entries.pop(cdir, None)
+                self.dir_mtimes.pop(cdir, None)
+
+        # 3. Assembler le cache de recherche et valider les liens morts
+        self.progress["stage"] = "Validation des liens symboliques..."
+        self.progress["percent"] = 62
+
         cache: Dict[str, List[str]] = {}
         dead: List[Dict[str, Any]] = []
-        total_folders = len(scan_paths)
-        files_scanned = 0
-        dead_found = 0
 
         def add_to_cache(key: str, p: str):
             if not key:
@@ -129,79 +269,53 @@ class ScannerService:
             if p not in cache[key]:
                 cache[key].append(p)
 
-        for f_idx, base_path in enumerate(scan_paths):
-            if not base_path.is_dir() or not os.access(base_path, os.R_OK):
-                continue
+        dead_found = 0
+        total_files = sum(len(items) for items in self.file_entries.values())
+        rclone_parts = rclone_mount.parts
 
-            folder_name = base_path.name
-            self.progress["current_folder"] = folder_name
-            self.progress["stage"] = f"Analyse des dossiers ({folder_name})..."
+        for dir_path, items in self.file_entries.items():
+            for item in items:
+                p_str = item["path"]
+                for sk in item["simp_keys"]:
+                    add_to_cache(sk, p_str)
 
-            try:
-                # Parcours avec limitation de profondeur
-                for root, dirs, files in os.walk(base_path, followlinks=False):
-                    if self._stop_requested:
-                        logger.info("Scanner: arrêt anticipé du parcours disque (interruption).")
-                        break
-                    rel = Path(root).relative_to(base_path)
-                    if len(rel.parts) > 5:
-                        dirs.clear()
-                        continue
+                # Validation rapide des liens morts
+                if item["is_symlink"]:
+                    target = item["target"]
+                    is_dead = False
+                    if not target:
+                        is_dead = True
+                    else:
+                        t_parts = Path(target).parts
+                        # Si le lien pointe vers rclone_mount (ex: /mnt/alldebrid/magnets/<release>/...)
+                        if len(t_parts) > len(rclone_parts) and t_parts[:len(rclone_parts)] == rclone_parts:
+                            magnet_folder_name = t_parts[len(rclone_parts)]
+                            if active_magnets and magnet_folder_name not in active_magnets:
+                                is_dead = True
+                        else:
+                            # Cible externe à rclone -> test exists
+                            if not os.path.exists(p_str):
+                                is_dead = True
 
-                    # Vérifier dossiers et fichiers
-                    all_entries = files + dirs
-                    for entry_name in all_entries:
-                        if self._stop_requested:
-                            break
-                        files_scanned += 1
-                        if files_scanned % 30 == 0:
-                            folder_pct = (f_idx / total_folders) if total_folders else 0
-                            self.progress["percent"] = min(60, int(5 + folder_pct * 55))
-                            self.progress["files_scanned"] = files_scanned
-                            self.progress["dead_found"] = dead_found
-                            self.progress["stage"] = f"Analyse {folder_name} : {files_scanned} fichiers ({dead_found} liens morts)..."
+                    if is_dead:
+                        dead_found += 1
+                        dead.append({
+                            "path": p_str,
+                            "filename": item["name"],
+                            "target": target,
+                            "media_type": "unknown",
+                            "media_id": None,
+                            "media_title": "",
+                        })
 
-                        full_path = Path(root) / entry_name
-                        try:
-                            path_str = str(full_path)
-                            simp = simplify_name(entry_name)
-                            add_to_cache(simp, path_str)
-
-                            if full_path.is_symlink():
-                                target = ""
-                                try:
-                                    target = os.readlink(full_path)
-                                    target_name = Path(target).name
-                                    add_to_cache(simplify_name(target_name), path_str)
-
-                                    # Découpage du chemin cible pour Season Packs
-                                    for part in Path(target).parts:
-                                        part_lower = part.lower()
-                                        if part_lower not in ("/", "mnt", "alldebrid", "magnets", "virtual", "medias", "films", "series"):
-                                            add_to_cache(simplify_name(part), path_str)
-                                except OSError:
-                                    pass
-
-                                # Lien mort ?
-                                if not os.path.exists(full_path):
-                                    dead_found += 1
-                                    self.progress["dead_found"] = dead_found
-                                    dead.append({
-                                        "path": path_str,
-                                        "filename": entry_name,
-                                        "target": target,
-                                        "media_type": "unknown",
-                                        "media_id": None,
-                                        "media_title": "",
-                                    })
-                        except Exception:
-                            continue
-            except Exception as exc:
-                logger.warning(f"Erreur lors du scan de {base_path} : {exc}")
-
-        self.progress["files_scanned"] = files_scanned
+        self.progress["files_scanned"] = total_files
         self.progress["dead_found"] = dead_found
         self.progress["percent"] = 65
+        logger.info(
+            f"Scanner [Incrémental] : {total_files} fichiers indexés "
+            f"({reused_folders} dossiers en cache réutilisés, {updated_folders} analysés). "
+            f"{dead_found} lien(s) mort(s)."
+        )
         return cache, dead
 
     async def _match_arr_media(self, dead_symlinks: List[Dict[str, Any]]) -> None:
@@ -257,7 +371,7 @@ class ScannerService:
                     item["media_title"] = s.get("title", "")
                     break
 
-    async def start_scan(self, force: bool = False) -> Dict[str, Any]:
+    async def start_scan(self, force: bool = False, force_full: bool = False) -> Dict[str, Any]:
         now = time.time()
 
         # 1. Si un scan est déjà en cours, on regroupe (coalescing)
@@ -291,7 +405,7 @@ class ScannerService:
         self.status = "scanning"
         self.error_msg = ""
         self.progress = {
-            "stage": "Démarrage de l'analyse...",
+            "stage": "Démarrage de l'analyse (Mode incrémental rapide)..." if not force_full else "Démarrage de l'analyse (Scan complet forcé)...",
             "percent": 5,
             "files_scanned": 0,
             "dead_found": 0,
@@ -312,8 +426,8 @@ class ScannerService:
                 )
                 paths = [Path(p.strip()) for p in raw_paths.split(",") if p.strip()]
 
-                # 2. Scan fichiers en thread
-                cache, dead = await asyncio.to_thread(self._scan_filesystem_sync, paths)
+                # 2. Scan fichiers en thread avec cache incrémental
+                cache, dead = await asyncio.to_thread(self._scan_filesystem_sync, paths, force_full)
 
                 if self._stop_requested:
                     self._abort_scan()

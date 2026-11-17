@@ -1,10 +1,64 @@
 import os
 import shutil
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from app.bencode import sanitize_filename
 from app.state import get_allowed_exts, settings_db
+
+
+def copy_chunked_with_limit(
+    src: Path,
+    dst: Path,
+    speed_limit_bytes: int = 0,
+    progress_callback: Optional[Callable[[int, int, float], None]] = None,
+    total_expected: int = 0,
+    already_copied: int = 0,
+) -> int:
+    """
+    Copie src vers dst par blocs (chunks) avec limitation de vitesse et callback de progression.
+    Retourne le nombre d'octets copiés pour ce fichier.
+    """
+    chunk_size = 256 * 1024  # 256 KB
+    copied = 0
+    t_start = time.time()
+    last_callback_time = t_start
+    last_callback_bytes = 0
+
+    with open(src, "rb") as fsrc, open(dst, "wb") as fdst:
+        while True:
+            chunk_start = time.time()
+            buf = fsrc.read(chunk_size)
+            if not buf:
+                break
+            fdst.write(buf)
+            buf_len = len(buf)
+            copied += buf_len
+
+            # Limitation de vitesse si active
+            if speed_limit_bytes > 0:
+                elapsed_chunk = time.time() - chunk_start
+                expected_chunk_time = buf_len / speed_limit_bytes
+                if elapsed_chunk < expected_chunk_time:
+                    time.sleep(expected_chunk_time - elapsed_chunk)
+
+            # Notification de progression périodique (toutes les 0.5s)
+            now = time.time()
+            if progress_callback and (now - last_callback_time >= 0.5):
+                interval_bytes = copied - last_callback_bytes
+                interval_time = max(0.001, now - last_callback_time)
+                instant_speed = interval_bytes / interval_time
+                progress_callback(already_copied + copied, total_expected, instant_speed)
+                last_callback_time = now
+                last_callback_bytes = copied
+
+    if progress_callback:
+        total_time = max(0.001, time.time() - t_start)
+        instant_speed = copied / total_time
+        progress_callback(already_copied + copied, total_expected, instant_speed)
+
+    return copied
 
 
 def _collect_from_folder(folder: Path, allowed_exts: set, expected_set: set) -> List[Path]:
@@ -68,38 +122,60 @@ def find_mounted_files(magnet_name: str, expected_files: List[str]) -> List[Path
 
 
 def materialize_files_for_torrent(
-    entry: Dict[str, Any], source_files: List[Path], mode: str, dest_dir: Path
-) -> Tuple[str, List[str]]:
+    entry: Dict[str, Any],
+    source_files: List[Path],
+    mode: str,
+    dest_dir: Path,
+    speed_limit_bytes: int = 0,
+    progress_callback: Optional[Callable[[int, int, float], None]] = None,
+) -> Tuple[str, List[str], int, float]:
     dest_dir.mkdir(parents=True, exist_ok=True)
     clean_root_name = sanitize_filename(entry["name"])
     created_paths: List[str] = []
+    total_copied_bytes = 0
+    t_transfer_start = time.time()
 
-    def _transfer(src: Path, dst: Path) -> None:
+    total_expected_bytes = int(entry.get("size") or sum(f.stat().st_size for f in source_files if f.exists()))
+
+    def _transfer(src: Path, dst: Path, already_copied: int) -> int:
         if dst.exists() or dst.is_symlink():
             dst.unlink()
         if mode == "download":
             tmp_dst = dst.with_name(f".{dst.name}.part")
             if tmp_dst.exists():
                 tmp_dst.unlink()
-            shutil.copyfile(src, tmp_dst)
+            bytes_copied = copy_chunked_with_limit(
+                src,
+                tmp_dst,
+                speed_limit_bytes=speed_limit_bytes,
+                progress_callback=progress_callback,
+                total_expected=total_expected_bytes,
+                already_copied=already_copied,
+            )
             os.replace(tmp_dst, dst)
+            return bytes_copied
         else:
             os.symlink(src, dst)
+            return 0
 
     if len(source_files) == 1:
         src = source_files[0]
         dst = dest_dir / src.name
-        _transfer(src, dst)
-        return str(dst), [str(dst)]
+        bytes_copied = _transfer(src, dst, 0)
+        total_copied_bytes += bytes_copied
+        duration = max(0.001, time.time() - t_transfer_start)
+        return str(dst), [str(dst)], total_copied_bytes, duration
 
     release_dir = dest_dir / clean_root_name
     release_dir.mkdir(parents=True, exist_ok=True)
     for src in source_files:
         dst = release_dir / src.name
-        _transfer(src, dst)
+        bytes_copied = _transfer(src, dst, total_copied_bytes)
+        total_copied_bytes += bytes_copied
         created_paths.append(str(dst))
 
-    return str(release_dir), created_paths
+    duration = max(0.001, time.time() - t_transfer_start)
+    return str(release_dir), created_paths, total_copied_bytes, duration
 
 
 def remove_local_artifacts(item: Dict[str, Any]) -> None:

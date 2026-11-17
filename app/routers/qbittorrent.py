@@ -431,13 +431,18 @@ async def qb_sync_maindata(rid: Optional[int] = 0):
 @router.get("/api/v2/transfer/info")
 @router.post("/api/v2/transfer/info")
 async def qb_transfer_info():
+    limit_mb = float(settings_db.get("download_speed_limit", 0))
+    limit_bytes = int(limit_mb * 1024 * 1024)
+    # Calcul de la vitesse instantanée globale
+    async with state_lock:
+        current_dlspeed = sum(int(t.get("dlspeed", 0)) for t in torrents_db.values())
     return JSONResponse(
         {
             "connection_status": "connected",
             "dht_nodes": 0,
             "dl_info_data": 0,
-            "dl_info_speed": 0,
-            "dl_rate_limit": 0,
+            "dl_info_speed": current_dlspeed,
+            "dl_rate_limit": limit_bytes,
             "up_info_data": 0,
             "up_info_speed": 0,
             "up_rate_limit": 0,
@@ -448,7 +453,9 @@ async def qb_transfer_info():
 @router.get("/api/v2/transfer/downloadLimit")
 @router.post("/api/v2/transfer/downloadLimit")
 async def qb_transfer_download_limit():
-    return PlainTextResponse("0")
+    limit_mb = float(settings_db.get("download_speed_limit", 0))
+    limit_bytes = int(limit_mb * 1024 * 1024)
+    return PlainTextResponse(str(limit_bytes))
 
 
 @router.get("/api/v2/transfer/uploadLimit")
@@ -464,7 +471,11 @@ async def qb_transfer_speed_limits_mode():
 
 
 @router.post("/api/v2/transfer/setDownloadLimit")
-async def qb_transfer_set_download_limit():
+async def qb_transfer_set_download_limit(limit: int = Form(0)):
+    limit_mb = round(limit / (1024 * 1024), 2) if limit > 0 else 0.0
+    async with state_lock:
+        settings_db["download_speed_limit"] = limit_mb
+        save_state()
     return PlainTextResponse("Ok.")
 
 
