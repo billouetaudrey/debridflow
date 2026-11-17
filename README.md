@@ -10,8 +10,11 @@
 * ⚡ **Deux modes de récupération par service** :
   * **Symlink (instantané)** : Crée des liens symboliques pointant vers le dossier monté par rclone (lecture directe sans duplication de stockage).
   * **Téléchargement réel (copie locale)** : Copie physique des fichiers depuis le cloud vers vos disques locaux (recommandé pour Whisparr ou le stockage permanent).
+  * **Contrôle du débit de téléchargement** : Limitation de la vitesse de téléchargement configurable en Mo/s (ou via l'API qBittorrent) et affichage en temps réel de la vitesse et de la vitesse moyenne du dernier téléchargement terminé.
 * 🎯 **Émulation API qBittorrent v2** : Vos applications \*arr communiquent avec PyRDT comme avec un client qBittorrent standard (catégories, vitesses, progression, statut, pause/reprise, suppression).
 * 🔍 **Scanner de Médiathèque & Liens Debrid ("Médiathèque & Liens")** :
+  * **Cache incrémental intelligent** : Grâce à l'indexation par date de modification (`mtime`) et à la validation des cibles cloud directement en mémoire vive, le scan passe de plus de 3 minutes à seulement **1 à 2 secondes** !
+  * **Scan complet ou incrémental** : Choix entre un scan rapide automatique/manuel ou un bouton "⚡ Scan complet" pour forcer une réindexation intégrale.
   * **Détection des liens morts** : Analyse récursive de vos dossiers de médiathèque pour repérer les symlinks cassés ou dont la source n'existe plus sur le cloud Debrid.
   * **Relance automatique Radarr / Sonarr** : Déclenchement automatique ou manuel d'une nouvelle recherche (`movies/search`, `episodes/search`) auprès de vos instances pour remplacer instantanément les fichiers manquants.
   * **Nettoyage & Suppression synchronisée** : Suppression locale en un clic des symlinks orphelins avec possibilité de supprimer également le film/la série ou le fichier associé directement dans Radarr / Sonarr.
