@@ -149,7 +149,7 @@ async def update_settings(
     password: str = Form(""),
     ui_language: str = Form("fr"),
     ui_theme: str = Form("dark"),
-    media_scan_paths: str = Form(""),
+    media_scan_paths: List[str] = Form(default=[]),
     radarr_url: str = Form(""),
     radarr_api_key: str = Form(""),
     sonarr_url: str = Form(""),
@@ -212,8 +212,14 @@ async def update_settings(
         settings_db["password"] = password.strip()
         settings_db["ui_language"] = clean_lang
         settings_db["ui_theme"] = clean_theme
-        if media_scan_paths.strip():
-            settings_db["media_scan_paths"] = media_scan_paths.strip()
+        parsed_paths = []
+        for p in media_scan_paths:
+            for sub in p.split(","):
+                sub = sub.strip()
+                if sub and sub not in parsed_paths:
+                    parsed_paths.append(sub)
+        if parsed_paths:
+            settings_db["media_scan_paths"] = ",".join(parsed_paths)
         settings_db["radarr_url"] = radarr_url.strip() or "http://127.0.0.1:7878"
         settings_db["radarr_api_key"] = radarr_api_key.strip()
         settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
@@ -271,6 +277,7 @@ async def reset_settings():
 async def web_dashboard(saved: Optional[str] = None):
     rows = []
     service_rows = []
+    scan_path_rows = []
     active_dl_count = 0
     active_sym_count = 0
 
@@ -293,6 +300,18 @@ async def web_dashboard(saved: Optional[str] = None):
                 f'</select>'
                 f'<input type="text" name="service_subpaths" value="{html.escape(svc_sub)}" placeholder="Sous-dossier dans DL" data-edited="1">'
                 f'<button type="button" class="btn-del" onclick="this.parentElement.remove()" data-i18n="btn_remove">Retirer</button>'
+                f'</div>'
+            )
+
+        scan_paths_raw = s.get("media_scan_paths", "")
+        scan_paths_list = [p.strip() for p in scan_paths_raw.split(",") if p.strip()]
+        if not scan_paths_list:
+            scan_paths_list = ["/mnt/virtual/Medias/Films", "/mnt/virtual/Medias/Series"]
+        for p in scan_paths_list:
+            scan_path_rows.append(
+                f'<div class="scan-path-row">'
+                f'<input type="text" name="media_scan_paths" value="{html.escape(p)}" placeholder="Ex: /mnt/virtual/Medias/Films" style="flex:1;" required>'
+                f'<button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 12px;" title="Supprimer">✕</button>'
                 f'</div>'
             )
 
@@ -413,6 +432,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__CHECKED_HIDE_LAST_DL_NAME__", "checked" if s.get("hide_last_download_name", True) else "")
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))
+        .replace("__SCAN_PATH_ROWS__", "".join(scan_path_rows))
         .replace("__API_KEY__", html.escape(s["api_key"]))
         .replace("__AGENT__", html.escape(s["agent"]))
         .replace("__POLL_INTERVAL__", str(s["poll_interval"]))

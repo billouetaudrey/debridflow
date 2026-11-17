@@ -171,6 +171,19 @@ class ScannerService:
                         try:
                             st = entry.stat()
                             mtime = st.st_mtime
+                            # Détecter également les changements dans les sous-dossiers immédiats (ex: Saison 02, etc.)
+                            try:
+                                with os.scandir(entry.path) as sub_it:
+                                    for sub_entry in sub_it:
+                                        if sub_entry.is_dir(follow_symlinks=False):
+                                            try:
+                                                sub_mtime = sub_entry.stat().st_mtime
+                                                if sub_mtime > mtime:
+                                                    mtime = sub_mtime
+                                            except OSError:
+                                                pass
+                            except OSError:
+                                pass
                         except OSError:
                             continue
 

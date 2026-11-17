@@ -413,6 +413,19 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   margin-top: 10px;
 }
 
+.scan-path-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.scan-path-row input {
+  flex: 1;
+}
+.scan-path-row .btn-del {
+  flex-shrink: 0;
+  padding: 8px 12px;
+}
+
 .form-actions {
   margin-top: 24px;
   display: flex;

@@ -370,10 +370,15 @@
                 </h3>
               </div>
 
-              <div class="field full" style="margin-bottom:14px;">
-                <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
-                <input type="text" name="media_scan_paths" value="__MEDIA_SCAN_PATHS__" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,..." data-i18n-placeholder="ph_scan_paths">
-                <small class="hint" data-i18n="hint_scan_paths">Chemins réels ou montages locaux où se trouvent vos films et séries à surveiller.</small>
+              <div class="field full" style="margin-bottom:18px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <label data-i18n="lbl_scan_paths" style="margin:0;font-weight:600;">Dossiers Médiathèque à analyser</label>
+                  <button type="button" class="btn-sec" onclick="addScanPathRow()" style="padding:5px 12px;font-size:12px;cursor:pointer;" data-i18n="btn_add_scan_path">+ Ajouter un dossier</button>
+                </div>
+                <small class="hint" data-i18n="hint_scan_paths" style="display:block;margin-bottom:10px;">Chemins réels ou montages locaux où se trouvent vos films et séries à surveiller.</small>
+                <div id="scan-paths-list" style="display:flex;flex-direction:column;gap:8px;">
+                  __SCAN_PATH_ROWS__
+                </div>
               </div>
 
               <div style="margin-top:18px;border-top:1px solid var(--border-muted);padding-top:14px;">
@@ -836,10 +841,15 @@
         <!-- Médiathèque -->
         <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:14px;">
           <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);" data-i18n="title_medialib_surveillance">Surveillance Médiathèque &amp; Radarr / Sonarr :</h4>
-          <div class="field full">
-            <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
-            <input type="text" id="ob_media_scan_paths" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series" data-i18n-placeholder="ph_scan_paths">
-            <small class="hint" data-i18n="hint_scan_paths">Dossiers scannés pour détecter les symlinks brisés.</small>
+          <div class="field full" style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <label data-i18n="lbl_scan_paths" style="margin:0;font-weight:600;">Dossiers Médiathèque à analyser</label>
+              <button type="button" class="btn-secondary" onclick="addObScanPathRow()" style="padding:5px 12px;font-size:12px;cursor:pointer;" data-i18n="btn_add_scan_path">+ Ajouter un dossier</button>
+            </div>
+            <small class="hint" data-i18n="hint_scan_paths" style="display:block;margin-bottom:10px;">Dossiers scannés pour détecter les symlinks brisés.</small>
+            <div id="ob-scan-paths-list" style="display:flex;flex-direction:column;gap:8px;">
+              <!-- Dynamically populated rows -->
+            </div>
           </div>
           <div class="grid" style="margin-top:10px;">
             <div class="field">

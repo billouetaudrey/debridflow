@@ -161,7 +161,9 @@ const TRANSLATIONS = {
     lbl_radarr_key: "Clé API Radarr",
     lbl_sonarr_url: "URL Sonarr",
     lbl_sonarr_key: "Clé API Sonarr",
-    lbl_scan_paths: "Dossiers Médiathèque à analyser (séparés par virgules)",
+    lbl_scan_paths: "Dossiers Médiathèque à analyser",
+    btn_add_scan_path: "+ Ajouter un dossier",
+    ph_scan_path_single: "Ex: /mnt/virtual/Medias/Films",
     hint_scan_paths: "Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.",
     lbl_speed_limit: "Limite de vitesse de téléchargement (Mo/s)",
     hint_speed_limit: "Limite le débit de copie/téléchargement physique (0 = illimité).",
@@ -444,7 +446,9 @@ const TRANSLATIONS = {
     lbl_radarr_key: "Radarr API Key",
     lbl_sonarr_url: "Sonarr URL",
     lbl_sonarr_key: "Sonarr API Key",
-    lbl_scan_paths: "Media Library scan folders (comma-separated)",
+    lbl_scan_paths: "Media Library folders to scan",
+    btn_add_scan_path: "+ Add folder",
+    ph_scan_path_single: "Ex: /mnt/virtual/Medias/Movies",
     hint_scan_paths: "Folders scanned to detect broken symlinks / missing targets.",
     lbl_speed_limit: "Download Speed Limit (MB/s)",
     hint_speed_limit: "Limits physical download rate (0 = unlimited).",
@@ -840,6 +844,20 @@ function addServiceRow(svcName = '', svcMode = 'download', svcSubpath = '') {
     <button type="button" class="btn-del" onclick="this.parentElement.remove()">${esc(t('btn_remove'))}</button>
   `;
   container.appendChild(row);
+}
+
+function addScanPathRow(path = '') {
+  const container = document.getElementById('scan-paths-list');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'scan-path-row';
+  row.innerHTML = `
+    <input type="text" name="media_scan_paths" value="${esc(path)}" placeholder="${esc(t('ph_scan_path_single'))}" style="flex:1;" required>
+    <button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 12px;" title="${esc(t('btn_remove'))}">✕</button>
+  `;
+  container.appendChild(row);
+  const input = row.querySelector('input');
+  if (input && !path) input.focus();
 }
 
 function updateHeaderStatus(items, apiHealth) {
@@ -1288,8 +1306,17 @@ function openOnboarding(force = false) {
   if (obPass) obPass.value = getVal('password');
 
   // Step 6: Médiathèque & Notifications
-  const obScanPaths = document.getElementById('ob_media_scan_paths');
-  if (obScanPaths) obScanPaths.value = getVal('media_scan_paths');
+  const obScanList = document.getElementById('ob-scan-paths-list');
+  if (obScanList) {
+    obScanList.innerHTML = '';
+    const mainPaths = Array.from(document.querySelectorAll('#scan-paths-list input[name="media_scan_paths"]')).map(i => i.value.trim()).filter(Boolean);
+    if (mainPaths.length > 0) {
+      mainPaths.forEach(p => addObScanPathRow(p));
+    } else {
+      addObScanPathRow('/mnt/virtual/Medias/Films');
+      addObScanPathRow('/mnt/virtual/Medias/Series');
+    }
+  }
   const obRadarrUrl = document.getElementById('ob_radarr_url');
   if (obRadarrUrl) obRadarrUrl.value = getVal('radarr_url', 'http://127.0.0.1:7878');
   const obRadarrKey = document.getElementById('ob_radarr_api_key');
@@ -1394,6 +1421,20 @@ function addObServiceRow(svcName = '', svcMode = 'download', svcSubpath = '') {
     <button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:6px 10px;" title="${esc(t('btn_remove'))}">✕</button>
   `;
   container.appendChild(row);
+}
+
+function addObScanPathRow(path = '') {
+  const container = document.getElementById('ob-scan-paths-list');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'scan-path-row';
+  row.innerHTML = `
+    <input type="text" class="ob-scan-path-val" value="${esc(path)}" placeholder="${esc(t('ph_scan_path_single'))}" style="flex:1;" required>
+    <button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 12px;" title="${esc(t('btn_remove'))}">✕</button>
+  `;
+  container.appendChild(row);
+  const input = row.querySelector('input');
+  if (input && !path) input.focus();
 }
 
 function toggleObTelegramOptions(enabled) {
@@ -1568,7 +1609,17 @@ function finishOnboarding() {
   setVal('username', document.getElementById('ob_username').value);
   setVal('password', document.getElementById('ob_password').value);
 
-  setVal('media_scan_paths', document.getElementById('ob_media_scan_paths').value);
+  const mainScanContainer = document.getElementById('scan-paths-list');
+  if (mainScanContainer) {
+    mainScanContainer.innerHTML = '';
+    const obPaths = Array.from(document.querySelectorAll('#ob-scan-paths-list .ob-scan-path-val')).map(i => i.value.trim()).filter(Boolean);
+    if (obPaths.length > 0) {
+      obPaths.forEach(p => addScanPathRow(p));
+    } else {
+      addScanPathRow('/mnt/virtual/Medias/Films');
+      addScanPathRow('/mnt/virtual/Medias/Series');
+    }
+  }
   setVal('radarr_url', document.getElementById('ob_radarr_url').value);
   setVal('radarr_api_key', document.getElementById('ob_radarr_api_key').value);
   setVal('sonarr_url', document.getElementById('ob_sonarr_url').value);
