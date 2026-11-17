@@ -704,7 +704,47 @@ class ScannerService:
                         except Exception as e:
                             logger.error(f"Scanner: erreur suppression Sonarr : {e}")
 
-        # 3. Mettre à jour la liste des liens morts
+        # 3. Suppression sur AllDebrid si le magnet existe encore sur AllDebrid
+        ad_deleted = 0
+        api_key = settings_db.get("api_key", "").strip()
+        agent = settings_db.get("agent", "PyRDT")
+        rclone_mount = Path(settings_db.get("rclone_mount_dir", "/mnt/alldebrid/magnets"))
+        rclone_parts = rclone_mount.parts
+
+        mags_to_delete_on_ad: Set[str] = set()
+        for p_str in paths_to_clean:
+            item = dead_map.get(p_str)
+            if not item:
+                continue
+            target = item.get("target", "")
+            if not target:
+                continue
+            t_parts = Path(target).parts
+            if len(t_parts) > len(rclone_parts) and t_parts[:len(rclone_parts)] == rclone_parts:
+                mag_folder_name = t_parts[len(rclone_parts)]
+                simp_folder = simplify_name(mag_folder_name)
+                for norm_name, mags in self.grouped_magnets.items():
+                    for mag in mags:
+                        if mag.get("name") == mag_folder_name or simplify_name(mag.get("name", "")) == simp_folder:
+                            mags_to_delete_on_ad.add(str(mag.get("id")))
+
+        if mags_to_delete_on_ad and api_key:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                for mag_id in mags_to_delete_on_ad:
+                    try:
+                        r = await client.get(
+                            "https://api.alldebrid.com/v4.1/magnet/delete",
+                            params={"agent": agent, "apikey": api_key, "id": mag_id},
+                        )
+                        if r.status_code == 200:
+                            data = r.json()
+                            if data.get("status") == "success" or data.get("error", {}).get("code") == "MAGNET_INVALID_ID":
+                                ad_deleted += 1
+                                logger.info(f"Scanner: magnet orphelin {mag_id} purgé sur AllDebrid.")
+                    except Exception as e:
+                        logger.warning(f"Scanner: erreur suppression AllDebrid magnet {mag_id} : {e}")
+
+        # 4. Mettre à jour la liste des liens morts
         cleaned_set = set(paths_to_clean)
         self.dead_symlinks = [d for d in self.dead_symlinks if d["path"] not in cleaned_set]
         self.stats["dead_symlinks"] = len(self.dead_symlinks)
@@ -715,9 +755,13 @@ class ScannerService:
                 await notifier.notify_dead_links_cleaned(deleted_local, deleted_arr=arr_deleted > 0)
             except Exception as notif_err:
                 logger.warning(f"Scanner: erreur notif clean dead : {notif_err}")
-        return {"deleted": deleted_local, "deleted_arr": arr_deleted}
+        return {"deleted": deleted_local, "deleted_arr": arr_deleted, "deleted_ad": ad_deleted}
 
-    async def delete_magnets(self, magnet_ids_and_names: List[Dict[str, Any]]) -> int:
+    async def delete_magnets(
+        self,
+        magnet_ids_and_names: List[Dict[str, Any]],
+        delete_local: bool = True
+    ) -> int:
         api_key = settings_db.get("api_key", "").strip()
         agent = settings_db.get("agent", "PyRDT")
         deleted_count = 0
@@ -751,15 +795,16 @@ class ScannerService:
                 except Exception as e:
                     logger.error(f"Erreur requête AllDebrid delete magnet {mag_id} : {e}")
 
-                # 2. Suppression locale simultanée des symlinks associés
-                simp = simplify_name(raw_name)
-                for path_str in self.local_cache.get(simp, []):
-                    try:
-                        p = Path(path_str)
-                        if p.is_symlink():
-                            p.unlink(missing_ok=True)
-                    except OSError:
-                        pass
+                # 2. Suppression locale simultanée des symlinks associés (uniquement si delete_local=True)
+                if delete_local:
+                    simp = simplify_name(raw_name)
+                    for path_str in self.local_cache.get(simp, []):
+                        try:
+                            p = Path(path_str)
+                            if p.is_symlink():
+                                p.unlink(missing_ok=True)
+                        except OSError:
+                            pass
 
         # 3. Mettre à jour immédiatement la mémoire et le cache disque
         if deleted_ids:

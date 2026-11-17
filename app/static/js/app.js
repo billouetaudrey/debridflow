@@ -1204,6 +1204,9 @@ async function cleanDeadSymlink(path) {
     });
     const data = await res.json();
     let msg = `${data.deleted} lien(s) supprimé(s) sur le disque.`;
+    if (data.deleted_ad > 0) {
+      msg += `\n${data.deleted_ad} magnet(s) orphelin(s) purgé(s) sur AllDebrid.`;
+    }
     if (data.deleted_arr > 0) {
       msg += `\n${data.deleted_arr} élément(s) supprimé(s) dans ${mediaType || 'Radarr/Sonarr'}.`;
     }
@@ -1256,6 +1259,9 @@ async function cleanAllDeadSymlinks() {
     });
     const data = await res.json();
     let msg = `${data.deleted} lien(s) mort(s) purgé(s) sur le disque !`;
+    if (data.deleted_ad > 0) {
+      msg += `\n${data.deleted_ad} magnet(s) orphelin(s) purgé(s) sur AllDebrid.`;
+    }
     if (data.deleted_arr > 0) {
       msg += `\n${data.deleted_arr} média(s) supprimé(s) dans Radarr / Sonarr.`;
     }
@@ -1490,7 +1496,7 @@ async function cleanAllDuplicateMagnets() {
     const res = await fetch('/api/scanner/delete_magnets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: duplicates })
+      body: JSON.stringify({ items: duplicates, delete_local: false })
     });
     const data = await res.json();
     if (data.status === 'success') {

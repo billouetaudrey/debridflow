@@ -59,7 +59,8 @@ async def clean_dead_symlinks(payload: Dict[str, Any] = Body(default={})):
 @router.post("/delete_magnets")
 async def delete_magnets(payload: Dict[str, Any] = Body(...)):
     items = payload.get("items", [])
-    deleted = await scanner_service.delete_magnets(items)
+    delete_local = bool(payload.get("delete_local", True))
+    deleted = await scanner_service.delete_magnets(items, delete_local=delete_local)
     return JSONResponse({"status": "success", "deleted": deleted})
 
 
