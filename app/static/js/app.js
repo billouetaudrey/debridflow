@@ -221,6 +221,67 @@ const TRANSLATIONS = {
     btn_reset_settings: "🗑️ Supprimer & Relancer l'onboarding",
     hint_reset_settings: "Réinitialise tous les paramètres de PyRDT à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.",
     confirm_reset_settings: "Êtes-vous sûr de vouloir supprimer tous les paramètres, restaurer les valeurs par défaut et relancer l'assistant de configuration initiale ?",
+    opt_theme_dark: "🌙 Sombre (Dark Mode)",
+    opt_theme_light: "☀️ Clair (Light Mode)",
+    opt_lang_fr: "🇫🇷 Français",
+    opt_lang_en: "🇬🇧 English",
+    title_clean_options: "Options de nettoyage :",
+    title_auth_options: "Authentification (Optionnelle) :",
+    title_medialib_surveillance: "Surveillance Médiathèque & Radarr / Sonarr :",
+    title_webhook_info: "ℹ️ URL Webhook Sonarr / Radarr :",
+    recap_provider_title: "🔑 Fournisseur Debrid :",
+    recap_dl_dir_title: "📁 Dossier Téléchargements :",
+    recap_services_title: "🎬 Services *arr configurés :",
+    recap_tg_title: "🔔 Notifications Telegram :",
+    ob_btn_finish_alt: "Bon DL ! Lancer PyRDT 🚀",
+    ob_active: "Activées",
+    ob_disabled: "Désactivées",
+    ob_services_count: "{n} service(s)",
+    ph_auth_empty: "Laisser vide = pas d'auth",
+    ph_api_key: "Clé ou Token API",
+    ph_speed_unlimited: "0 = illimité",
+    ph_scan_paths: "/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,...",
+    tip_toggle_name: "Cliquer pour afficher / masquer le nom",
+    tip_scan_fast: "Scan incrémental rapide utilisant le cache",
+    tip_scan_force: "Forcer une réindexation complète de tous les dossiers",
+    tip_close: "Fermer / Passer",
+    scan_starting: "Démarrage du scan...",
+    missing_target: "Cible inexistante",
+    btn_purge: "🗑️ Purger",
+    btn_retrigger_radarr: "🔍 Relancer Radarr",
+    btn_retrigger_sonarr: "🔍 Relancer Sonarr",
+    media_unknown: "❓ Non identifié",
+    tag_symlinked: "🔗 Symlinké",
+    tag_not_symlinked: "Non symlinké",
+    tag_dead_api: "⚠️ Mort API",
+    tag_kept_default: "(Conservé par défaut)",
+    meta_size: "Taille :",
+    meta_status: "Statut :",
+    msg_no_magnets: "Aucun magnet trouvé. Lancez un scan pour actualiser.",
+    no_dead_to_delete: "Aucun lien mort à supprimer.",
+    no_dead_arr: "Aucun lien mort associé à Radarr ou Sonarr.",
+    confirm_delete_magnet: "Supprimer ce magnet sur le fournisseur et purger ses liens locaux associés ?\n\n{name}",
+    confirm_delete_checked_mags: "Supprimer définitivement {n} magnet(s) sélectionné(s) sur le fournisseur et leurs symlinks locaux ?",
+    confirm_clean_duplicates: "Supprimer {n} doublons inutiles sur le fournisseur ?\n\nLe meilleur fichier de chaque groupe sera conservé intact.",
+    confirm_clean_all_dead: "Supprimer l'intégralité des {n} liens morts détectés sur le disque ?",
+    confirm_delete_from_arr: "{n} des liens morts sont associés à Radarr ou Sonarr.\n\nVoulez-vous ÉGALEMENT supprimer ces médias de votre bibliothèque Radarr / Sonarr ?",
+    confirm_research_dead: "Relancer une recherche dans {mediaType} et purger le lien mort local ?",
+    confirm_research_all_dead: "Voulez-vous relancer la recherche dans Radarr / Sonarr pour les {n} médias détectés et purger les liens morts ?",
+    tip_brand_home: "Accueil (File d'attente)",
+    tip_theme_toggle: "Basculer le thème (Clair / Sombre)",
+    ph_api_key_secret: "Votre clé secrète API...",
+    confirm_clean_single_dead: "Supprimer définitivement ce lien symbolique mort sur le disque ?",
+    confirm_delete_media_arr: "Ce média est associé à {mediaType}{mediaTitle}.\n\nVoulez-vous ÉGALEMENT supprimer ce titre de votre bibliothèque {mediaType} ?",
+    no_mags_selected: "Aucun magnet sélectionné.",
+    no_dup_mags: "Aucun doublon fournisseur détecté à nettoyer.",
+    last_scan_prefix: "Dernier scan : ",
+    btn_collapse_all: "↕️ Plier tout",
+    btn_expand_all: "↕️ Déplier tout",
+    btn_check_visible: "☑ Cocher visibles",
+    btn_uncheck_all: "☐ Décocher tout",
+    scan_finished_success: "Scan terminé avec succès !",
+    scan_interrupted_user: "Scan interrompu par l'utilisateur.",
+    ph_chat_id: "Ex: 123456789 ou -100123456789",
   },
   en: {
     // Brand & Header
@@ -443,6 +504,67 @@ const TRANSLATIONS = {
     btn_reset_settings: "🗑️ Delete & Relaunch Onboarding",
     hint_reset_settings: "Resets all PyRDT settings back to factory defaults and redisplays the initial setup wizard.",
     confirm_reset_settings: "Are you sure you want to delete all settings, restore defaults, and restart the onboarding wizard?",
+    opt_theme_dark: "🌙 Dark Mode",
+    opt_theme_light: "☀️ Light Mode",
+    opt_lang_fr: "🇫🇷 Français (French)",
+    opt_lang_en: "🇬🇧 English",
+    title_clean_options: "Cleanup Options:",
+    title_auth_options: "Authentication (Optional):",
+    title_medialib_surveillance: "Media Library & Radarr / Sonarr Monitoring:",
+    title_webhook_info: "ℹ️ Sonarr / Radarr Webhook URL:",
+    recap_provider_title: "🔑 Debrid Provider:",
+    recap_dl_dir_title: "📁 Downloads Folder:",
+    recap_services_title: "🎬 Configured *arr Services:",
+    recap_tg_title: "🔔 Telegram Notifications:",
+    ob_btn_finish_alt: "Bon DL! Launch PyRDT 🚀",
+    ob_active: "Active",
+    ob_disabled: "Disabled",
+    ob_services_count: "{n} service(s)",
+    ph_auth_empty: "Leave empty = no auth",
+    ph_api_key: "API Key or Token",
+    ph_speed_unlimited: "0 = unlimited",
+    ph_scan_paths: "/mnt/virtual/Medias/Movies,/mnt/virtual/Medias/Series,...",
+    tip_toggle_name: "Click to show / hide name",
+    tip_scan_fast: "Fast incremental scan using cache",
+    tip_scan_force: "Force complete reindexing of all folders",
+    tip_close: "Close / Skip",
+    scan_starting: "Starting scan...",
+    missing_target: "Missing target",
+    btn_purge: "🗑️ Purge",
+    btn_retrigger_radarr: "🔍 Retrigger Radarr",
+    btn_retrigger_sonarr: "🔍 Retrigger Sonarr",
+    media_unknown: "❓ Unidentified",
+    tag_symlinked: "🔗 Symlinked",
+    tag_not_symlinked: "Not symlinked",
+    tag_dead_api: "⚠️ Dead API",
+    tag_kept_default: "(Kept by default)",
+    meta_size: "Size:",
+    meta_status: "Status:",
+    msg_no_magnets: "No magnets found. Run a scan to refresh.",
+    no_dead_to_delete: "No dead links to delete.",
+    no_dead_arr: "No dead links associated with Radarr or Sonarr.",
+    confirm_delete_magnet: "Delete this magnet on provider and purge its associated local links?\n\n{name}",
+    confirm_delete_checked_mags: "Permanently delete {n} selected magnet(s) on provider and their local symlinks?",
+    confirm_clean_duplicates: "Delete {n} unnecessary duplicates on provider?\n\nThe best file in each group will be kept intact.",
+    confirm_clean_all_dead: "Delete all {n} dead links detected on disk?",
+    confirm_delete_from_arr: "{n} of the dead links are associated with Radarr or Sonarr.\n\nDo you ALSO want to delete these media from your Radarr / Sonarr library?",
+    confirm_research_dead: "Retrigger a search in {mediaType} and purge the local dead link?",
+    confirm_research_all_dead: "Do you want to retrigger search in Radarr / Sonarr for the {n} detected media and purge dead links?",
+    tip_brand_home: "Home (Queue)",
+    tip_theme_toggle: "Toggle theme (Light / Dark)",
+    ph_api_key_secret: "Your secret API key...",
+    confirm_clean_single_dead: "Permanently delete this dead symbolic link on disk?",
+    confirm_delete_media_arr: "This media is associated with {mediaType}{mediaTitle}.\n\nDo you ALSO want to delete this title from your {mediaType} library?",
+    no_mags_selected: "No magnet selected.",
+    no_dup_mags: "No provider duplicates detected to clean.",
+    last_scan_prefix: "Last scan: ",
+    btn_collapse_all: "↕️ Collapse all",
+    btn_expand_all: "↕️ Expand all",
+    btn_check_visible: "☑ Check visible",
+    btn_uncheck_all: "☐ Uncheck all",
+    scan_finished_success: "Scan completed successfully!",
+    scan_interrupted_user: "Scan interrupted by user.",
+    ph_chat_id: "Ex: 123456789 or -100123456789",
   }
 };
 
@@ -546,6 +668,8 @@ function setLanguage(lang) {
   if (hiddenLangInput) hiddenLangInput.value = lang;
   const langSelect = document.getElementById('lang-select');
   if (langSelect) langSelect.value = lang;
+  const obLangSelect = document.getElementById('ob_lang');
+  if (obLangSelect) obLangSelect.value = lang;
 
   // Mise à jour de tous les éléments balisés avec data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -582,6 +706,13 @@ function setLanguage(lang) {
     brandEl.title = t('home_tip');
   }
 
+  if (typeof scannerData !== 'undefined' && scannerData) {
+    renderScannerView();
+  }
+  if (typeof updateObRecap === 'function') {
+    updateObRecap();
+  }
+
   updateSelection();
   updateLastDlDisplay();
   refreshQueue();
@@ -606,6 +737,10 @@ function applyTheme(theme) {
   const sel = document.getElementById('theme-select');
   if (sel) {
     sel.value = currentTheme;
+  }
+  const obSel = document.getElementById('ob_theme');
+  if (obSel) {
+    obSel.value = currentTheme;
   }
   const hiddenInput = document.getElementById('ui_theme');
   if (hiddenInput) {
@@ -882,7 +1017,7 @@ async function refreshQueue() {
           if (detailsEl) {
             const sizeStr = formatSize(lastStat.size || 0);
             const durStr = lastStat.duration ? `${lastStat.duration}s` : '';
-            detailsEl.textContent = `(${sizeStr}${durStr ? ' en ' + durStr : ''})`;
+            detailsEl.textContent = `(${sizeStr}${durStr ? (currentLang === 'en' ? ' in ' : ' en ') + durStr : ''})`;
           }
           if (speedEl) speedEl.textContent = formatSpeed(lastStat.avg_speed);
           updateLastDlDisplay();
@@ -1351,12 +1486,12 @@ function updateObRecap() {
 
   const svcsCount = document.querySelectorAll('#ob-services-list .svc-row').length;
   const recapSvc = document.getElementById('ob-recap-services');
-  if (recapSvc) recapSvc.textContent = `${svcsCount} service(s)`;
+  if (recapSvc) recapSvc.textContent = t('ob_services_count', { n: svcsCount });
 
   const tgOn = document.getElementById('ob_telegram_enabled').checked;
   const recapTg = document.getElementById('ob-recap-tg');
   if (recapTg) {
-    recapTg.textContent = tgOn ? (currentLang === 'en' ? 'Active' : 'Activées') : (currentLang === 'en' ? 'Disabled' : 'Désactivées');
+    recapTg.textContent = tgOn ? t('ob_active') : t('ob_disabled');
     recapTg.style.color = tgOn ? '#3fb950' : 'var(--text-muted)';
   }
 }
@@ -1456,10 +1591,10 @@ async function resetSettingsAndRelaunchOnboarding() {
       } catch (e) {}
       window.location.href = '/?onboarding=1';
     } else {
-      alert('Erreur: ' + (data.error || data.message || 'Impossible de réinitialiser'));
+      alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.error || data.message || (currentLang === 'en' ? 'Unable to reset' : 'Impossible de réinitialiser')));
     }
   } catch (e) {
-    alert('Erreur réseau : ' + e);
+    alert((currentLang === 'en' ? 'Network error: ' : 'Erreur réseau : ') + e);
   }
 }
 
@@ -1516,18 +1651,18 @@ function setScanButtonScanning(scanning, percent = 0, stage = '') {
   if (btnForce) btnForce.disabled = scanning;
   if (btnStop) btnStop.style.display = scanning ? 'inline-block' : 'none';
   if (spinner) spinner.style.display = scanning ? 'inline' : 'none';
-  if (text) text.textContent = scanning ? (percent > 0 ? `Scan en cours... (${percent}%)` : 'Scan en cours...') : t('btn_scan_now');
+  if (text) text.textContent = scanning ? (percent > 0 ? (currentLang === 'en' ? `Scanning... (${percent}%)` : `Scan en cours... (${percent}%)`) : (currentLang === 'en' ? 'Scanning...' : 'Scan en cours...')) : t('btn_scan_now');
 
   if (progContainer) {
     if (scanning) {
       progContainer.style.display = 'block';
-      if (progStage) progStage.textContent = stage || 'Démarrage du scan...';
+      if (progStage) progStage.textContent = stage || (currentLang === 'en' ? 'Starting scan...' : 'Démarrage du scan...');
       if (progPercent) progPercent.textContent = (percent || 0) + '%';
       if (progFill) progFill.style.width = (percent || 0) + '%';
     } else {
       if (progPercent) progPercent.textContent = '100%';
       if (progFill) progFill.style.width = '100%';
-      if (progStage) progStage.textContent = 'Scan terminé avec succès !';
+      if (progStage) progStage.textContent = t('scan_finished_success');
       setTimeout(() => {
         if (!isScanning) progContainer.style.display = 'none';
       }, 1500);
@@ -1536,14 +1671,14 @@ function setScanButtonScanning(scanning, percent = 0, stage = '') {
 }
 
 async function triggerScannerScan(forceFull = false) {
-  setScanButtonScanning(true, 5, forceFull ? 'Démarrage du scan complet...' : 'Démarrage du scan...');
+  setScanButtonScanning(true, 5, forceFull ? (currentLang === 'en' ? 'Starting full scan...' : 'Démarrage du scan complet...') : (currentLang === 'en' ? 'Starting scan...' : 'Démarrage du scan...'));
   try {
     const url = forceFull ? '/api/scanner/start?force=true&force_full=true' : '/api/scanner/start?force=true';
     await fetch(url, { method: 'POST' });
     isScanning = true;
     pollScannerStatus();
   } catch (err) {
-    alert('Erreur lors du lancement du scan : ' + err);
+    alert((currentLang === 'en' ? 'Error starting scan: ' : 'Erreur lors du lancement du scan : ') + err);
     setScanButtonScanning(false);
   }
 }
@@ -1560,14 +1695,14 @@ async function stopScannerScan() {
     setScanButtonScanning(false);
     if (scannerPollTimer) clearTimeout(scannerPollTimer);
     const progStage = document.getElementById('scanner-progress-stage');
-    if (progStage) progStage.textContent = 'Scan interrompu par l\'utilisateur.';
+    if (progStage) progStage.textContent = t('scan_interrupted_user');
     const progContainer = document.getElementById('scanner-progress-container');
     setTimeout(() => {
       if (!isScanning && progContainer) progContainer.style.display = 'none';
     }, 2000);
     await loadScannerData();
   } catch (err) {
-    alert('Erreur lors de l\'interruption du scan : ' + err);
+    alert((currentLang === 'en' ? 'Error interrupting scan: ' : 'Erreur lors de l\'interruption du scan : ') + err);
   } finally {
     if (btnStop) {
       btnStop.disabled = false;
@@ -1585,7 +1720,7 @@ async function pollScannerStatus() {
       isScanning = true;
       const prog = data.progress || {};
       const pct = prog.percent || 0;
-      const stage = prog.stage || 'Scan en cours...';
+      const stage = prog.stage || (currentLang === 'en' ? 'Scanning...' : 'Scan en cours...');
       setScanButtonScanning(true, pct, stage);
       scannerPollTimer = setTimeout(pollScannerStatus, 1000);
     } else {
@@ -1651,7 +1786,7 @@ function renderScannerView() {
   const lastTimeEl = document.getElementById('scan-last-time');
   if (lastTimeEl && scannerData.last_update) {
     const d = new Date(scannerData.last_update * 1000);
-    lastTimeEl.textContent = `Dernier scan : ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+    lastTimeEl.textContent = `${t('last_scan_prefix')}${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
   }
 
   // Rendu des Liens Morts
@@ -1682,31 +1817,31 @@ function renderDeadLinks(deadList) {
   if (btnCleanAll) btnCleanAll.style.display = 'inline-block';
 
   tbody.innerHTML = deadList.map(item => {
-    let mediaBadge = '<span class="badge-tag unlinked">❓ Non identifié</span>';
+    let mediaBadge = `<span class="badge-tag unlinked">${esc(t('media_unknown'))}</span>`;
     let researchBtn = '';
 
     if (item.media_type === 'radarr' && item.media_id) {
       mediaBadge = `<span class="badge-tag radarr">🎬 Radarr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
-      researchBtn = `<button type="button" class="btn-sec" style="color:#f5a623;border-color:#f5a623;" onclick="researchDeadLink('radarr', ${item.media_id}, '${esc(item.path)}')">🔍 Relancer Radarr</button>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#f5a623;border-color:#f5a623;" onclick="researchDeadLink('radarr', ${item.media_id}, '${esc(item.path)}')">${esc(t('btn_retrigger_radarr'))}</button>`;
     } else if (item.media_type === 'sonarr' && item.media_id) {
       mediaBadge = `<span class="badge-tag sonarr">📺 Sonarr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
-      researchBtn = `<button type="button" class="btn-sec" style="color:#58a6ff;border-color:#58a6ff;" onclick="researchDeadLink('sonarr', ${item.media_id}, '${esc(item.path)}')">🔍 Relancer Sonarr</button>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#58a6ff;border-color:#58a6ff;" onclick="researchDeadLink('sonarr', ${item.media_id}, '${esc(item.path)}')">${esc(t('btn_retrigger_sonarr'))}</button>`;
     }
 
     return `<tr>
       <td>${mediaBadge}</td>
       <td style="font-family:monospace;font-size:12px;word-break:break-all;">${esc(item.path)}</td>
-      <td style="font-family:monospace;font-size:11px;color:#f85149;word-break:break-all;">${esc(item.target || 'Cible inexistante')}</td>
+      <td style="font-family:monospace;font-size:11px;color:#f85149;word-break:break-all;">${esc(item.target || t('missing_target'))}</td>
       <td style="display:flex;gap:6px;align-items:center;">
         ${researchBtn}
-        <button type="button" class="btn-del" onclick="cleanDeadSymlink('${esc(item.path)}')">🗑️ Purger</button>
+        <button type="button" class="btn-del" onclick="cleanDeadSymlink('${esc(item.path)}')">${esc(t('btn_purge'))}</button>
       </td>
     </tr>`;
   }).join('');
 }
 
 async function researchDeadLink(mediaType, mediaId, path) {
-  if (!confirm(`Relancer une recherche dans ${mediaType.toUpperCase()} et purger le lien mort local ?`)) return;
+  if (!confirm(t('confirm_research_dead', { mediaType: mediaType.toUpperCase() }))) return;
   try {
     const res = await fetch('/api/scanner/research', {
       method: 'POST',
@@ -1715,13 +1850,13 @@ async function researchDeadLink(mediaType, mediaId, path) {
     });
     const data = await res.json();
     if (data.status === 'success') {
-      alert(`Recherche relancée avec succès dans ${mediaType.toUpperCase()} !`);
+      alert(currentLang === 'en' ? `Search successfully retriggered in ${mediaType.toUpperCase()}!` : `Recherche relancée avec succès dans ${mediaType.toUpperCase()} !`);
       loadScannerData();
     } else {
-      alert(`Erreur : ${data.message}`);
+      alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + data.message);
     }
   } catch (e) {
-    alert('Erreur réseau lors de la relance : ' + e);
+    alert((currentLang === 'en' ? 'Network error during search: ' : 'Erreur réseau lors de la relance : ') + e);
   }
 }
 
@@ -1730,13 +1865,12 @@ async function cleanDeadSymlink(path) {
   const mediaType = item && item.media_type && item.media_type !== 'unknown' ? item.media_type.toUpperCase() : null;
   const mediaTitle = item && item.media_title ? ` (${item.media_title})` : '';
 
-  if (!confirm(`Supprimer définitivement ce lien symbolique mort sur le disque ?`)) return;
+  if (!confirm(t('confirm_clean_single_dead'))) return;
 
   let deleteFromArr = false;
   if (mediaType) {
     deleteFromArr = confirm(
-      `Ce média est associé à ${mediaType}${mediaTitle}.\n\n` +
-      `Voulez-vous ÉGALEMENT supprimer ce titre de votre bibliothèque ${mediaType} ?`
+      t('confirm_delete_media_arr', { mediaType: mediaType, mediaTitle: mediaTitle })
     );
   }
 
@@ -1747,35 +1881,35 @@ async function cleanDeadSymlink(path) {
       body: JSON.stringify({ paths: [path], delete_from_arr: deleteFromArr })
     });
     const data = await res.json();
-    let msg = `${data.deleted} lien(s) supprimé(s) sur le disque.`;
+    let msg = currentLang === 'en' ? `${data.deleted} link(s) deleted on disk.` : `${data.deleted} lien(s) supprimé(s) sur le disque.`;
     if (data.deleted_ad > 0) {
-      msg += `\n${data.deleted_ad} magnet(s) orphelin(s) purgé(s) sur AllDebrid.`;
+      msg += currentLang === 'en' ? `\n${data.deleted_ad} orphaned magnet(s) purged on provider.` : `\n${data.deleted_ad} magnet(s) orphelin(s) purgé(s) sur le fournisseur.`;
     }
     if (data.deleted_arr > 0) {
-      msg += `\n${data.deleted_arr} élément(s) supprimé(s) dans ${mediaType || 'Radarr/Sonarr'}.`;
+      msg += currentLang === 'en' ? `\n${data.deleted_arr} item(s) deleted in ${mediaType || 'Radarr/Sonarr'}.` : `\n${data.deleted_arr} élément(s) supprimé(s) dans ${mediaType || 'Radarr/Sonarr'}.`;
     }
     alert(msg);
     loadScannerData();
   } catch (e) {
-    alert('Erreur : ' + e);
+    alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + e);
   }
 }
 
 async function researchAllDeadLinks() {
   const matched = (scannerData.dead_symlinks || []).filter(d => d.media_type === 'radarr' || d.media_type === 'sonarr');
-  if (matched.length === 0) return alert('Aucun lien mort associé à Radarr ou Sonarr.');
-  if (!confirm(`Voulez-vous relancer la recherche dans Radarr / Sonarr pour les ${matched.length} médias détectés et purger les liens morts ?`)) return;
+  if (matched.length === 0) return alert(t('no_dead_arr'));
+  if (!confirm(t('confirm_research_all_dead', { n: matched.length }))) return;
 
   const btn = document.getElementById('btn-research-all');
-  if (btn) { btn.disabled = true; btn.textContent = 'Traitement en cours...'; }
+  if (btn) { btn.disabled = true; btn.textContent = currentLang === 'en' ? 'Processing...' : 'Traitement en cours...'; }
 
   try {
     const res = await fetch('/api/scanner/research_all_dead', { method: 'POST' });
     const data = await res.json();
-    alert(data.message || `${data.count} recherche(s) relancée(s) !`);
+    alert(data.message || (currentLang === 'en' ? `${data.count} search(es) retriggered!` : `${data.count} recherche(s) relancée(s) !`));
     loadScannerData();
   } catch (e) {
-    alert('Erreur : ' + e);
+    alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + e);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = t('btn_research_all'); }
   }
@@ -1783,16 +1917,13 @@ async function researchAllDeadLinks() {
 
 async function cleanAllDeadSymlinks() {
   const total = (scannerData.dead_symlinks || []).length;
-  if (total === 0) return alert('Aucun lien mort à supprimer.');
-  if (!confirm(`Supprimer l'intégralité des ${total} liens morts détectés sur le disque ?`)) return;
+  if (total === 0) return alert(t('no_dead_to_delete'));
+  if (!confirm(t('confirm_clean_all_dead', { n: total }))) return;
 
   const arrItems = (scannerData.dead_symlinks || []).filter(d => d.media_type === 'radarr' || d.media_type === 'sonarr');
   let deleteFromArr = false;
   if (arrItems.length > 0) {
-    deleteFromArr = confirm(
-      `${arrItems.length} des liens morts sont associés à Radarr ou Sonarr.\n\n` +
-      `Voulez-vous ÉGALEMENT supprimer ces médias de votre bibliothèque Radarr / Sonarr ?`
-    );
+    deleteFromArr = confirm(t('confirm_delete_from_arr', { n: arrItems.length }));
   }
 
   try {
@@ -1802,17 +1933,17 @@ async function cleanAllDeadSymlinks() {
       body: JSON.stringify({ delete_from_arr: deleteFromArr })
     });
     const data = await res.json();
-    let msg = `${data.deleted} lien(s) mort(s) purgé(s) sur le disque !`;
+    let msg = currentLang === 'en' ? `${data.deleted} dead link(s) purged on disk!` : `${data.deleted} lien(s) mort(s) purgé(s) sur le disque !`;
     if (data.deleted_ad > 0) {
-      msg += `\n${data.deleted_ad} magnet(s) orphelin(s) purgé(s) sur AllDebrid.`;
+      msg += currentLang === 'en' ? `\n${data.deleted_ad} orphaned magnet(s) purged on provider.` : `\n${data.deleted_ad} magnet(s) orphelin(s) purgé(s) sur le fournisseur.`;
     }
     if (data.deleted_arr > 0) {
-      msg += `\n${data.deleted_arr} média(s) supprimé(s) dans Radarr / Sonarr.`;
+      msg += currentLang === 'en' ? `\n${data.deleted_arr} media deleted in Radarr / Sonarr.` : `\n${data.deleted_arr} média(s) supprimé(s) dans Radarr / Sonarr.`;
     }
     alert(msg);
     loadScannerData();
   } catch (e) {
-    alert('Erreur : ' + e);
+    alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + e);
   }
 }
 
@@ -1828,7 +1959,7 @@ function renderMagnetsList(grouped) {
   const groupKeys = Object.keys(grouped);
 
   if (groupKeys.length === 0) {
-    container.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:25px;">Aucun magnet trouvé. Lancez un scan pour actualiser.</div>`;
+    container.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:25px;">${esc(t('msg_no_magnets'))}</div>`;
     return;
   }
 
@@ -1840,8 +1971,8 @@ function renderMagnetsList(grouped) {
 
     if (isSingle) {
       const mag = mags[0];
-      const localBadge = mag.is_local ? `<span class="badge-tag local">🔗 Symlinké</span>` : `<span class="badge-tag unlinked">Non symlinké</span>`;
-      const deadBadge = mag.is_dead ? `<span class="badge-tag dead">⚠️ Mort API</span>` : '';
+      const localBadge = mag.is_local ? `<span class="badge-tag local">${esc(t('tag_symlinked'))}</span>` : `<span class="badge-tag unlinked">${esc(t('tag_not_symlinked'))}</span>`;
+      const deadBadge = mag.is_dead ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>` : '';
 
       html += `<div class="mag-group sc-mag-card" id="mag-single-${mag.id}" data-title="${esc(normTitle.toLowerCase())} ${esc(mag.name.toLowerCase())}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}" data-dup="0">
         <div class="mag-item" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
@@ -1851,23 +1982,23 @@ function renderMagnetsList(grouped) {
               <div style="font-weight:600;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)}</div>
               <div class="mag-meta">
                 <span>ID: #${mag.id}</span>
-                <span>Taille: ${formatSize(mag.size)}</span>
-                <span>Statut: ${mag.statusCode}</span>
+                <span>${esc(t('meta_size'))} ${formatSize(mag.size)}</span>
+                <span>${esc(t('meta_status'))} ${mag.statusCode}</span>
                 ${localBadge} ${deadBadge}
               </div>
             </div>
           </div>
           <div class="mag-actions">
-            <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">Supprimer</button>
+            <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">${esc(t('btn_delete'))}</button>
           </div>
         </div>
       </div>`;
     } else {
       let childrenHtml = '';
       mags.forEach((mag, idx) => {
-        const isBest = idx === 0 ? `<span style="color:#58a6ff;font-size:11px;">(Conservé par défaut)</span>` : '';
-        const localBadge = mag.is_local ? `<span class="badge-tag local">🔗 Symlinké</span>` : `<span class="badge-tag unlinked">Non symlinké</span>`;
-        const deadBadge = mag.is_dead ? `<span class="badge-tag dead">⚠️ Mort API</span>` : '';
+        const isBest = idx === 0 ? `<span style="color:#58a6ff;font-size:11px;">${esc(t('tag_kept_default'))}</span>` : '';
+        const localBadge = mag.is_local ? `<span class="badge-tag local">${esc(t('tag_symlinked'))}</span>` : `<span class="badge-tag unlinked">${esc(t('tag_not_symlinked'))}</span>`;
+        const deadBadge = mag.is_dead ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>` : '';
 
         childrenHtml += `<div class="mag-item sc-mag-child" id="mag-child-${mag.id}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
           <div class="mag-info-left">
@@ -1876,14 +2007,14 @@ function renderMagnetsList(grouped) {
               <div style="font-weight:500;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)} ${isBest}</div>
               <div class="mag-meta">
                 <span>ID: #${mag.id}</span>
-                <span>Taille: ${formatSize(mag.size)}</span>
-                <span>Statut: ${mag.statusCode}</span>
+                <span>${esc(t('meta_size'))} ${formatSize(mag.size)}</span>
+                <span>${esc(t('meta_status'))} ${mag.statusCode}</span>
                 ${localBadge} ${deadBadge}
               </div>
             </div>
           </div>
           <div class="mag-actions">
-            <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">Supprimer</button>
+            <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">${esc(t('btn_delete'))}</button>
           </div>
         </div>`;
       });
@@ -1947,7 +2078,7 @@ function toggleExpandAllGroups() {
     g.classList.toggle('open', allMagnetsExpanded);
   });
   const btn = document.getElementById('btn-expand-groups');
-  if (btn) btn.textContent = allMagnetsExpanded ? '↕️ Plier tout' : '↕️ Déplier tout';
+  if (btn) btn.textContent = allMagnetsExpanded ? t('btn_collapse_all') : t('btn_expand_all');
 }
 
 function toggleSelectAllVisibleMagnets() {
@@ -1959,11 +2090,11 @@ function toggleSelectAllVisibleMagnets() {
   const allChecked = visibleChks.every(c => c.checked);
   visibleChks.forEach(c => c.checked = !allChecked);
   const btn = document.getElementById('btn-select-all-mags');
-  if (btn) btn.textContent = allChecked ? '☑ Cocher visibles' : '☐ Décocher tout';
+  if (btn) btn.textContent = allChecked ? t('btn_check_visible') : t('btn_uncheck_all');
 }
 
 async function deleteSingleMagnet(id, name) {
-  if (!confirm(`Supprimer ce magnet sur AllDebrid et purger ses liens locaux associés ?\n\n${name}`)) return;
+  if (!confirm(t('confirm_delete_magnet', { name: name }))) return;
   try {
     const res = await fetch('/api/scanner/delete_magnets', {
       method: 'POST',
@@ -1979,10 +2110,10 @@ async function deleteSingleMagnet(id, name) {
       await loadScannerData();
       pollScannerStatus();
     } else {
-      alert(`Erreur : ${data.message || 'Échec de la suppression'}`);
+      alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.message || (currentLang === 'en' ? 'Deletion failed' : 'Échec de la suppression')));
     }
   } catch (e) {
-    alert('Erreur lors de la suppression : ' + e);
+    alert((currentLang === 'en' ? 'Error during deletion: ' : 'Erreur lors de la suppression : ') + e);
   }
 }
 
@@ -1991,11 +2122,11 @@ async function deleteSelectedMagnets() {
     id: c.value,
     name: c.dataset.name || ''
   }));
-  if (checked.length === 0) return alert('Aucun magnet sélectionné.');
-  if (!confirm(`Supprimer définitivement ${checked.length} magnet(s) sélectionné(s) sur AllDebrid et leurs symlinks locaux ?`)) return;
+  if (checked.length === 0) return alert(t('no_mags_selected'));
+  if (!confirm(t('confirm_delete_checked_mags', { n: checked.length }))) return;
 
   const btn = document.getElementById('btn-del-selected-mags');
-  if (btn) { btn.disabled = true; btn.textContent = 'Suppression...'; }
+  if (btn) { btn.disabled = true; btn.textContent = currentLang === 'en' ? 'Deleting...' : 'Suppression...'; }
 
   try {
     const res = await fetch('/api/scanner/delete_magnets', {
@@ -2014,10 +2145,10 @@ async function deleteSelectedMagnets() {
       await loadScannerData();
       pollScannerStatus();
     } else {
-      alert(`Erreur : ${data.message || 'Échec de la suppression'}`);
+      alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.message || (currentLang === 'en' ? 'Deletion failed' : 'Échec de la suppression')));
     }
   } catch (e) {
-    alert('Erreur : ' + e);
+    alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + e);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = t('btn_delete_checked'); }
   }
@@ -2033,8 +2164,8 @@ async function cleanAllDuplicateMagnets() {
     }
   });
 
-  if (duplicates.length === 0) return alert('Aucun doublon AllDebrid détecté à nettoyer.');
-  if (!confirm(`Supprimer ${duplicates.length} doublons inutiles sur AllDebrid ?\n\nLe meilleur fichier de chaque groupe sera conservé intact.`)) return;
+  if (duplicates.length === 0) return alert(t('no_dup_mags'));
+  if (!confirm(t('confirm_clean_duplicates', { n: duplicates.length }))) return;
 
   try {
     const res = await fetch('/api/scanner/delete_magnets', {
@@ -2047,10 +2178,10 @@ async function cleanAllDuplicateMagnets() {
       await loadScannerData();
       pollScannerStatus();
     } else {
-      alert(`Erreur : ${data.message || 'Échec du nettoyage'}`);
+      alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.message || (currentLang === 'en' ? 'Cleanup failed' : 'Échec du nettoyage')));
     }
   } catch (e) {
-    alert('Erreur : ' + e);
+    alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + e);
   }
 }
 

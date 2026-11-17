@@ -17,7 +17,7 @@
 <div class="wrap">
   <!-- Barre Supérieure -->
   <div class="topbar">
-    <div class="brand" onclick="showTab('queue')" title="Accueil (File d'attente) / Home (Queue)">
+    <div class="brand" onclick="showTab('queue')" title="Accueil (File d'attente)" data-i18n-title="tip_brand_home">
       <span class="status-orb __ORB_CLS__" id="status-orb" title="__API_DETAIL__"></span>
       <div class="brand-text">
         <h2>PyRDT</h2>
@@ -34,7 +34,7 @@
 
       <div class="header-utils">
         <!-- Bouton Thème (Clair / Nuit) -->
-        <button type="button" id="theme-btn" class="theme-btn" onclick="toggleTheme()" title="Basculer le thème">
+        <button type="button" id="theme-btn" class="theme-btn" onclick="toggleTheme()" title="Basculer le thème (Clair / Sombre)" data-i18n-title="tip_theme_toggle">
           <span id="theme-icon">☀️</span>
         </button>
         
@@ -69,7 +69,7 @@
     <div id="last-download-stat-bar" style="display:none;margin-bottom:12px;padding:9px 14px;background:var(--bg-subpanel);border:1px solid var(--border-muted);border-radius:8px;font-size:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;">
         <span style="color:#58a6ff;font-weight:700;">⚡ <span data-i18n="lbl_last_download">Dernier téléchargement :</span></span>
-        <span id="last-dl-toggle-btn" onclick="toggleLastDlName()" style="cursor:pointer;padding:2px 8px;background:var(--bg-card);border:1px dashed var(--border-muted);border-radius:4px;color:var(--text-muted);font-size:11px;user-select:none;display:inline-flex;align-items:center;gap:4px;" title="Cliquer pour afficher / masquer le nom">
+        <span id="last-dl-toggle-btn" onclick="toggleLastDlName()" style="cursor:pointer;padding:2px 8px;background:var(--bg-card);border:1px dashed var(--border-muted);border-radius:4px;color:var(--text-muted);font-size:11px;user-select:none;display:inline-flex;align-items:center;gap:4px;" title="Cliquer pour afficher / masquer le nom" data-i18n-title="tip_toggle_name">
           <span id="last-dl-toggle-icon">👁️</span>
           <span id="last-dl-toggle-text" data-i18n="lbl_show_last_dl">Afficher le nom</span>
         </span>
@@ -106,11 +106,11 @@
         <span id="scan-last-time" style="font-size:12px;color:var(--text-muted);" data-i18n="sc_last_scan_unknown">Dernier scan : Inconnu</span>
       </div>
       <div class="scanner-actions">
-        <button type="button" id="btn-start-scan" class="btn-main" onclick="triggerScannerScan(false)" title="Scan incrémental rapide utilisant le cache">
+        <button type="button" id="btn-start-scan" class="btn-main" onclick="triggerScannerScan(false)" title="Scan incrémental rapide utilisant le cache" data-i18n-title="tip_scan_fast">
           <span id="scan-btn-spinner" style="display:none;">⏳ </span>
           <span id="scan-btn-text" data-i18n="btn_scan_now">🔄 Scanner (Rapide)</span>
         </button>
-        <button type="button" id="btn-force-scan" class="btn-sec" onclick="triggerScannerScan(true)" title="Forcer une réindexation complète de tous les dossiers">
+        <button type="button" id="btn-force-scan" class="btn-sec" onclick="triggerScannerScan(true)" title="Forcer une réindexation complète de tous les dossiers" data-i18n-title="tip_scan_force">
           <span data-i18n="btn_scan_force">⚡ Scan complet</span>
         </button>
         <button type="button" id="btn-stop-scan" class="btn-main" onclick="stopScannerScan()" style="display:none;background:#da3633;border-color:#f85149;margin-left:4px;">
@@ -123,7 +123,7 @@
     <!-- Barre de progression en temps réel -->
     <div id="scanner-progress-container" style="display:none;margin:14px 0 6px 0;background:var(--bg-subpanel);border:1px solid var(--border-main);border-radius:8px;padding:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:8px;">
-        <span id="scanner-progress-stage" style="color:var(--text-bright);font-weight:600;">Démarrage du scan...</span>
+        <span id="scanner-progress-stage" style="color:var(--text-bright);font-weight:600;" data-i18n="scan_starting">Démarrage du scan...</span>
         <span id="scanner-progress-percent" style="color:#58a6ff;font-weight:700;">0%</span>
       </div>
       <div style="width:100%;height:8px;background:var(--border-muted);border-radius:4px;overflow:hidden;">
@@ -282,7 +282,7 @@
                 </div>
                 <div class="field">
                   <label id="lbl-api-key" data-i18n="lbl_api_key">__KEY_LABEL__</label>
-                  <input type="password" name="api_key" id="api_key_input" value="__API_KEY__" placeholder="Clé ou Token API" required>
+                  <input type="password" name="api_key" id="api_key_input" value="__API_KEY__" placeholder="Clé ou Token API" data-i18n-placeholder="ph_api_key" required>
                   <small class="hint" id="hint-api-key">__KEY_HINT__</small>
                 </div>
                 <div class="field">
@@ -331,7 +331,7 @@
                 </div>
                 <div class="field">
                   <label data-i18n="lbl_speed_limit">Limite de vitesse de téléchargement (Mo/s)</label>
-                  <input type="number" step="0.5" min="0" name="download_speed_limit" value="__DOWNLOAD_SPEED_LIMIT__" placeholder="0 = illimité">
+                  <input type="number" step="0.5" min="0" name="download_speed_limit" value="__DOWNLOAD_SPEED_LIMIT__" placeholder="0 = illimité" data-i18n-placeholder="ph_speed_unlimited">
                   <small class="hint" data-i18n="hint_speed_limit">Limite le débit de copie/téléchargement physique (0 = illimité).</small>
                 </div>
               </div>
@@ -372,7 +372,7 @@
 
               <div class="field full" style="margin-bottom:14px;">
                 <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
-                <input type="text" name="media_scan_paths" value="__MEDIA_SCAN_PATHS__" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,...">
+                <input type="text" name="media_scan_paths" value="__MEDIA_SCAN_PATHS__" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,..." data-i18n-placeholder="ph_scan_paths">
                 <small class="hint" data-i18n="hint_scan_paths">Chemins réels ou montages locaux où se trouvent vos films et séries à surveiller.</small>
               </div>
 
@@ -399,7 +399,7 @@
               </div>
 
               <div style="margin-top:16px;background:var(--bg-card);padding:12px;border-radius:6px;border:1px solid var(--border-muted);font-size:12px;">
-                <strong>ℹ️ URL Webhook Sonarr / Radarr :</strong> <code id="webhook-url-display" style="color:var(--text-accent);">http://&lt;IP_DE_VOTRE_SERVEUR&gt;:6505/api/scanner/webhook</code>
+                <strong data-i18n="title_webhook_info">ℹ️ URL Webhook Sonarr / Radarr :</strong> <code id="webhook-url-display" style="color:var(--text-accent);">http://&lt;IP_DE_VOTRE_SERVEUR&gt;:6505/api/scanner/webhook</code>
                 <div style="color:var(--text-muted);margin-top:4px;" data-i18n="hint_webhook_info">À renseigner dans Sonarr/Radarr (Settings &gt; Connect &gt; Webhook, déclencheur : On Download / On Import) pour analyser automatiquement après un téléchargement.</div>
               </div>
             </div>
@@ -441,12 +441,12 @@
               <div class="grid">
                 <div class="field">
                   <label data-i18n="lbl_username">Nom d'utilisateur (Web &amp; Apps *arr — optionnel)</label>
-                  <input type="text" name="username" value="__USERNAME__" placeholder="Laisser vide = pas d'auth">
+                  <input type="text" name="username" value="__USERNAME__" placeholder="Laisser vide = pas d'auth" data-i18n-placeholder="ph_auth_empty">
                   <small class="hint" data-i18n="hint_username">Si renseigné, doit correspondre aux identifiants qBittorrent dans Sonarr/Radarr.</small>
                 </div>
                 <div class="field">
                   <label data-i18n="lbl_password">Mot de passe (Web &amp; Apps *arr — optionnel)</label>
-                  <input type="password" name="password" value="__PASSWORD__" placeholder="Laisser vide = pas d'auth">
+                  <input type="password" name="password" value="__PASSWORD__" placeholder="Laisser vide = pas d'auth" data-i18n-placeholder="ph_auth_empty">
                   <small class="hint" data-i18n="hint_password">Protège l'accès Web et l'API qBittorrent.</small>
                 </div>
               </div>
@@ -468,16 +468,16 @@
                 <div class="field">
                   <label data-i18n="lbl_theme_choice">Thème de l'interface</label>
                   <select id="theme-select" onchange="applyTheme(this.value)">
-                    <option value="dark" __SELECTED_THEME_DARK__>🌙 Sombre (Dark Mode)</option>
-                    <option value="light" __SELECTED_THEME_LIGHT__>☀️ Clair (Light Mode)</option>
+                    <option value="dark" __SELECTED_THEME_DARK__ data-i18n="opt_theme_dark">🌙 Sombre (Dark Mode)</option>
+                    <option value="light" __SELECTED_THEME_LIGHT__ data-i18n="opt_theme_light">☀️ Clair (Light Mode)</option>
                   </select>
                   <small class="hint" data-i18n="hint_theme_choice">Bascule entre le mode sombre et le mode clair.</small>
                 </div>
                 <div class="field">
                   <label data-i18n="lbl_language">Langue de l'interface</label>
                   <select id="lang-select" onchange="setLanguage(this.value)">
-                    <option value="fr" __SELECTED_LANG_FR__>🇫🇷 Français (French)</option>
-                    <option value="en" __SELECTED_LANG_EN__>🇬🇧 English (Anglais)</option>
+                    <option value="fr" __SELECTED_LANG_FR__ data-i18n="opt_lang_fr">🇫🇷 Français</option>
+                    <option value="en" __SELECTED_LANG_EN__ data-i18n="opt_lang_en">🇬🇧 English</option>
                   </select>
                   <small class="hint" data-i18n="hint_language">Choisissez le français ou l'anglais pour l'affichage.</small>
                 </div>
@@ -537,7 +537,7 @@
                   </div>
                   <div class="field">
                     <label data-i18n="lbl_tg_chat_id">Chat ID / Channel ID</label>
-                    <input type="text" id="telegram_chat_id" name="telegram_chat_id" value="__TELEGRAM_CHAT_ID__" placeholder="Ex: 123456789 ou -100123456789">
+                    <input type="text" id="telegram_chat_id" name="telegram_chat_id" value="__TELEGRAM_CHAT_ID__" placeholder="Ex: 123456789 ou -100123456789" data-i18n-placeholder="ph_chat_id">
                     <small class="hint" data-i18n="hint_tg_chat_id">Votre ID de discussion Telegram (obtenu via @userinfobot ou @GetMyChatID_Bot).</small>
                   </div>
                 </div>
@@ -662,7 +662,7 @@
           <h2><span style="font-size:22px;">🚀</span> <span data-i18n="ob_title">Bienvenue sur PyRDT</span></h2>
           <p data-i18n="ob_subtitle">Assistant de première configuration pas à pas</p>
         </div>
-        <button type="button" onclick="skipOnboarding()" title="Fermer / Passer" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px 8px;">✕</button>
+        <button type="button" onclick="skipOnboarding()" title="Fermer / Passer" data-i18n-title="tip_close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px 8px;">✕</button>
       </div>
       <div class="ob-progress-bar-bg">
         <div id="ob-progress-bar" class="ob-progress-bar-fill" style="width: 14.28%;"></div>
@@ -688,16 +688,16 @@
           <div class="field">
             <label data-i18n="lbl_theme_choice">Thème de l'interface</label>
             <select id="ob_theme" onchange="applyTheme(this.value)">
-              <option value="dark">🌙 Sombre (Dark Mode)</option>
-              <option value="light">☀️ Clair (Light Mode)</option>
+              <option value="dark" data-i18n="opt_theme_dark">🌙 Sombre (Dark Mode)</option>
+              <option value="light" data-i18n="opt_theme_light">☀️ Clair (Light Mode)</option>
             </select>
             <small class="hint" data-i18n="hint_theme_choice">Bascule entre le mode sombre et le mode clair.</small>
           </div>
           <div class="field">
             <label data-i18n="lbl_language">Langue de l'interface</label>
             <select id="ob_lang" onchange="setLanguage(this.value)">
-              <option value="fr">🇫🇷 Français (French)</option>
-              <option value="en">🇬🇧 English (Anglais)</option>
+              <option value="fr" data-i18n="opt_lang_fr">🇫🇷 Français</option>
+              <option value="en" data-i18n="opt_lang_en">🇬🇧 English</option>
             </select>
             <small class="hint" data-i18n="hint_language">Choisissez le français ou l'anglais pour l'affichage.</small>
           </div>
@@ -736,7 +736,7 @@
           </div>
           <div class="field full">
             <label id="ob-key-label" data-i18n="lbl_api_key">Clé / Token API</label>
-            <input type="password" id="ob_api_key" placeholder="Votre clé secrète API...">
+            <input type="password" id="ob_api_key" placeholder="Votre clé secrète API..." data-i18n-placeholder="ph_api_key_secret">
             <small class="hint" id="ob-key-hint" data-i18n="hint_api_key">Clé ou Token secret généré chez votre fournisseur.</small>
           </div>
           <div class="field full" style="margin-top:4px;">
@@ -806,7 +806,7 @@
       <div id="ob-page-5" class="ob-page">
         <div class="ob-section-hint" data-i18n="ob_hint_step5">Ajustez le comportement de nettoyage automatique et protégez l'accès à PyRDT.</div>
         <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:16px;">
-          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);">Options de nettoyage :</h4>
+          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);" data-i18n="title_clean_options">Options de nettoyage :</h4>
           <div class="chk-line">
             <input type="checkbox" id="ob_del_dl_done" style="cursor:pointer;">
             <label for="ob_del_dl_done" data-i18n="lbl_del_dl_done">Supprimer automatiquement le magnet chez le fournisseur dès que le Téléchargement réel est terminé</label>
@@ -822,16 +822,16 @@
         </div>
 
         <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);">
-          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);">Authentification (Optionnelle) :</h4>
+          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);" data-i18n="title_auth_options">Authentification (Optionnelle) :</h4>
           <div class="grid">
             <div class="field">
               <label data-i18n="lbl_username">Nom d'utilisateur (Web &amp; Apps *arr)</label>
-              <input type="text" id="ob_username" placeholder="Laisser vide = pas d'auth">
+              <input type="text" id="ob_username" placeholder="Laisser vide = pas d'auth" data-i18n-placeholder="ph_auth_empty">
               <small class="hint" data-i18n="hint_username">Identifiants qBittorrent dans Sonarr/Radarr.</small>
             </div>
             <div class="field">
               <label data-i18n="lbl_password">Mot de passe (Web &amp; Apps *arr)</label>
-              <input type="password" id="ob_password" placeholder="Laisser vide = pas d'auth">
+              <input type="password" id="ob_password" placeholder="Laisser vide = pas d'auth" data-i18n-placeholder="ph_auth_empty">
               <small class="hint" data-i18n="hint_password">Protège l'accès Web et l'API.</small>
             </div>
           </div>
@@ -844,10 +844,10 @@
         
         <!-- Médiathèque -->
         <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:14px;">
-          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);">Surveillance Médiathèque &amp; Radarr / Sonarr :</h4>
+          <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);" data-i18n="title_medialib_surveillance">Surveillance Médiathèque &amp; Radarr / Sonarr :</h4>
           <div class="field full">
             <label data-i18n="lbl_scan_paths">Dossiers Médiathèque à analyser (séparés par virgules)</label>
-            <input type="text" id="ob_media_scan_paths" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series">
+            <input type="text" id="ob_media_scan_paths" placeholder="/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series" data-i18n-placeholder="ph_scan_paths">
             <small class="hint" data-i18n="hint_scan_paths">Dossiers scannés pour détecter les symlinks brisés.</small>
           </div>
           <div class="grid" style="margin-top:10px;">
@@ -884,7 +884,7 @@
               </div>
               <div class="field">
                 <label data-i18n="lbl_tg_chat_id">Chat ID / Channel ID</label>
-                <input type="text" id="ob_telegram_chat_id" placeholder="-100123456789 ou 987654321">
+                <input type="text" id="ob_telegram_chat_id" placeholder="-100123456789 ou 987654321" data-i18n-placeholder="ph_chat_id">
               </div>
             </div>
             <div style="margin-top:10px;">
@@ -905,26 +905,26 @@
 
         <div class="ob-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;">
           <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">🔑 Fournisseur Debrid :</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;" data-i18n="recap_provider_title">🔑 Fournisseur Debrid :</div>
             <div id="ob-recap-provider" style="font-weight:700;color:var(--text-bright);font-size:15px;">AllDebrid</div>
           </div>
           <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📁 Dossier Téléchargements :</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;" data-i18n="recap_dl_dir_title">📁 Dossier Téléchargements :</div>
             <div id="ob-recap-dl-dir" style="font-weight:700;color:var(--text-bright);font-size:13px;word-break:break-all;">/mnt/virtual/Medias/DL</div>
           </div>
           <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">🎬 Services *arr configurés :</div>
-            <div id="ob-recap-services" style="font-weight:700;color:var(--text-bright);font-size:15px;">3 service(s)</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;" data-i18n="recap_services_title">🎬 Services *arr configurés :</div>
+            <div id="ob-recap-services" style="font-weight:700;color:var(--text-bright);font-size:15px;" data-i18n="ob_services_count">3 service(s)</div>
           </div>
           <div class="ob-recap-card" style="background:var(--bg-subpanel);border:1px solid var(--border-muted);padding:12px 14px;border-radius:8px;">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">🔔 Notifications Telegram :</div>
-            <div id="ob-recap-tg" style="font-weight:700;color:var(--text-bright);font-size:15px;">Désactivées</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;" data-i18n="recap_tg_title">🔔 Notifications Telegram :</div>
+            <div id="ob-recap-tg" style="font-weight:700;color:var(--text-bright);font-size:15px;" data-i18n="ob_disabled">Désactivées</div>
           </div>
         </div>
 
         <div style="text-align:center;margin-top:20px;">
-          <button type="button" class="btn-save" onclick="finishOnboarding()" style="font-size:16px;padding:12px 32px;background:#238636;border-color:#2ea043;cursor:pointer;" data-i18n="ob_btn_finish">
-            🚀 Enregistrer &amp; Terminer (Bon DL !)
+          <button type="button" class="btn-save" onclick="finishOnboarding()" style="font-size:16px;padding:12px 32px;background:#238636;border-color:#2ea043;cursor:pointer;">
+            🍿 <span data-i18n="ob_btn_finish_alt">Bon DL ! Lancer PyRDT 🚀</span>
           </button>
         </div>
       </div>
