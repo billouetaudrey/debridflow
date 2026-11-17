@@ -42,6 +42,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "username": os.getenv("PYRDT_USER", "").strip(),
     "password": os.getenv("PYRDT_PASS", "").strip(),
     "ui_language": os.getenv("UI_LANGUAGE", "fr").strip().lower(),
+    "ui_theme": os.getenv("UI_THEME", "dark").strip().lower(),
     "provider": os.getenv("DEBRID_PROVIDER", "alldebrid").strip().lower(),
     "services": {k: dict(v) for k, v in DEFAULT_SERVICES.items()},
     "media_scan_paths": os.getenv(

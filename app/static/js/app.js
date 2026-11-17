@@ -525,12 +525,14 @@ function setLanguage(lang) {
   refreshQueue();
 }
 
-let currentTheme = localStorage.getItem('pyrdt_theme') || 'dark';
+let currentTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('pyrdt_theme') || 'dark';
 
 function applyTheme(theme) {
   currentTheme = theme === 'light' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', currentTheme);
-  localStorage.setItem('pyrdt_theme', currentTheme);
+  try {
+    localStorage.setItem('pyrdt_theme', currentTheme);
+  } catch (e) {}
   const icon = document.getElementById('theme-icon');
   const btn = document.getElementById('theme-btn');
   if (icon) {
@@ -542,6 +544,10 @@ function applyTheme(theme) {
   const sel = document.getElementById('theme-select');
   if (sel) {
     sel.value = currentTheme;
+  }
+  const hiddenInput = document.getElementById('ui_theme');
+  if (hiddenInput) {
+    hiddenInput.value = currentTheme;
   }
 }
 
@@ -980,9 +986,11 @@ async function testTelegramNotification() {
 
 // Initialisation au chargement du DOM
 document.addEventListener('DOMContentLoaded', () => {
-  const savedLang = localStorage.getItem('pyrdt_lang') || document.documentElement.lang || 'fr';
-  setLanguage(savedLang);
-  applyTheme(currentTheme);
+  const serverLang = document.documentElement.lang || localStorage.getItem('pyrdt_lang') || 'fr';
+  setLanguage(serverLang);
+
+  const serverTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('pyrdt_theme') || 'dark';
+  applyTheme(serverTheme);
 
   const urlParams = new URLSearchParams(window.location.search);
   const activeSubPage = sessionStorage.getItem('pyrdt_settings_page') || 'alldebrid';

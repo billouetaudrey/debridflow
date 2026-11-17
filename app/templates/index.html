@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="__UI_LANGUAGE__">
+<html lang="__UI_LANGUAGE__" data-theme="__UI_THEME__">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="/static/css/style.css?v=2.4">
   <script>
     (function() {
-      const savedTheme = localStorage.getItem('pyrdt_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
+      const serverTheme = document.documentElement.getAttribute('data-theme') || '__UI_THEME__';
+      document.documentElement.setAttribute('data-theme', serverTheme);
+      try { localStorage.setItem('pyrdt_theme', serverTheme); } catch(e) {}
     })();
   </script>
 </head>
@@ -259,6 +260,7 @@
       <main class="settings-content">
         <form id="settings-form" method="post" action="/api/settings">
           <input type="hidden" name="ui_language" id="ui_language" value="__UI_LANGUAGE__">
+          <input type="hidden" name="ui_theme" id="ui_theme" value="__UI_THEME__">
 
           <!-- Page 1 : Fournisseur & API Debrid -->
           <div id="setpage-alldebrid" class="settings-page">
@@ -465,16 +467,16 @@
                 <div class="field">
                   <label data-i18n="lbl_theme_choice">Thème de l'interface</label>
                   <select id="theme-select" onchange="applyTheme(this.value)">
-                    <option value="dark">🌙 Sombre (Dark Mode)</option>
-                    <option value="light">☀️ Clair (Light Mode)</option>
+                    <option value="dark" __SELECTED_THEME_DARK__>🌙 Sombre (Dark Mode)</option>
+                    <option value="light" __SELECTED_THEME_LIGHT__>☀️ Clair (Light Mode)</option>
                   </select>
                   <small class="hint" data-i18n="hint_theme_choice">Bascule entre le mode sombre et le mode clair.</small>
                 </div>
                 <div class="field">
                   <label data-i18n="lbl_language">Langue de l'interface</label>
                   <select id="lang-select" onchange="setLanguage(this.value)">
-                    <option value="fr">🇫🇷 Français (French)</option>
-                    <option value="en">🇬🇧 English (Anglais)</option>
+                    <option value="fr" __SELECTED_LANG_FR__>🇫🇷 Français (French)</option>
+                    <option value="en" __SELECTED_LANG_EN__>🇬🇧 English (Anglais)</option>
                   </select>
                   <small class="hint" data-i18n="hint_language">Choisissez le français ou l'anglais pour l'affichage.</small>
                 </div>

@@ -148,6 +148,7 @@ async def update_settings(
     username: str = Form(""),
     password: str = Form(""),
     ui_language: str = Form("fr"),
+    ui_theme: str = Form("dark"),
     media_scan_paths: str = Form(""),
     radarr_url: str = Form(""),
     radarr_api_key: str = Form(""),
@@ -184,6 +185,10 @@ async def update_settings(
     if clean_lang not in ("fr", "en"):
         clean_lang = "fr"
 
+    clean_theme = ui_theme.strip().lower()
+    if clean_theme not in ("dark", "light"):
+        clean_theme = "dark"
+
     clean_prov = normalize_provider_name(provider)
     prov_obj = get_provider(clean_prov)
 
@@ -205,6 +210,7 @@ async def update_settings(
         settings_db["username"] = username.strip()
         settings_db["password"] = password.strip()
         settings_db["ui_language"] = clean_lang
+        settings_db["ui_theme"] = clean_theme
         if media_scan_paths.strip():
             settings_db["media_scan_paths"] = media_scan_paths.strip()
         settings_db["radarr_url"] = radarr_url.strip() or "http://127.0.0.1:7878"
@@ -228,7 +234,7 @@ async def update_settings(
     async with httpx.AsyncClient() as client:
         await check_alldebrid_api_health(client, provider_name=clean_prov)
 
-    logger.info(f"Paramètres mis à jour via l'interface web (fournisseur={clean_prov}, {len(new_services)} service(s), langue={clean_lang}).")
+    logger.info(f"Paramètres mis à jour via l'interface web (fournisseur={clean_prov}, {len(new_services)} service(s), langue={clean_lang}, thème={clean_theme}).")
     return RedirectResponse(url="/?saved=1", status_code=303)
 
 
@@ -350,6 +356,9 @@ async def web_dashboard(saved: Optional[str] = None):
     raw_template = template_file.read_text(encoding="utf-8")
 
     ui_lang = s.get("ui_language") or "fr"
+    ui_theme = s.get("ui_theme") or "dark"
+    if ui_theme not in ("dark", "light"):
+        ui_theme = "dark"
     current_prov = normalize_provider_name(s.get("provider", "alldebrid"))
     prov_meta = SUPPORTED_PROVIDERS.get(current_prov, SUPPORTED_PROVIDERS["alldebrid"])
 
@@ -381,6 +390,11 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__USERNAME__", html.escape(s["username"]))
         .replace("__PASSWORD__", html.escape(s["password"]))
         .replace("__UI_LANGUAGE__", html.escape(ui_lang))
+        .replace("__UI_THEME__", html.escape(ui_theme))
+        .replace("__SELECTED_THEME_DARK__", "selected" if ui_theme == "dark" else "")
+        .replace("__SELECTED_THEME_LIGHT__", "selected" if ui_theme == "light" else "")
+        .replace("__SELECTED_LANG_FR__", "selected" if ui_lang == "fr" else "")
+        .replace("__SELECTED_LANG_EN__", "selected" if ui_lang == "en" else "")
         .replace("__ALLOWED_EXTS__", html.escape(s["allowed_exts"]))
         .replace("__API_BASE__", html.escape(s["api_base"]))
         .replace("__MEDIA_SCAN_PATHS__", html.escape(s.get("media_scan_paths", "")))
