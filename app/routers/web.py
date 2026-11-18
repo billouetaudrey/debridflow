@@ -1,13 +1,18 @@
 import html
+import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
-from fastapi import APIRouter, Form, Response
+from fastapi import APIRouter, File, Form, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from app.alldebrid import check_alldebrid_api_health
-from app.bencode import sanitize_filename
+from app.alldebrid import (
+    alldebrid_upload_file,
+    alldebrid_upload_magnet,
+    check_alldebrid_api_health,
+)
+from app.bencode import parse_magnet_uri, parse_torrent_bytes, sanitize_filename
 from app.config import DEFAULT_SERVICES, DEFAULT_SETTINGS, logger
 from app.providers import SUPPORTED_PROVIDERS, get_provider, normalize_provider_name
 from app.state import (
@@ -75,6 +80,147 @@ async def ui_queue_feed():
             "hide_last_download_name": bool(settings_db.get("hide_last_download_name", True)),
         },
         headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.post("/api/torrents/upload")
+async def api_upload_torrent(
+    magnet: Optional[str] = Form(None),
+    category: Optional[str] = Form("torrent-direct"),
+    transfer_mode: Optional[str] = Form("auto"),
+    torrent_files: Optional[List[UploadFile]] = File(None),
+    torrent_file: Optional[UploadFile] = File(None),
+):
+    api_key = settings_db.get("api_key", "").strip()
+    if not api_key:
+        return JSONResponse(
+            {"status": "error", "message": "Clé API non configurée dans les paramètres."},
+            status_code=400,
+        )
+
+    cat = (category or "torrent-direct").strip()
+    cfg_mode, configured_dir = resolve_service(cat)
+    mode = cfg_mode
+    if transfer_mode in ("download", "symlink"):
+        mode = transfer_mode
+    save_dir = configured_dir
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    magnet_list: List[str] = []
+    if magnet:
+        for line in magnet.splitlines():
+            line_str = line.strip()
+            if line_str:
+                magnet_list.append(line_str)
+
+    files_to_process: List[UploadFile] = []
+    if torrent_files:
+        files_to_process.extend([f for f in torrent_files if f and f.filename])
+    if torrent_file and torrent_file.filename:
+        if torrent_file not in files_to_process:
+            files_to_process.append(torrent_file)
+
+    if not magnet_list and not files_to_process:
+        return JSONResponse(
+            {"status": "error", "message": "Veuillez fournir un lien magnet ou sélectionner un fichier .torrent."},
+            status_code=400,
+        )
+
+    added_items: List[Dict[str, Any]] = []
+    errors: List[str] = []
+
+    async with httpx.AsyncClient() as client:
+        for raw_url in magnet_list:
+            try:
+                info_hash, parsed_name = parse_magnet_uri(raw_url)
+                ad_data = await alldebrid_upload_magnet(client, raw_url)
+                ad_id = ad_data.get("id")
+                if str(ad_id).isdigit():
+                    ad_id = int(ad_id)
+                ad_name = ad_data.get("name") or parsed_name
+                real_hash = str(ad_data.get("hash") or "").strip().lower()
+                if real_hash:
+                    info_hash = real_hash
+
+                async with state_lock:
+                    torrents_db[info_hash] = {
+                        "hash": info_hash,
+                        "ad_id": ad_id,
+                        "name": ad_name,
+                        "category": cat,
+                        "transfer_mode": mode,
+                        "save_path": str(save_dir),
+                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "linked_paths": [],
+                        "size": int(ad_data.get("size") or 0),
+                        "progress": 0.0,
+                        "state": "downloading",
+                        "added_on": int(time.time()),
+                        "completion_on": -1,
+                        "deleted_on_ad": False,
+                        "error_msg": "",
+                    }
+                    save_state()
+                logger.info(f"Magnet ajouté manuellement [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
+                added_items.append({"name": ad_name, "hash": info_hash, "id": str(ad_id)})
+            except Exception as exc:
+                logger.error(f"Erreur upload magnet manuel ({raw_url[:40]}...) : {exc}")
+                errors.append(f"Magnet: {exc}")
+
+        for up_file in files_to_process:
+            try:
+                raw_bytes = await up_file.read()
+                if not raw_bytes:
+                    continue
+                info_hash, parsed_name = parse_torrent_bytes(raw_bytes)
+                filename = up_file.filename or f"{info_hash}.torrent"
+                ad_data = await alldebrid_upload_file(client, filename, raw_bytes)
+                ad_id = ad_data.get("id")
+                if str(ad_id).isdigit():
+                    ad_id = int(ad_id)
+                ad_name = ad_data.get("name") or parsed_name
+                real_hash = str(ad_data.get("hash") or "").strip().lower()
+                if real_hash:
+                    info_hash = real_hash
+
+                async with state_lock:
+                    torrents_db[info_hash] = {
+                        "hash": info_hash,
+                        "ad_id": ad_id,
+                        "name": ad_name,
+                        "category": cat,
+                        "transfer_mode": mode,
+                        "save_path": str(save_dir),
+                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "linked_paths": [],
+                        "size": int(ad_data.get("size") or 0),
+                        "progress": 0.0,
+                        "state": "downloading",
+                        "added_on": int(time.time()),
+                        "completion_on": -1,
+                        "deleted_on_ad": False,
+                        "error_msg": "",
+                    }
+                    save_state()
+                logger.info(f"Fichier .torrent ajouté manuellement [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
+                added_items.append({"name": ad_name, "hash": info_hash, "id": str(ad_id)})
+            except Exception as exc:
+                logger.error(f"Erreur upload .torrent manuel ({up_file.filename}) : {exc}")
+                errors.append(f"{up_file.filename}: {exc}")
+
+    if not added_items and errors:
+        return JSONResponse(
+            {"status": "error", "message": "; ".join(errors)},
+            status_code=400,
+        )
+
+    return JSONResponse(
+        {
+            "status": "success",
+            "count": len(added_items),
+            "items": added_items,
+            "errors": errors if errors else [],
+        }
     )
 
 
@@ -278,6 +424,7 @@ async def web_dashboard(saved: Optional[str] = None):
     rows = []
     service_rows = []
     scan_path_rows = []
+    services_options = []
     active_dl_count = 0
     active_sym_count = 0
 
@@ -301,6 +448,13 @@ async def web_dashboard(saved: Optional[str] = None):
                 f'<input type="text" name="service_subpaths" value="{html.escape(svc_sub)}" placeholder="Sous-dossier dans DL" data-edited="1">'
                 f'<button type="button" class="btn-del" onclick="this.parentElement.remove()" data-i18n="btn_remove">Retirer</button>'
                 f'</div>'
+            )
+            is_direct = svc_name in ("torrent-direct", "direct")
+            sel_opt = "selected" if is_direct else ""
+            mode_lbl = "DL réel" if svc_mode == "download" else "Symlink"
+            display_name = "Torrent Direct" if is_direct else svc_name
+            services_options.append(
+                f'<option value="{html.escape(svc_name)}" data-mode="{svc_mode}" data-subpath="{html.escape(svc_sub)}" {sel_opt}>{html.escape(display_name)} ({mode_lbl})</option>'
             )
 
         scan_paths_raw = s.get("media_scan_paths", "")
@@ -432,6 +586,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__CHECKED_HIDE_LAST_DL_NAME__", "checked" if s.get("hide_last_download_name", True) else "")
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))
+        .replace("__SERVICES_OPTIONS__", "".join(services_options))
         .replace("__SCAN_PATH_ROWS__", "".join(scan_path_rows))
         .replace("__API_KEY__", html.escape(s["api_key"]))
         .replace("__AGENT__", html.escape(s["agent"]))

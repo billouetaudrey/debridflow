@@ -13,6 +13,25 @@ const TRANSLATIONS = {
     status_unreachable: "Serveur PyRDT injoignable",
 
     // Toolbar
+    btn_add_torrent: "Ajouter un torrent / magnet",
+    modal_upload_title: "Ajouter un Torrent / Magnet",
+    tab_magnet: "Lien Magnet",
+    tab_torrent_file: "Fichier .torrent",
+    lbl_magnet_input: "Lien(s) Magnet ou URL(s) :",
+    ph_magnet_input: "magnet:?xt=urn:btih:...",
+    hint_magnet_multiple: "Vous pouvez coller un ou plusieurs liens (un par ligne).",
+    lbl_torrent_file: "Sélectionner ou glisser un fichier .torrent :",
+    dropzone_prompt: "Glissez vos fichiers .torrent ici ou cliquez pour parcourir",
+    dropzone_files_selected: "{n} fichier(s) sélectionné(s) :",
+    lbl_dest_service: "Service / Catégorie :",
+    lbl_transfer_mode: "Mode de transfert :",
+    opt_mode_auto: "Auto (selon le service)",
+    btn_send_debrid: "Envoyer vers le débrideur",
+    upload_sending: "Envoi en cours...",
+    upload_success: "{n} élément(s) envoyé(s) avec succès !",
+    err_no_input: "Veuillez fournir un lien magnet ou sélectionner un fichier .torrent.",
+    err_upload_failed: "Échec de l'envoi vers le débrideur.",
+    lbl_destination: "Destination :",
     sel_count: "{n} sélectionné(s)",
     btn_retry: "Relancer",
     btn_pause: "Pause",
@@ -298,6 +317,25 @@ const TRANSLATIONS = {
     status_unreachable: "PyRDT server unreachable",
 
     // Toolbar
+    btn_add_torrent: "Add torrent / magnet",
+    modal_upload_title: "Add Torrent / Magnet",
+    tab_magnet: "Magnet Link",
+    tab_torrent_file: ".torrent File",
+    lbl_magnet_input: "Magnet link(s) or URL(s):",
+    ph_magnet_input: "magnet:?xt=urn:btih:...",
+    hint_magnet_multiple: "You can paste one or multiple links (one per line).",
+    lbl_torrent_file: "Select or drop a .torrent file:",
+    dropzone_prompt: "Drag and drop your .torrent files here or click to browse",
+    dropzone_files_selected: "{n} file(s) selected:",
+    lbl_dest_service: "Service / Category:",
+    lbl_transfer_mode: "Transfer mode:",
+    opt_mode_auto: "Auto (from service)",
+    btn_send_debrid: "Send to Debrid Provider",
+    upload_sending: "Sending...",
+    upload_success: "{n} item(s) sent successfully!",
+    err_no_input: "Please provide a magnet link or select a .torrent file.",
+    err_upload_failed: "Failed to send to debrid provider.",
+    lbl_destination: "Destination:",
     sel_count: "{n} selected",
     btn_retry: "Retry",
     btn_pause: "Pause",
@@ -1109,6 +1147,189 @@ async function confirmDelete() {
   await refreshQueue();
 }
 
+let currentUploadTab = 'magnet';
+let selectedTorrentFiles = [];
+
+function openUploadModal() {
+  modalOpen = true;
+  const modal = document.getElementById('upload-modal');
+  if (!modal) return;
+
+  const magnetInput = document.getElementById('upload-magnet-text');
+  if (magnetInput) magnetInput.value = '';
+  const fileInput = document.getElementById('upload-torrent-files');
+  if (fileInput) fileInput.value = '';
+  selectedTorrentFiles = [];
+  updateDropzoneFileList();
+
+  const statusMsg = document.getElementById('upload-status-msg');
+  if (statusMsg) {
+    statusMsg.style.display = 'none';
+    statusMsg.textContent = '';
+    statusMsg.className = '';
+  }
+
+  const spinner = document.getElementById('upload-spinner');
+  if (spinner) spinner.style.display = 'none';
+  const submitBtn = document.getElementById('btn-submit-upload');
+  if (submitBtn) submitBtn.disabled = false;
+  const btnText = document.getElementById('upload-btn-text');
+  if (btnText) btnText.textContent = t('btn_send_debrid');
+
+  switchUploadTab('magnet');
+  onUploadCategoryChange();
+
+  modal.style.display = 'flex';
+}
+
+function closeUploadModal() {
+  modalOpen = false;
+  const modal = document.getElementById('upload-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchUploadTab(tab) {
+  currentUploadTab = tab;
+  const tabBtnMag = document.getElementById('tab-btn-magnet');
+  const tabBtnFile = document.getElementById('tab-btn-file');
+  const secMag = document.getElementById('upload-sec-magnet');
+  const secFile = document.getElementById('upload-sec-file');
+
+  if (tab === 'file') {
+    if (tabBtnMag) tabBtnMag.classList.remove('active');
+    if (tabBtnFile) tabBtnFile.classList.add('active');
+    if (secMag) secMag.style.display = 'none';
+    if (secFile) secFile.style.display = 'block';
+  } else {
+    if (tabBtnFile) tabBtnFile.classList.remove('active');
+    if (tabBtnMag) tabBtnMag.classList.add('active');
+    if (secFile) secFile.style.display = 'none';
+    if (secMag) secMag.style.display = 'block';
+  }
+}
+
+function onUploadCategoryChange() {
+  const catSel = document.getElementById('upload-category');
+  const preview = document.getElementById('upload-dest-preview');
+  if (!catSel || !preview) return;
+
+  const opt = catSel.options[catSel.selectedIndex];
+  if (!opt) return;
+
+  const sub = opt.getAttribute('data-subpath') || opt.value;
+  const mode = opt.getAttribute('data-mode') || 'download';
+  const baseInput = document.getElementById('download_base_dir');
+  const baseDir = (baseInput ? baseInput.value.trim() : '') || '/mnt/virtual/Medias/DL';
+  const target = sub.startsWith('/') ? sub : `${baseDir.replace(/\/+$/, '')}/${sub}`;
+  const modeTag = mode === 'download' ? `<span class="tag dl">${t('tag_dl')}</span>` : `<span class="tag sym">${t('tag_sym')}</span>`;
+
+  preview.innerHTML = `<span style="font-weight:600;color:var(--text-bright);">${t('lbl_destination')}</span> <code>${esc(target)}</code> <span style="margin-left:6px;">${modeTag}</span>`;
+}
+
+function onTorrentFilesSelected(input) {
+  if (input && input.files) {
+    selectedTorrentFiles = Array.from(input.files);
+    updateDropzoneFileList();
+  }
+}
+
+function updateDropzoneFileList() {
+  const listEl = document.getElementById('dropzone-file-list');
+  const promptEl = document.getElementById('dropzone-text');
+  if (!listEl) return;
+
+  if (selectedTorrentFiles.length > 0) {
+    if (promptEl) promptEl.style.display = 'none';
+    listEl.innerHTML = `<div style="color:#58a6ff;margin-bottom:4px;">${t('dropzone_files_selected', { n: selectedTorrentFiles.length })}</div>` +
+      selectedTorrentFiles.map(f => `<div>📄 ${esc(f.name)} <span style="color:var(--text-muted);font-weight:normal;">(${formatSize(f.size)})</span></div>`).join('');
+  } else {
+    if (promptEl) promptEl.style.display = 'block';
+    listEl.innerHTML = '';
+  }
+}
+
+async function submitTorrentUpload() {
+  const statusMsg = document.getElementById('upload-status-msg');
+  const submitBtn = document.getElementById('btn-submit-upload');
+  const spinner = document.getElementById('upload-spinner');
+  const btnText = document.getElementById('upload-btn-text');
+
+  const catSel = document.getElementById('upload-category');
+  const modeSel = document.getElementById('upload-transfer-mode');
+  const magnetInput = document.getElementById('upload-magnet-text');
+
+  const category = catSel ? catSel.value : 'torrent-direct';
+  const transferMode = modeSel ? modeSel.value : 'auto';
+  const magnetVal = magnetInput ? magnetInput.value.trim() : '';
+
+  if (currentUploadTab === 'magnet' && !magnetVal) {
+    if (statusMsg) {
+      statusMsg.className = 'upload-msg-error';
+      statusMsg.textContent = t('err_no_input');
+      statusMsg.style.display = 'block';
+    }
+    return;
+  }
+
+  if (currentUploadTab === 'file' && (!selectedTorrentFiles || selectedTorrentFiles.length === 0)) {
+    if (statusMsg) {
+      statusMsg.className = 'upload-msg-error';
+      statusMsg.textContent = t('err_no_input');
+      statusMsg.style.display = 'block';
+    }
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('category', category);
+  fd.append('transfer_mode', transferMode);
+
+  if (currentUploadTab === 'magnet') {
+    fd.append('magnet', magnetVal);
+  } else {
+    for (const file of selectedTorrentFiles) {
+      fd.append('torrent_files', file, file.name);
+    }
+  }
+
+  if (submitBtn) submitBtn.disabled = true;
+  if (spinner) spinner.style.display = 'inline-block';
+  if (btnText) btnText.textContent = t('upload_sending');
+  if (statusMsg) {
+    statusMsg.style.display = 'none';
+    statusMsg.textContent = '';
+  }
+
+  try {
+    const res = await fetch('/api/torrents/upload', {
+      method: 'POST',
+      body: fd,
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      closeUploadModal();
+      await refreshQueue();
+    } else {
+      const err = data.message || data.detail || t('err_upload_failed');
+      if (statusMsg) {
+        statusMsg.className = 'upload-msg-error';
+        statusMsg.textContent = err;
+        statusMsg.style.display = 'block';
+      }
+    }
+  } catch (err) {
+    if (statusMsg) {
+      statusMsg.className = 'upload-msg-error';
+      statusMsg.textContent = `${t('err_upload_failed')} (${err.message || err})`;
+      statusMsg.style.display = 'block';
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+    if (spinner) spinner.style.display = 'none';
+    if (btnText) btnText.textContent = t('btn_send_debrid');
+  }
+}
+
 async function testApi() {
   const btn = document.getElementById('btn-test-api');
   const box = document.getElementById('test-result');
@@ -1290,6 +1511,7 @@ function openOnboarding(force = false) {
       addObServiceRow('tv-sonarr', 'symlink', 'tv-sonarr');
       addObServiceRow('radarr', 'symlink', 'radarr');
       addObServiceRow('tv-whisparr', 'download', 'tv-whisparr');
+      addObServiceRow('torrent-direct', 'download', 'Torrent-Direct');
     }
   }
 
@@ -1703,6 +1925,38 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
     }
   }
+
+  const dropzone = document.getElementById('torrent-dropzone');
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dragover');
+      });
+    });
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length > 0) {
+        selectedTorrentFiles = Array.from(dt.files).filter(f => f.name.endsWith('.torrent') || f.size > 0);
+        updateDropzoneFileList();
+      }
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOpen) {
+      closeUploadModal();
+      closeDeleteModal();
+    }
+  });
 
   setInterval(refreshQueue, 2000);
   setInterval(() => {

@@ -35,14 +35,18 @@ def get_services_config() -> Dict[str, Dict[str, str]]:
 def resolve_service(category: str) -> Tuple[str, Path]:
     svcs = get_services_config()
     base = Path(settings_db["download_base_dir"])
-    cat = (category or "tv-sonarr").strip()
+    cat = (category or "torrent-direct").strip()
 
     cfg = svcs.get(cat)
     if not cfg:
-        for k, v in svcs.items():
-            if k.lower() == cat.lower():
-                cfg = v
-                break
+        # Prise en charge des alias direct <-> torrent-direct
+        if cat in ("direct", "torrent-direct"):
+            cfg = svcs.get("torrent-direct") or svcs.get("direct")
+        if not cfg:
+            for k, v in svcs.items():
+                if k.lower() == cat.lower():
+                    cfg = v
+                    break
 
     if cfg:
         mode = "download" if cfg.get("mode") == "download" else "symlink"
@@ -51,7 +55,8 @@ def resolve_service(category: str) -> Tuple[str, Path]:
         return mode, target_dir
 
     safe_cat = sanitize_filename(cat) or "default"
-    return "symlink", base / safe_cat
+    default_mode = "download" if "direct" in cat.lower() else "symlink"
+    return default_mode, base / safe_cat
 
 
 def rebuild_categories() -> None:
@@ -89,11 +94,15 @@ def load_state() -> None:
                             for sk, sv in saved_settings["services"].items()
                             if isinstance(sv, dict)
                         }
+                        if "torrent-direct" not in settings_db["services"] and "direct" not in settings_db["services"]:
+                            settings_db["services"]["torrent-direct"] = dict(DEFAULT_SERVICES["torrent-direct"])
                     elif isinstance(saved_settings.get("service_modes"), dict) and saved_settings["service_modes"]:
                         settings_db["services"] = {
                             sk: {"mode": sm, "subpath": sk}
                             for sk, sm in saved_settings["service_modes"].items()
                         }
+                        if "torrent-direct" not in settings_db["services"] and "direct" not in settings_db["services"]:
+                            settings_db["services"]["torrent-direct"] = dict(DEFAULT_SERVICES["torrent-direct"])
                     else:
                         settings_db["services"] = {k2: dict(v2) for k2, v2 in DEFAULT_SERVICES.items()}
                 elif k in saved_settings and saved_settings[k] != "":

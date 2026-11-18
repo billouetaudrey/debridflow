@@ -53,6 +53,9 @@
   <div id="tab-queue" class="card">
     <div class="toolbar">
       <div class="bulk-bar">
+        <button type="button" id="btn-open-upload" class="btn-main" onclick="openUploadModal()" style="display:inline-flex;align-items:center;gap:6px;">
+          <span>➕</span> <span data-i18n="btn_add_torrent">Ajouter un torrent / magnet</span>
+        </button>
         <span id="sel-count" style="color:#8b949e;font-size:13px;margin-right:4px;">0 sélectionné(s)</span>
         <button id="bulk-retry" class="btn-sec" disabled onclick="batchSelected('retry')" data-i18n="btn_retry">Relancer</button>
         <button id="bulk-pause" class="btn-warn" disabled onclick="batchSelected('pause')" data-i18n="btn_pause">Pause</button>
@@ -624,6 +627,83 @@
           <div id="test-result" class="test-box"></div>
         </form>
       </main>
+    </div>
+  </div>
+</div>
+
+<!-- Modal d'ajout manuel de torrent / magnet -->
+<div id="upload-modal" class="modal-bg" style="display:none; z-index: 950;">
+  <div class="modal upload-modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0; font-size:17px; display:flex; align-items:center; gap:8px;">
+        <span>📥</span> <span data-i18n="modal_upload_title">Ajouter un Torrent / Magnet</span>
+      </h3>
+      <button type="button" class="btn-del" onclick="closeUploadModal()" style="padding:4px 9px; font-size:13px; border-radius:6px; cursor:pointer;" title="Fermer">✕</button>
+    </div>
+
+    <!-- Choix du type : Magnet ou Fichier -->
+    <div class="upload-type-tabs" style="display:flex; gap:8px; margin-bottom:14px;">
+      <button type="button" id="tab-btn-magnet" class="btn-upload-tab active" onclick="switchUploadTab('magnet')">
+        <span>🧲</span> <span data-i18n="tab_magnet">Lien Magnet</span>
+      </button>
+      <button type="button" id="tab-btn-file" class="btn-upload-tab" onclick="switchUploadTab('file')">
+        <span>📁</span> <span data-i18n="tab_torrent_file">Fichier .torrent</span>
+      </button>
+    </div>
+
+    <!-- Section Lien Magnet -->
+    <div id="upload-sec-magnet" class="upload-sec">
+      <label style="font-size:13px; font-weight:600; color:var(--text-bright); display:block; margin-bottom:6px;" data-i18n="lbl_magnet_input">
+        Lien(s) Magnet ou URL(s) :
+      </label>
+      <textarea id="upload-magnet-text" rows="4" placeholder="magnet:?xt=urn:btih:..." style="width:100%; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);" data-i18n-placeholder="ph_magnet_input"></textarea>
+      <small class="hint" style="margin-top:4px; display:block;" data-i18n="hint_magnet_multiple">Vous pouvez coller un ou plusieurs liens (un par ligne).</small>
+    </div>
+
+    <!-- Section Fichier .torrent -->
+    <div id="upload-sec-file" class="upload-sec" style="display:none;">
+      <label style="font-size:13px; font-weight:600; color:var(--text-bright); display:block; margin-bottom:6px;" data-i18n="lbl_torrent_file">
+        Sélectionner ou glisser un fichier .torrent :
+      </label>
+      <div id="torrent-dropzone" class="torrent-dropzone" onclick="document.getElementById('upload-torrent-files').click()">
+        <input type="file" id="upload-torrent-files" accept=".torrent" multiple style="display:none;" onchange="onTorrentFilesSelected(this)">
+        <div style="font-size:28px; margin-bottom:6px;">📂</div>
+        <div id="dropzone-text" style="font-size:13px; color:var(--text-muted);" data-i18n="dropzone_prompt">Glissez vos fichiers .torrent ici ou cliquez pour parcourir</div>
+        <div id="dropzone-file-list" style="margin-top:8px; font-size:12px; color:var(--text-bright); font-weight:600;"></div>
+      </div>
+    </div>
+
+    <!-- Options de destination et mode -->
+    <div style="margin-top:16px; padding:12px; background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px;">
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px;">
+        <div class="field" style="margin-bottom:0;">
+          <label style="font-size:12px; font-weight:600;" data-i18n="lbl_dest_service">Service / Catégorie :</label>
+          <select id="upload-category" onchange="onUploadCategoryChange()" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+            __SERVICES_OPTIONS__
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label style="font-size:12px; font-weight:600;" data-i18n="lbl_transfer_mode">Mode de transfert :</label>
+          <select id="upload-transfer-mode" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+            <option value="auto" data-i18n="opt_mode_auto">Auto (selon le service)</option>
+            <option value="download" data-i18n="opt_mode_download">Téléchargement réel (copie locale)</option>
+            <option value="symlink" data-i18n="opt_mode_symlink">Symlink (instantané)</option>
+          </select>
+        </div>
+      </div>
+      <div id="upload-dest-preview" style="margin-top:8px; font-size:11px; color:var(--text-muted); word-break:break-all;"></div>
+    </div>
+
+    <!-- Message de statut / erreur -->
+    <div id="upload-status-msg" style="display:none; margin-top:12px; padding:8px 12px; border-radius:6px; font-size:12px;"></div>
+
+    <!-- Actions -->
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+      <button type="button" class="btn-sec" onclick="closeUploadModal()" data-i18n="btn_cancel">Annuler</button>
+      <button type="button" id="btn-submit-upload" class="btn-main" onclick="submitTorrentUpload()" style="display:inline-flex; align-items:center; gap:6px;">
+        <span id="upload-spinner" style="display:none;">⏳</span>
+        <span id="upload-btn-text" data-i18n="btn_send_debrid">Envoyer vers le débrideur</span>
+      </button>
     </div>
   </div>
 </div>

@@ -15,12 +15,13 @@ def _get_default_state_file() -> Path:
 
 STATE_FILE = _get_default_state_file()
 
-# Services par défaut associés aux applications *arr
+# Services par défaut associés aux applications *arr et usages directs
 DEFAULT_SERVICES: Dict[str, Dict[str, str]] = {
     "tv-sonarr": {"mode": "symlink", "subpath": "tv-sonarr"},
     "radarr": {"mode": "symlink", "subpath": "radarr"},
     "whisparr": {"mode": "download", "subpath": "whisparr"},
     "prowlarr": {"mode": "symlink", "subpath": "prowlarr"},
+    "torrent-direct": {"mode": "download", "subpath": "Torrent-Direct"},
 }
 
 # Configuration par défaut (surchargeable par variables d'environnement ou state.json)

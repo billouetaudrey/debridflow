@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import re
 import urllib.parse
@@ -59,8 +60,12 @@ def parse_torrent_bytes(raw_bytes: bytes) -> Tuple[str, str]:
 
 
 def parse_magnet_uri(magnet: str) -> Tuple[str, str]:
-    """Extrait le hash et le nom (dn) d'un URI magnet."""
-    parsed = urllib.parse.urlparse(magnet)
+    """Extrait le hash et le nom (dn) d'un URI magnet ou d'un hash brut."""
+    raw = magnet.strip()
+    if len(raw) == 40 and all(c in "0123456789abcdefABCDEF" for c in raw):
+        return raw.lower(), raw.lower()
+
+    parsed = urllib.parse.urlparse(raw)
     params = urllib.parse.parse_qs(parsed.query)
     xt_list = params.get("xt", [])
     info_hash = ""
@@ -68,8 +73,13 @@ def parse_magnet_uri(magnet: str) -> Tuple[str, str]:
         if xt.lower().startswith("urn:btih:"):
             info_hash = xt.split(":")[-1].strip().lower()
             break
+    if info_hash and len(info_hash) == 32:
+        try:
+            info_hash = base64.b32decode(info_hash.upper()).hex().lower()
+        except Exception:
+            pass
     if not info_hash:
-        info_hash = hashlib.sha1(magnet.encode()).hexdigest().lower()
+        info_hash = hashlib.sha1(raw.encode()).hexdigest().lower()
     dn = params.get("dn", [info_hash])[0]
     name = urllib.parse.unquote_plus(dn).strip() or info_hash
     return info_hash, name

@@ -229,6 +229,10 @@ async def background_worker() -> None:
                         continue
 
                     mode, dest_dir = resolve_service(item.get("category", ""))
+                    if item.get("transfer_mode") in ("download", "symlink"):
+                        mode = item["transfer_mode"]
+                    if item.get("save_path"):
+                        dest_dir = Path(item["save_path"])
                     ready_since = item.get("ready_since") or now_ts
                     async with state_lock:
                         if info_hash in torrents_db and torrents_db[info_hash]["state"] != "pausedDL":
