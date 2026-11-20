@@ -837,3 +837,145 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   }
 }
 
+/* --- Multi-Engine Finder Styles --- */
+.engine-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-muted);
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-main);
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.engine-chip:hover {
+  border-color: #58a6ff;
+  color: var(--text-bright);
+}
+.engine-chip input[type="checkbox"] {
+  cursor: pointer;
+  margin: 0;
+}
+.engine-chip input[type="checkbox"]:checked + span {
+  font-weight: 700;
+  color: #58a6ff;
+}
+
+.finder-card-item {
+  background: var(--bg-subpanel);
+  border: 1px solid var(--border-muted);
+  border-left: 4px solid #1f6feb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.finder-card-item:hover {
+  border-color: #388bfd;
+  background: var(--bg-card);
+}
+.finder-card-item.rejected {
+  border-left-color: #da3633;
+  opacity: 0.8;
+}
+.finder-card-cb {
+  margin-top: 4px;
+  cursor: pointer;
+  transform: scale(1.15);
+}
+.finder-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.finder-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.finder-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.badge-score {
+  background: #1f6feb;
+  color: #ffffff;
+}
+.badge-magnet {
+  background: #8957e5;
+  color: #ffffff;
+}
+.badge-torrent {
+  background: #0969da;
+  color: #ffffff;
+}
+.badge-hoster {
+  background: #238636;
+  color: #ffffff;
+}
+.badge-engine {
+  background: rgba(137, 87, 229, 0.15);
+  border: 1px solid rgba(137, 87, 229, 0.4);
+  color: #d2a8ff;
+}
+.badge-status-ok {
+  background: rgba(63, 185, 80, 0.15);
+  border: 1px solid rgba(63, 185, 80, 0.4);
+  color: #3fb950;
+}
+.badge-status-warn {
+  background: rgba(210, 153, 34, 0.15);
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  color: #d29922;
+}
+.badge-status-err {
+  background: rgba(248, 81, 73, 0.15);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  color: #f85149;
+}
+.finder-card-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text-bright);
+  word-break: break-word;
+}
+.finder-card-url {
+  display: block;
+  font-size: 11.5px;
+  color: #58a6ff;
+  text-decoration: none;
+  word-break: break-all;
+  margin: 3px 0;
+}
+.finder-card-url:hover {
+  text-decoration: underline;
+}
+.finder-card-snippet {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.finder-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+

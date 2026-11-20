@@ -29,6 +29,7 @@
       <div class="tabs">
         <button id="btn-queue" class="tab-btn active" onclick="showTab('queue')" data-i18n="tab_queue">File d'attente</button>
         <button id="btn-ddl" class="tab-btn" onclick="showTab('ddl')" data-i18n="tab_ddl_nav">🔗 Liens DDL</button>
+        <button id="btn-finder" class="tab-btn" onclick="showTab('finder')" data-i18n="tab_finder_nav">🔍 Recherche</button>
         <button id="btn-scanner" class="tab-btn" onclick="showTab('scanner')" data-i18n="tab_scanner" style="__SCANNER_TAB_DISPLAY__">Médiathèque &amp; Liens</button>
         <button id="btn-settings" class="tab-btn" onclick="showTab('settings')" data-i18n="tab_settings">Paramètres</button>
       </div>
@@ -177,7 +178,153 @@
     </div>
   </div>
 
-  <!-- Onglet 3 : Médiathèque, Liens Morts & Magnets (Scanner) -->
+  <!-- Onglet 3 : Recherche Multi-Moteurs (Magnets, Torrents & DDL) -->
+  <div id="tab-finder" class="card" style="display:none">
+    <div style="margin-bottom:16px;">
+      <h3 style="margin:0 0 6px 0; font-size:18px; display:flex; align-items:center; gap:8px;">
+        <span>🔍</span> <span data-i18n="finder_title">Recherche Multi-Moteurs (Torrents, Magnets &amp; DDL)</span>
+      </h3>
+      <p style="margin:0; font-size:13px; color:var(--text-muted);" data-i18n="finder_subtitle">
+        Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans PyRDT.
+      </p>
+    </div>
+
+    <!-- Barre de recherche principale -->
+    <div style="background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px; padding:16px; margin-bottom:16px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <select id="finder_search_mode" style="padding:10px 12px; font-size:13px; border-radius:6px; min-width:180px;">
+          <option value="torrent" selected data-i18n="opt_finder_mode_torrent">🧲 Magnets &amp; Torrents (Deep)</option>
+          <option value="hoster" data-i18n="opt_finder_mode_hoster">🔗 Liens DDL (site:)</option>
+          <option value="both" data-i18n="opt_finder_mode_both">⚡ Tout (Torrent + DDL)</option>
+        </select>
+        <input type="text" id="finder_query" placeholder="Ex: Dune Part Two 2024 MULTI 1080p..." style="flex:1; min-width:260px; padding:10px 14px; font-size:13px; border-radius:6px; background:var(--bg-card); color:var(--text-bright); border:1px solid var(--border-muted);" data-i18n-placeholder="ph_finder_query">
+        <button type="button" id="btn-finder-search" class="btn-main" onclick="runFinderSearch()" style="padding:10px 20px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
+          <span id="finder-spinner" style="display:none;">⏳</span>
+          <span>🔍</span> <span data-i18n="btn_finder_search">Rechercher</span>
+        </button>
+      </div>
+
+      <!-- Options avancées repliables -->
+      <details style="margin-top:14px; padding:10px 14px; background:var(--bg-card); border:1px solid var(--border-muted); border-radius:8px;">
+        <summary style="cursor:pointer; font-size:13px; font-weight:600; color:var(--text-bright);" data-i18n="finder_adv_settings">
+          ⚙️ Paramètres avancés (moteurs actifs, filtres, similarité)
+        </summary>
+
+        <div style="margin-top:14px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:8px;" data-i18n="finder_lbl_engines">Moteurs de recherche actifs :</div>
+          <div id="finder-engines-container" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="duckduckgo"> <span>DuckDuckGo</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="brave" checked> <span>Brave</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="bing"> <span>Bing</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="yandex" checked> <span>Yandex</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="google"> <span>Google</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="yahoo" checked> <span>Yahoo</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="mojeek"> <span>Mojeek</span></label>
+            <label class="engine-chip"><input type="checkbox" class="finder-engine-cb" value="lite" checked> <span>DDG Lite</span></label>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_site_filter">Domaine hébergeur (mode site:)</label>
+            <input type="text" id="finder_site_filter" value="rapidgator.net" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_region">Région</label>
+            <select id="finder_region" style="padding:6px 10px; font-size:12px;">
+              <option value="fr-fr" selected>France (fr-fr)</option>
+              <option value="us-en">International / US (us-en)</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_safesearch">Filtre parental</label>
+            <select id="finder_safesearch" style="padding:6px 10px; font-size:12px;">
+              <option value="off" selected>Désactivé (off)</option>
+              <option value="moderate">Modéré</option>
+              <option value="strict">Strict</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_max_results">Résultats max / moteur</label>
+            <input type="number" id="finder_max_results" min="5" max="100" value="25" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_max_scrape">Pages max à analyser (Torrent)</label>
+            <input type="number" id="finder_max_scrape" min="3" max="50" value="18" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_min_sim">Similarité minimum (%)</label>
+            <input type="number" id="finder_min_sim" min="0" max="100" value="10" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px;" data-i18n="finder_timeout">Timeout réseau (sec)</label>
+            <input type="number" id="finder_timeout" min="2" max="30" value="8" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <div class="field" style="margin-bottom:0; display:flex; align-items:center; gap:8px; padding-top:20px;">
+            <input type="checkbox" id="finder_verify_links" checked style="cursor:pointer;">
+            <label for="finder_verify_links" style="font-size:12px; cursor:pointer;" data-i18n="finder_chk_verify">Vérifier validité des liens</label>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+          <button type="button" class="btn-sec" onclick="saveFinderDefaultSettings()" data-i18n="btn_save_finder_default" style="font-size:12px; padding:6px 14px;">💾 Enregistrer comme défaut</button>
+          <span id="finder-save-msg" style="font-size:12px; color:#3fb950;"></span>
+        </div>
+      </details>
+    </div>
+
+    <!-- Animation chargement recherche -->
+    <div id="finder-loader" style="display:none; text-align:center; padding:30px; background:var(--bg-subpanel); border:1px dashed var(--border-muted); border-radius:8px; margin-bottom:16px;">
+      <div style="font-size:28px; margin-bottom:8px;">⏳</div>
+      <div style="font-weight:600; color:var(--text-bright);" data-i18n="finder_searching_title">Recherche sur les moteurs et scan des liens...</div>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:4px;" data-i18n="finder_searching_desc">Interrogation des moteurs configurés, extraction des trackers et test de validité des liens.</div>
+    </div>
+
+    <!-- Zone de Résultats -->
+    <div id="finder-results-card" style="display:none;">
+      <!-- Barre d'état et actions en masse -->
+      <div style="background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px; padding:12px 16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div id="finder-stats" style="font-weight:700; font-size:13px; color:var(--text-bright);"></div>
+          <div id="finder-warn-banner" style="display:none; margin-top:4px; font-size:11px; color:#f0883e;"></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="btn-sec" onclick="setFinderSelection('all')" style="font-size:11px; padding:4px 9px;" data-i18n="btn_sel_all">Tout cocher</button>
+          <button type="button" class="btn-sec" onclick="setFinderSelection('none')" style="font-size:11px; padding:4px 9px;" data-i18n="btn_sel_none">Tout décocher</button>
+          <button type="button" class="btn-sec" onclick="setFinderSelection('magnet')" style="font-size:11px; padding:4px 9px;" data-i18n="btn_sel_magnets">Magnets seuls</button>
+          <button type="button" class="btn-sec" onclick="setFinderSelection('ddl')" style="font-size:11px; padding:4px 9px;" data-i18n="btn_sel_ddl">DDL seuls</button>
+          <button type="button" id="btn-finder-toggle-rejected" class="btn-sec" onclick="toggleFinderRejected()" style="display:none; font-size:11px; padding:4px 9px;">Voir écartés</button>
+        </div>
+      </div>
+
+      <!-- Barre de téléchargement direct groupé -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:10px 14px; background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:12px; font-weight:600;" data-i18n="lbl_dest_service">Dossier / Catégorie :</span>
+          <select id="finder-dest-category" style="padding:6px 10px; font-size:12px; border-radius:6px;">
+            __SERVICES_OPTIONS__
+          </select>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-sec" onclick="copyFinderSelected()" style="font-size:12px; padding:6px 12px;" data-i18n="btn_copy_selected">📋 Copier sélectionnés</button>
+          <button type="button" id="btn-finder-bulk-dl" class="btn-main" onclick="downloadFinderSelected()" style="font-size:12px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px;">
+            <span>⚡</span> <span data-i18n="btn_dl_selected_pyrdt">Télécharger la sélection dans PyRDT</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste des résultats valides -->
+      <div id="finder-results-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+      <!-- Liste des résultats écartés -->
+      <div id="finder-rejected-box" style="display:none; margin-top:20px;">
+        <h4 style="font-size:13px; color:#f85149; margin:0 0 10px 0;" data-i18n="title_rejected_items">⚠️ Liens écartés / non retenus</h4>
+        <div id="finder-rejected-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onglet 4 : Médiathèque, Liens Morts & Magnets (Scanner) -->
   <div id="tab-scanner" class="card" style="display:none">
     <div class="scanner-header-bar">
       <div class="scanner-title-area">
