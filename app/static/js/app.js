@@ -15,6 +15,8 @@ const TRANSLATIONS = {
     // Toolbar
     btn_add_torrent: "Ajouter un torrent / magnet",
     btn_add_ddl: "Ajouter liens DDL",
+    btn_download: "Télécharger",
+    tip_download_local: "Basculer en téléchargement réel sur le serveur",
     modal_upload_title: "Ajouter un Téléchargement",
     tab_magnet: "Lien Magnet",
     tab_torrent_file: "Fichier .torrent",
@@ -388,6 +390,8 @@ const TRANSLATIONS = {
     // Toolbar
     btn_add_torrent: "Add torrent / magnet",
     btn_add_ddl: "Add DDL links",
+    btn_download: "Download",
+    tip_download_local: "Switch to local real download on server",
     modal_upload_title: "Add Download",
     tab_magnet: "Magnet Link",
     tab_torrent_file: ".torrent File",
