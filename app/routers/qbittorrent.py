@@ -172,7 +172,9 @@ async def qb_torrents_info(category: Optional[str] = None, hashes: Optional[str]
             progress = float(item.get("progress") or 0.0)
             downloaded = size if progress >= 1.0 else int(size * progress)
             raw_state = item.get("state") or "downloading"
-            if raw_state == "copying":
+            if raw_state == "error":
+                qb_state = "error"
+            elif raw_state == "copying":
                 qb_state = "checkingDL"
             elif raw_state in ("stalledUP", "uploading", "completed", "pausedUP") or progress >= 1.0:
                 qb_state = "pausedUP"
@@ -188,7 +190,7 @@ async def qb_torrents_info(category: Optional[str] = None, hashes: Optional[str]
                     "dlspeed": 0,
                     "upspeed": 0,
                     "priority": 1,
-                    "num_seeds": 1,
+                    "num_seeds": 0 if raw_state == "error" else 1,
                     "num_leechs": 0,
                     "ratio": 1.0,
                     "ratio_limit": 1.0,
@@ -198,7 +200,7 @@ async def qb_torrents_info(category: Optional[str] = None, hashes: Optional[str]
                     "max_seeding_time": 0,
                     "time_active": 86400,
                     "has_seed_limit_reached": True,
-                    "eta": 0 if progress >= 1.0 else 10,
+                    "eta": 86400 if raw_state == "error" else (0 if progress >= 1.0 else 10),
                     "state": qb_state,
                     "category": item.get("category") or "",
                     "save_path": item.get("save_path") or str(settings_db["download_base_dir"]),
@@ -512,7 +514,7 @@ async def qb_torrents_properties(hash: str):
             "piece_size": 1024 * 1024,
             "pieces_num": max(1, size // (1024 * 1024)),
             "pieces_have": int(max(1, size // (1024 * 1024)) * progress),
-            "comment": f"PyRDT Transfer ({item.get('transfer_mode', 'symlink')})",
+            "comment": f"PyRDT Error: {item.get('error_msg')}" if item.get("state") == "error" else f"PyRDT Transfer ({item.get('transfer_mode', 'symlink')})",
             "total_wasted": 0,
             "total_uploaded": downloaded,
             "total_downloaded": downloaded,
@@ -524,11 +526,11 @@ async def qb_torrents_properties(hash: str):
             "nb_connections_limit": 100,
             "peers": 0,
             "peers_total": 0,
-            "seeds": 1,
-            "seeds_total": 1,
+            "seeds": 0 if item.get("state") == "error" else 1,
+            "seeds_total": 0 if item.get("state") == "error" else 1,
             "dl_speed": 0,
             "up_speed": 0,
-            "eta": 0,
+            "eta": 86400 if item.get("state") == "error" else 0,
             "addition_date": item.get("added_on", 0),
             "completion_on": item.get("completion_on", -1),
         }
@@ -538,17 +540,20 @@ async def qb_torrents_properties(hash: str):
 @router.get("/api/v2/torrents/trackers")
 @router.post("/api/v2/torrents/trackers")
 async def qb_torrents_trackers(hash: str):
+    item = torrents_db.get(hash.lower(), {})
+    is_err = item.get("state") == "error"
+    err_msg = item.get("error_msg") or "Erreur Fournisseur Debrid"
     return JSONResponse(
         [
             {
                 "url": "**PyRDT Debrid**",
-                "status": 2,
+                "status": 4 if is_err else 2,
                 "tier": 0,
                 "num_peers": 0,
-                "num_seeds": 1,
+                "num_seeds": 0 if is_err else 1,
                 "num_leeches": 0,
-                "num_downloaded": 1,
-                "msg": "OK",
+                "num_downloaded": 0 if is_err else 1,
+                "msg": err_msg if is_err else "OK",
             }
         ]
     )

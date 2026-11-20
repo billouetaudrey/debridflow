@@ -193,16 +193,52 @@ async def background_worker() -> None:
                         continue
                     ad_id = int(item.get("ad_id") or 0)
                     if not ad_id or ad_id not in statuses:
-                        logger.warning(f"ID={ad_id} ({info_hash[:8]}) introuvable dans la réponse AllDebrid.")
+                        missing_cnt = int(item.get("missing_count", 0)) + 1
+                        async with state_lock:
+                            if info_hash in torrents_db:
+                                torrents_db[info_hash]["missing_count"] = missing_cnt
+                        if missing_cnt < 3:
+                            logger.warning(f"ID={ad_id} ({info_hash[:8]}) introuvable chez le fournisseur (tentative {missing_cnt}/3)...")
+                        else:
+                            err_text = "Torrent introuvable ou supprimé chez le fournisseur Debrid"
+                            async with state_lock:
+                                if info_hash in torrents_db:
+                                    torrents_db[info_hash]["state"] = "error"
+                                    torrents_db[info_hash]["error_msg"] = err_text
+                                    save_state()
+                            logger.error(f"Échec Debrid [{info_hash[:8]}] : {err_text} (ID={ad_id})")
+                            try:
+                                from app.notifications import notifier
+                                await notifier.notify_error(f"Échec débridage : {item.get('name') or info_hash[:8]}", err_text)
+                            except Exception:
+                                pass
                         continue
+
+                    # Réinitialiser le compteur d'absence si le torrent réapparaît
+                    if item.get("missing_count"):
+                        async with state_lock:
+                            if info_hash in torrents_db:
+                                torrents_db[info_hash]["missing_count"] = 0
 
                     ad_info = statuses[ad_id]
                     status_code = int(ad_info.get("statusCode", 0))
                     ad_filename = ad_info.get("filename") or item["name"]
                     ad_size = int(ad_info.get("size") or item.get("size") or 0)
+                    ad_status_str = str(ad_info.get("status") or "").strip()
+                    ad_status_lower = ad_status_str.lower()
 
-                    if status_code >= 5:
-                        err_text = ad_info.get("status", "Erreur Fournisseur Debrid")
+                    is_error = (
+                        status_code >= 5
+                        or status_code < 0
+                        or "error" in ad_status_lower
+                        or "fail" in ad_status_lower
+                        or "dead" in ad_status_lower
+                        or "invalid" in ad_status_lower
+                        or bool(ad_info.get("error"))
+                    )
+
+                    if is_error:
+                        err_text = ad_status_str or "Erreur Fournisseur Debrid"
                         async with state_lock:
                             if info_hash in torrents_db:
                                 torrents_db[info_hash]["state"] = "error"

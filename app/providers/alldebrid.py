@@ -158,6 +158,33 @@ class AllDebridProvider(BaseDebridProvider):
                                 "status": item.get("status") or "",
                                 "links": item.get("links") or [],
                             }
+                elif p_single.get("status") == "error":
+                    err = p_single.get("error") or {}
+                    err_code = err.get("code") or "ERROR"
+                    err_msg = err.get("message") or f"Erreur AllDebrid ({err_code})"
+                    mid = int(target_id)
+                    result[mid] = {
+                        "id": mid,
+                        "statusCode": 5,
+                        "filename": "",
+                        "size": 0,
+                        "downloaded": 0,
+                        "status": err_msg,
+                        "error": err,
+                    }
+            except httpx.HTTPStatusError as http_err:
+                if http_err.response.status_code in (400, 404, 410):
+                    mid = int(target_id)
+                    result[mid] = {
+                        "id": mid,
+                        "statusCode": 5,
+                        "filename": "",
+                        "size": 0,
+                        "downloaded": 0,
+                        "status": f"Torrent introuvable ou supprimé chez AllDebrid (HTTP {http_err.response.status_code})",
+                    }
+                else:
+                    logger.debug(f"AllDebrid get_statuses erreur HTTP ID {target_id} : {http_err}")
             except Exception as exc:
                 logger.debug(f"AllDebrid get_statuses erreur ID {target_id} : {exc}")
 

@@ -159,6 +159,15 @@ class RealDebridProvider(BaseDebridProvider):
                     timeout=15.0,
                 )
                 if not resp.is_success:
+                    if resp.status_code in (400, 403, 404, 410):
+                        result[target_id] = {
+                            "id": target_id,
+                            "statusCode": 5,
+                            "filename": "",
+                            "size": 0,
+                            "downloaded": 0,
+                            "status": f"Torrent introuvable ou supprimé sur Real-Debrid (HTTP {resp.status_code})",
+                        }
                     continue
                 info = resp.json()
                 raw_status = (info.get("status") or "").lower()
