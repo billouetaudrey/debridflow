@@ -302,9 +302,15 @@ async def qb_torrents_retry(hashes: str = Form(...)):
     async with state_lock:
         for h in target_hashes:
             if h in torrents_db:
-                torrents_db[h]["state"] = "downloading"
-                torrents_db[h]["error_msg"] = ""
-                torrents_db[h]["ready_since"] = now_ts
+                item = torrents_db[h]
+                if item.get("is_ddl"):
+                    item["state"] = "resolving"
+                    item["download_url"] = ""
+                else:
+                    item["state"] = "downloading"
+                    item["missing_count"] = 0
+                item["error_msg"] = ""
+                item["ready_since"] = now_ts
         save_state()
     return PlainTextResponse("Ok.")
 

@@ -503,6 +503,7 @@ class ScannerService:
                                     mag_entry = {
                                         "id": mag.get("id"),
                                         "name": orig_name,
+                                        "hash": mag.get("hash") or "",
                                         "size": mag.get("size", 0),
                                         "statusCode": int(mag.get("statusCode") or 0),
                                         "status": mag.get("status", ""),

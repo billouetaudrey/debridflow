@@ -1,8 +1,13 @@
 from typing import Any, Dict, List, Optional
+import hashlib
+import time
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
 from app.scanner import scanner_service
+from app.bencode import sanitize_filename
+from app.state import torrents_db, state_lock, save_state, resolve_service
+from app.config import logger
 
 router = APIRouter(prefix="/api/scanner", tags=["scanner"])
 
@@ -99,4 +104,46 @@ async def research_all_dead():
         "status": "success",
         "message": f"Recherche relancée pour {success_count} média(s) dans Radarr / Sonarr.",
         "count": success_count,
+    })
+
+
+@router.post("/download_magnet")
+async def download_scanner_magnet(payload: Dict[str, Any] = Body(...)):
+    mag_id = payload.get("id")
+    name = payload.get("name") or f"Magnet_{mag_id}"
+    mag_hash = str(payload.get("hash") or "").strip().lower()
+    size = int(payload.get("size") or 0)
+
+    info_hash = mag_hash if mag_hash else hashlib.sha1(f"ad_{mag_id}".encode()).hexdigest()
+
+    _, configured_dir = resolve_service("torrent-direct")
+    save_dir = configured_dir
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    async with state_lock:
+        torrents_db[info_hash] = {
+            "hash": info_hash,
+            "ad_id": mag_id,
+            "name": name,
+            "category": "torrent-direct",
+            "transfer_mode": "download",
+            "save_path": str(save_dir),
+            "content_path": str(save_dir / sanitize_filename(name)),
+            "linked_paths": [],
+            "size": size,
+            "progress": 0.0,
+            "state": "downloading",
+            "added_on": int(time.time()),
+            "completion_on": -1,
+            "deleted_on_ad": False,
+            "missing_count": 0,
+            "is_ddl": False,
+        }
+        save_state()
+
+    logger.info(f"Magnet depuis Médiathèque envoyé en téléchargement : ID={mag_id} ({name})")
+    return JSONResponse({
+        "status": "success",
+        "message": f"'{name}' a été basculé en téléchargement réel (DL) dans la file !",
+        "hash": info_hash,
     })

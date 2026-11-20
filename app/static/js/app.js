@@ -1194,6 +1194,10 @@ function renderQueue(items) {
       ? `<button class="btn-sec" onclick="batchAction('resume', ['${fullId}'])">${esc(t('btn_resume'))}</button>`
       : `<button class="btn-warn" onclick="batchAction('pause', ['${fullId}'])">${esc(t('btn_pause'))}</button>`;
 
+    const retryBtn = state === 'error'
+      ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
+      : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
+
     return `<tr>
       <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
       <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
@@ -1204,7 +1208,7 @@ function renderQueue(items) {
         <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
       </td>
       <td class="actions col-actions">
-        <button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>
+        ${retryBtn}
         ${pauseBtn}
         <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>
       </td>
@@ -1250,6 +1254,10 @@ function renderQueue(items) {
           ? `<button class="btn-sec" onclick="batchAction('resume', ['${fullId}'])">${esc(t('btn_resume'))}</button>`
           : `<button class="btn-warn" onclick="batchAction('pause', ['${fullId}'])">${esc(t('btn_pause'))}</button>`;
 
+        const ddlRetryBtn = state === 'error'
+          ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
+          : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
+
         return `<tr>
           <td class="col-name"><strong>${esc(item.name)}</strong><div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
           <td class="col-cat"><span class="tag">${esc(item.category)}</span><div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
@@ -1258,7 +1266,7 @@ function renderQueue(items) {
             <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
           </td>
           <td class="actions col-actions" style="text-align:right;">
-            <button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>
+            ${ddlRetryBtn}
             ${pauseBtn}
             <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>
           </td>
@@ -1278,6 +1286,7 @@ async function refreshQueue() {
     if (res.ok) {
       const data = await res.json();
       const items = data.items || [];
+      window.currentQueueItems = items;
       updateHeaderStatus(items, data.api_health);
       if (currentTab === 'queue' || currentTab === 'ddl') {
         renderQueue(items);
@@ -1321,6 +1330,16 @@ async function refreshQueue() {
 
 async function batchAction(action, hashes) {
   if (!hashes.length) return;
+  if (action === 'retry' && window.currentQueueItems) {
+    const hashSet = new Set(hashes);
+    window.currentQueueItems.forEach(it => {
+      if (hashSet.has(it.hash)) {
+        it.state = it.is_ddl ? 'resolving' : 'downloading';
+        it.error_msg = '';
+      }
+    });
+    renderQueue(window.currentQueueItems);
+  }
   const fd = new FormData();
   fd.append('hashes', hashes.join('|'));
   await fetch('/api/v2/torrents/' + action, { method: 'POST', body: fd });
@@ -2688,6 +2707,7 @@ function renderMagnetsList(grouped) {
             </div>
           </div>
           <div class="mag-actions">
+            <button type="button" class="btn-sec" onclick="downloadScannerMagnet(${mag.id}, '${esc(mag.name)}', '${esc(mag.hash || '')}', ${mag.size || 0})" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;" title="Basculer en téléchargement réel sur le serveur"><span>📥</span> <span>${esc(t('btn_download') || 'Télécharger')}</span></button>
             <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">${esc(t('btn_delete'))}</button>
           </div>
         </div>
@@ -2713,6 +2733,7 @@ function renderMagnetsList(grouped) {
             </div>
           </div>
           <div class="mag-actions">
+            <button type="button" class="btn-sec" onclick="downloadScannerMagnet(${mag.id}, '${esc(mag.name)}', '${esc(mag.hash || '')}', ${mag.size || 0})" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;" title="Basculer en téléchargement réel sur le serveur"><span>📥</span> <span>${esc(t('btn_download') || 'Télécharger')}</span></button>
             <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">${esc(t('btn_delete'))}</button>
           </div>
         </div>`;
@@ -2733,6 +2754,25 @@ function renderMagnetsList(grouped) {
 
   container.innerHTML = html;
   filterMagnetsDisplay();
+}
+
+async function downloadScannerMagnet(id, name, hash, size) {
+  try {
+    const res = await fetch('/api/scanner/download_magnet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name, hash, size })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'success') {
+      alert(data.message || `'${name}' basculé dans les téléchargements !`);
+      refreshQueue();
+    } else {
+      alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.message || 'Échec du transfert'));
+    }
+  } catch (e) {
+    alert((currentLang === 'en' ? 'Network error: ' : 'Erreur réseau : ') + e.message);
+  }
 }
 
 function setMagnetsFilter(filter) {
