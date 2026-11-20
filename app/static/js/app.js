@@ -904,8 +904,6 @@ function showTab(tab) {
   }
   currentTab = tab;
   document.getElementById('tab-queue').style.display = tab === 'queue' ? 'block' : 'none';
-  const tabDdl = document.getElementById('tab-ddl');
-  if (tabDdl) tabDdl.style.display = tab === 'ddl' ? 'block' : 'none';
   const tabFinder = document.getElementById('tab-finder');
   if (tabFinder) tabFinder.style.display = tab === 'finder' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
@@ -913,8 +911,6 @@ function showTab(tab) {
   if (tabScanner) tabScanner.style.display = tab === 'scanner' ? 'block' : 'none';
 
   document.getElementById('btn-queue').classList.toggle('active', tab === 'queue');
-  const btnDdl = document.getElementById('btn-ddl');
-  if (btnDdl) btnDdl.classList.toggle('active', tab === 'ddl');
   const btnFinder = document.getElementById('btn-finder');
   if (btnFinder) btnFinder.classList.toggle('active', tab === 'finder');
   document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
@@ -926,7 +922,7 @@ function showTab(tab) {
     } catch (e) {}
   }
 
-  if (tab === 'queue' || tab === 'ddl') refreshQueue();
+  if (tab === 'queue') refreshQueue();
   if (tab === 'finder') loadFinderSettings();
   if (tab === 'scanner') {
     loadScannerData();

@@ -28,7 +28,6 @@
     <div class="header-controls">
       <div class="tabs">
         <button id="btn-queue" class="tab-btn active" onclick="showTab('queue')" data-i18n="tab_queue">File d'attente</button>
-        <button id="btn-ddl" class="tab-btn" onclick="showTab('ddl')" data-i18n="tab_ddl_nav">🔗 Liens DDL</button>
         <button id="btn-finder" class="tab-btn" onclick="showTab('finder')" data-i18n="tab_finder_nav">🔍 Recherche</button>
         <button id="btn-scanner" class="tab-btn" onclick="showTab('scanner')" data-i18n="tab_scanner" style="__SCANNER_TAB_DISPLAY__">Médiathèque &amp; Liens</button>
         <button id="btn-settings" class="tab-btn" onclick="showTab('settings')" data-i18n="tab_settings">Paramètres</button>
@@ -106,79 +105,7 @@
     </table>
   </div>
 
-  <!-- Onglet 2 : Téléchargements Directs Hébergeurs (DDL / JDownloader-like) -->
-  <div id="tab-ddl" class="card" style="display:none">
-    <div style="margin-bottom:16px;">
-      <h3 style="margin:0 0 6px 0; font-size:18px; display:flex; align-items:center; gap:8px;">
-        <span>🔗</span> <span data-i18n="ddl_card_title">Téléchargements Directs Hébergeurs (DDL)</span>
-      </h3>
-      <p style="margin:0; font-size:13px; color:var(--text-muted);" data-i18n="ddl_card_desc">
-        Débridez vos liens Rapidgator, 1fichier, Turbobit, Nitroflare... directement via AllDebrid et téléchargez-les sur votre serveur.
-      </p>
-    </div>
-
-    <!-- Carte d'ajout DDL rapide -->
-    <div style="background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px; padding:16px; margin-bottom:20px;">
-      <div style="margin-bottom:10px;">
-        <label style="font-size:13px; font-weight:600; color:var(--text-bright); display:block; margin-bottom:6px;" data-i18n="lbl_ddl_input">
-          Lien(s) direct(s) (Rapidgator, 1fichier, etc.) :
-        </label>
-        <textarea id="ddl-page-links" rows="3" placeholder="https://rapidgator.net/file/...&#10;https://1fichier.com/?..." style="width:100%; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);" data-i18n-placeholder="ph_ddl_input"></textarea>
-        <small class="hint" style="margin-top:4px; display:block;" data-i18n="hint_ddl_multiple">Collez vos liens direct (un par ligne). Débridage automatique via AllDebrid.</small>
-      </div>
-
-      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
-        <div>
-          <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;" data-i18n="lbl_ddl_password">
-            Mot de passe éventuel (optionnel) :
-          </label>
-          <input type="text" id="ddl-page-password" placeholder="Mot de passe des archives / liens si nécessaire" style="width:100%; box-sizing:border-box; font-size:12px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);" data-i18n-placeholder="ph_ddl_password">
-        </div>
-        <div>
-          <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;" data-i18n="lbl_dest_service">
-            Dossier de destination :
-          </label>
-          <select id="ddl-page-category" style="width:100%; box-sizing:border-box; padding:8px 10px; font-size:12px; border-radius:6px;">
-            __SERVICES_OPTIONS__
-          </select>
-        </div>
-      </div>
-
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div id="ddl-concurrency-indicator" style="font-size:12px; color:var(--text-muted);">
-          ⚡ <span id="ddl-active-count-txt">Téléchargements simultanés actifs : 0 / __MAX_CONCURRENT_DOWNLOADS__</span>
-        </div>
-        <button type="button" id="btn-submit-ddl-page" class="btn-main" onclick="submitDdlPageUpload()" style="display:inline-flex; align-items:center; gap:6px;">
-          <span id="ddl-page-spinner" style="display:none;">⏳</span>
-          <span>🚀</span> <span data-i18n="btn_ddl_submit">Débrider &amp; Télécharger en DDL</span>
-        </button>
-      </div>
-      <div id="ddl-page-status-msg" style="display:none; margin-top:12px; padding:8px 12px; border-radius:6px; font-size:12px;"></div>
-    </div>
-
-    <!-- Tableau spécifique DDL -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <h4 style="margin:0; font-size:14px; font-weight:600;" data-i18n="title_ddl_queue">Téléchargements DDL en cours &amp; terminés</h4>
-      <button class="btn-sec" onclick="purgeCompleted()" data-i18n="btn_purge_completed" style="font-size:11px; padding:4px 8px;">Purger terminés</button>
-    </div>
-    <div class="table-responsive">
-      <table id="ddl-queue-table">
-        <thead>
-          <tr>
-            <th data-i18n="th_name">Nom</th>
-            <th data-i18n="th_service">Destination</th>
-            <th data-i18n="th_status">Statut &amp; Vitesse</th>
-            <th data-i18n="th_actions" style="text-align:right;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="ddl-queue-tbody">
-          <tr><td colspan="4" style="color:#8b949e;text-align:center;">Aucun téléchargement DDL</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Onglet 3 : Recherche Multi-Moteurs (Magnets, Torrents & DDL) -->
+  <!-- Onglet 2 : Recherche Multi-Moteurs (Magnets, Torrents & DDL) -->
   <div id="tab-finder" class="card" style="display:none">
     <div style="margin-bottom:16px;">
       <h3 style="margin:0 0 6px 0; font-size:18px; display:flex; align-items:center; gap:8px;">
