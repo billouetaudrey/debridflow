@@ -111,6 +111,7 @@ async def qb_add_torrent(
                         "hash": info_hash,
                         "ad_id": ad_id,
                         "name": ad_name,
+                        "magnet_uri": raw_url,
                         "category": cat,
                         "transfer_mode": mode,
                         "save_path": str(save_dir),
@@ -299,19 +300,38 @@ async def qb_torrents_resume(hashes: str = Form(...)):
 async def qb_torrents_retry(hashes: str = Form(...)):
     target_hashes = [h.strip().lower() for h in hashes.split("|") if h.strip()]
     now_ts = int(time.time())
-    async with state_lock:
-        for h in target_hashes:
-            if h in torrents_db:
-                item = torrents_db[h]
-                if item.get("is_ddl"):
-                    item["state"] = "resolving"
-                    item["download_url"] = ""
-                else:
-                    item["state"] = "downloading"
+    async with httpx.AsyncClient() as client:
+        async with state_lock:
+            for h in target_hashes:
+                if h in torrents_db:
+                    item = torrents_db[h]
+                    item["error_msg"] = ""
+                    item["ready_since"] = now_ts
                     item["missing_count"] = 0
-                item["error_msg"] = ""
-                item["ready_since"] = now_ts
-        save_state()
+                    if item.get("is_ddl"):
+                        item["state"] = "resolving"
+                        item["download_url"] = ""
+                    else:
+                        old_ad_id = item.get("ad_id")
+                        # Retenter le débridage AllDebrid depuis le magnet
+                        mag = item.get("magnet_uri") or f"magnet:?xt=urn:btih:{h}&dn={item.get('name') or h}"
+                        try:
+                            if old_ad_id and str(old_ad_id).isdigit():
+                                try:
+                                    await alldebrid_delete_magnet(client, int(old_ad_id))
+                                except Exception:
+                                    pass
+                            ad_data = await alldebrid_upload_magnet(client, mag)
+                            if ad_data and ad_data.get("id"):
+                                item["ad_id"] = int(ad_data["id"])
+                                if ad_data.get("name") and not item.get("name"):
+                                    item["name"] = ad_data["name"]
+                                logger.info(f"Relance débridage AllDebrid [{h[:8]}] -> nouvel ID={item['ad_id']}")
+                        except Exception as e:
+                            logger.warning(f"Échec ré-upload magnet pour {h[:8]} lors du retry: {e}")
+                        item["state"] = "downloading"
+                        item["progress"] = 0.0
+            save_state()
     return PlainTextResponse("Ok.")
 
 

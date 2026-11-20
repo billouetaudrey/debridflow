@@ -39,6 +39,7 @@ const TRANSLATIONS = {
     title_ddl_queue: "Téléchargements DDL en cours & terminés",
     lbl_max_concurrent_dl: "Nombre de téléchargements simultanés en DDL :",
     hint_max_concurrent_dl: "Nombre de téléchargements simultanés (torrents/magnets en mode copie et liens directs DDL). Par défaut : 3.",
+    st_in_progress: "Débridage en cours...",
     st_resolving: "Débridage AllDebrid...",
     st_queued: "En attente (slot DL)",
     tag_ddl: "DDL Direct",
@@ -414,6 +415,7 @@ const TRANSLATIONS = {
     title_ddl_queue: "Active & completed DDL downloads",
     lbl_max_concurrent_dl: "Simultaneous DDL downloads limit:",
     hint_max_concurrent_dl: "Simultaneous downloads limit (torrents/magnets in copy mode and direct DDL links). Default: 3.",
+    st_in_progress: "Debriding in progress...",
     st_resolving: "Debriding...",
     st_queued: "Queued (DL slot)",
     tag_ddl: "Direct DDL",
@@ -1176,7 +1178,7 @@ function renderQueue(items) {
         : `<span class="tag sym">${esc(t('tag_sym'))}</span>`);
 
     let badgeCls = 'run';
-    let stateTxt = `${esc(t('st_downloading'))} (${pct}%)`;
+    let stateTxt = pct > 0 ? `${esc(t('st_downloading'))} (${pct}%)` : `${esc(t('st_in_progress'))}`;
 
     if (state === 'pausedUP' || state === 'stalledUP') {
       badgeCls = 'ok';
@@ -1189,7 +1191,7 @@ function renderQueue(items) {
       stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
     } else if (state === 'resolving') {
       badgeCls = 'run';
-      stateTxt = `${esc(t('st_resolving') || 'Débridage AllDebrid...')}`;
+      stateTxt = `${esc(t('st_in_progress'))}`;
     } else if (state === 'queued') {
       badgeCls = 'pause';
       stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
@@ -1246,7 +1248,7 @@ function renderQueue(items) {
         const pct = Math.round((Number(item.progress) || 0) * 100);
         const state = item.state || 'downloading';
         let badgeCls = 'run';
-        let stateTxt = `${esc(t('st_downloading'))} (${pct}%)`;
+        let stateTxt = pct > 0 ? `${esc(t('st_downloading'))} (${pct}%)` : `${esc(t('st_in_progress'))}`;
 
         if (state === 'pausedUP' || state === 'stalledUP') {
           badgeCls = 'ok';
@@ -1259,7 +1261,7 @@ function renderQueue(items) {
           stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
         } else if (state === 'resolving') {
           badgeCls = 'run';
-          stateTxt = `${esc(t('st_resolving') || 'Débridage AllDebrid...')}`;
+          stateTxt = `${esc(t('st_in_progress'))}`;
         } else if (state === 'queued') {
           badgeCls = 'pause';
           stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
@@ -1355,6 +1357,7 @@ async function batchAction(action, hashes) {
     window.currentQueueItems.forEach(it => {
       if (hashSet.has(it.hash)) {
         it.state = it.is_ddl ? 'resolving' : 'downloading';
+        it.progress = 0;
         it.error_msg = '';
       }
     });
