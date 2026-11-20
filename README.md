@@ -1,126 +1,148 @@
-# DebridFlow — Multi-Debrid Symlink & Download Client
+# DebridFlow 🌊
 
-> **DebridFlow** (anciennement PyRDT) est un client de téléchargement et d'émulation qBittorrent léger, rapide et modulaire conçu pour connecter vos applications de la suite \*arr (**Sonarr**, **Radarr**, **Whisparr**, **Prowlarr**, etc.) à vos fournisseurs de débridage favoris, avec gestion intelligente de médiathèque, recherche multi-moteurs et détection des liens morts.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
-
-## 🌟 Fonctionnalités Principales
-
-* 🌐 **Multi-Fournisseurs Debrid** : Support complet de **AllDebrid**, **Real-Debrid**, **Premiumize.me**, **Debrid-Link**, **TorBox** et **High-Way.me**.
-* ⚡ **Deux modes de récupération par service** :
-  * **Symlink (instantané)** : Crée des liens symboliques pointant vers le dossier monté par rclone (lecture directe sans duplication de stockage).
-  * **Téléchargement réel (copie locale)** : Copie physique des fichiers depuis le cloud vers vos disques locaux (recommandé pour Whisparr ou le stockage permanent).
-  * **Contrôle du débit de téléchargement** : Limitation de la vitesse de téléchargement configurable en Mo/s (ou via l'API qBittorrent) et affichage en temps réel de la vitesse et de la vitesse moyenne du dernier téléchargement terminé.
-* 🎯 **Émulation API qBittorrent v2** : Vos applications \*arr communiquent avec PyRDT comme avec un client qBittorrent standard (catégories, vitesses, progression, statut, pause/reprise, suppression).
-* 🔍 **Scanner de Médiathèque & Liens Debrid ("Médiathèque & Liens")** :
-  * **Cache incrémental intelligent** : Grâce à l'indexation par date de modification (`mtime`) et à la validation des cibles cloud directement en mémoire vive, le scan passe de plus de 3 minutes à seulement **1 à 2 secondes** !
-  * **Scan complet ou incrémental** : Choix entre un scan rapide automatique/manuel ou un bouton "⚡ Scan complet" pour forcer une réindexation intégrale.
-  * **Détection des liens morts** : Analyse récursive de vos dossiers de médiathèque pour repérer les symlinks cassés ou dont la source n'existe plus sur le cloud Debrid.
-  * **Relance automatique Radarr / Sonarr** : Déclenchement automatique ou manuel d'une nouvelle recherche (`movies/search`, `episodes/search`) auprès de vos instances pour remplacer instantanément les fichiers manquants.
-  * **Nettoyage & Suppression synchronisée** : Suppression locale en un clic des symlinks orphelins avec possibilité de supprimer également le film/la série ou le fichier associé directement dans Radarr / Sonarr.
-  * **Gestionnaire de magnets** : Visualisation de tous les torrents cloud, identification des doublons et des magnets non associés à des fichiers locaux avec suppression sélective.
-  * **Contrôle & Progression en direct** : Barre de progression animée avec pourcentage, étapes détaillées et **possibilité d'interrompre le scan en cours à tout moment**.
-  * **Sécurité anti-flood & Coalescing** : Protection contre les rafales de requêtes webhook (cooldown 45s, fusion des imports simultanés et tampon de stabilisation de 15s).
-* 🎨 **Interface Web Moderne & Responsive** :
-  * Adaptée aux écrans d'ordinateurs, tablettes et smartphones.
-  * Thème sombre (**Dark Mode**) et thème clair (**Light Mode**).
-  * Multilingue (**Français 🇫🇷 / Anglais 🇬🇧**) avec bascule instantanée.
-  * Paramètres modulaires avec possibilité d'activer/désactiver des fonctionnalités (ex: onglet scanner).
-* 🔔 **Système de Notifications Telegram** :
-  * Alertes en temps réel sur votre bot Telegram lors des scans de médiathèque, détection de liens morts, fin de téléchargement/symlink (avec vitesse moyenne et taille), purges et erreurs critiques.
-  * Entièrement paramétrable dans l'interface (**Paramètres > Notifications**) avec activation sélective par type d'événement et bouton d'envoi de message de test.
-* 🧹 **Automatisation & Nettoyage** :
-  * Purge automatique des fichiers/symlinks temporaires dès que Sonarr/Radarr a finalisé l'importation.
-  * Suppression automatique des torrents/magnets sur le cloud du fournisseur après téléchargement.
+> **DebridFlow** est un client de téléchargement et d'émulation qBittorrent WebAPI moderne, ultra-rapide et modulaire. Conçu pour connecter les applications de la suite \*arr (**Sonarr**, **Radarr**, **Whisparr**, **Lidarr**, **Prowlarr**) à vos services de débridage favoris, avec gestion automatique de médiathèque, recherche DDL intégrée et détection des liens orphelins.
 
 ---
 
-## 🚀 Installation
+## 📑 Sommaire
 
-### 1. Docker & Docker Compose *(Recommandé)*
+- [🌟 Fonctionnalités](#-fonctionnalités)
+- [🏗️ Modes de Fonctionnement](#️-modes-de-fonctionnement)
+- [🚀 Installation & Déploiement](#-installation--déploiement)
+  - [1. Docker & Docker Compose (Recommandé)](#1-docker--docker-compose-recommandé)
+  - [2. Linux Bare-Metal](#2-linux-bare-metal)
+  - [3. Windows](#3-windows)
+  - [4. macOS](#4-macos)
+- [⚙️ Configuration avec Sonarr / Radarr / Whisparr](#️-configuration-avec-sonarr--radarr--whisparr)
+- [🔍 Scanner de Médiathèque & Liens Morts](#-scanner-de-médiathèque--liens-morts)
+- [🔎 Finder Multi-Moteurs DDL](#-finder-multi-moteurs-ddl)
+- [📊 Speedtest Réseau & Datacenters](#-speedtest-réseau--datacenters)
+- [🔔 Notifications Telegram](#-notifications-telegram)
+- [📐 Structure du Projet](#-structure-du-projet)
+- [⚖️ Avertissement Légal & Licence](#️-avertissement-légal--licence)
 
-Idéal pour Linux, serveurs NAS (Synology, QNAP, Unraid) ou Docker Desktop.
+---
+
+## 🌟 Fonctionnalités
+
+* 🌐 **Multi-Fournisseurs Debrid** : Support direct de **AllDebrid**, **Real-Debrid**, **Premiumize.me**, **Debrid-Link**, **TorBox** et **High-Way.me**.
+* ⚡ **Deux modes de récupération par catégorie** :
+  * **Mode Symlink** : Création instantanée de liens symboliques pointant vers le montage rclone cloud (zéro espace disque physique consommé).
+  * **Mode Téléchargement réel** : Téléchargement physique des fichiers en streaming direct avec reprise, vérification d'intégrité et limitation de débit configurable.
+* 🎯 **Émulation qBittorrent WebAPI v2** : Compatible clé en main avec Sonarr, Radarr, Whisparr et Prowlarr (catégories, gestion des priorités, vitesses, progression, pause/reprise, suppression).
+* 📥 **Gestionnaire Direct Download (DDL)** : Débridage et téléchargement immédiat de liens d'hébergeurs (1fichier, Rapidgator, Turbobit, Uptobox, etc.) avec choix du dossier de destination.
+* 🔍 **Scanner de Médiathèque & Liens Morts** :
+  * Cache incrémental indexé sur la date de modification (`mtime`) : scan de milliers de fichiers en **1 à 2 secondes**.
+  * Détection en temps réel des symlinks cassés ou retirés du cloud fournisseur.
+  * Relance automatique de recherche auprès de Radarr / Sonarr pour remplacer les fichiers manquants.
+  * Nettoyage sélectif ou en masse des orphelins et magnets cloud obsolètes.
+* 🔎 **Moteur de Recherche Multi-Sources** : Recherche intégrée sur DuckDuckGo, Brave, Google, Bing, Yandex et Mojeek avec injection directe en file de débridage en 1 clic.
+* 📊 **Test de Débit & Latence Intégré** : Mesure de ping vers l'infrastructure Debrid et serveurs mondiaux, avec calcul de débit montant/descendant (Mbps et Mo/s).
+* 🔔 **Système de Notifications Telegram** : Alertes modulaires (téléchargements terminés, vitesse moyenne, liens orphelins détectés, erreurs serveur).
+* 🎨 **Interface Web Moderne** : Responsive pour mobile, tablette et desktop, modes Sombre et Clair, multilingue Français 🇫🇷 / Anglais 🇬🇧, et onglets personnalisables.
+
+---
+
+## 🏗️ Modes de Fonctionnement
+
+DebridFlow offre une flexibilité totale pour gérer vos flux multimédia :
+
+```text
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│ Sonarr / Radarr ├──────►│   DebridFlow    ├──────►│ Debrid Provider │
+│   (qB API v2)   │       │   (Port 6505)   │       │   (Cloud API)   │
+└─────────────────┘       └────────┬────────┘       └────────┬────────┘
+                                   │                         │
+                 ┌─────────────────┴─────────────────┐       │
+                 ▼                                   ▼       ▼
+       [ Mode Symlink ]                    [ Mode Téléchargement ]
+   Pointe vers /mnt/rclone              Copie physique sur disque local
+   (Lecture directe sans espace)        (Idéal Whisparr & stockage local)
+```
+
+---
+
+## 🚀 Installation & Déploiement
+
+### 1. Docker & Docker Compose (Recommandé)
+
+Créez un fichier `docker-compose.yml` :
+
+```yaml
+services:
+  debridflow:
+    image: python:3.12-slim
+    container_name: debridflow
+    network_mode: host
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir --root-user-action=ignore -r requirements.txt &&
+             uvicorn app.main:app --host 0.0.0.0 --port 6505"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - DEBRID_PROVIDER=alldebrid
+      - RCLONE_MOUNT_DIR=/mnt/alldebrid/magnets
+      - DOWNLOAD_BASE_DIR=/mnt/virtual/Medias/DL
+      - MEDIA_SCAN_PATHS=/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series
+      - POLL_INTERVAL=3.0
+    volumes:
+      - ./app:/app/app:ro
+      - ./app.py:/app/app.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - ./data:/data
+      - /mnt/virtual/Medias:/mnt/virtual/Medias
+      - /mnt/alldebrid:/mnt/alldebrid:rshared
+    restart: unless-stopped
+```
+
+Démarrez le service :
+```bash
+docker compose up -d
+```
+L'interface est accessible sur `http://<IP_DU_SERVEUR>:6505`.
+
+---
+
+### 2. Linux Bare-Metal
+
+Compatible avec Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux et Alpine :
 
 1. Clonez le dépôt :
    ```bash
-   git clone https://github.com/billouetaudrey/pyrdt.git
-   cd pyrdt
+   git clone https://github.com/billouetaudrey/debridflow.git
+   cd debridflow
    ```
-2. Adaptez `docker-compose.yml` selon vos chemins de montage et vos disques :
-   ```yaml
-   services:
-     pyrdt:
-       image: python:3.12-slim
-       container_name: pyrdt
-       network_mode: host
-       working_dir: /app
-       command: >
-         sh -c "pip install --no-cache-dir --root-user-action=ignore -r requirements.txt &&
-                uvicorn app.main:app --host 0.0.0.0 --port 6505"
-       environment:
-         - PUID=1000
-         - PGID=1000
-         - TZ=Europe/Paris
-         - DEBRID_PROVIDER=alldebrid
-         - RCLONE_MOUNT_DIR=/mnt/alldebrid/magnets
-         - DOWNLOAD_BASE_DIR=/mnt/virtual/Medias/DL
-         - MEDIA_SCAN_PATHS=/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,/mnt/virtual/Medias/Animes
-         - POLL_INTERVAL=3.0
-       volumes:
-         - ./app.py:/app/app.py:ro
-         - ./app:/app/app:ro
-         - ./requirements.txt:/app/requirements.txt:ro
-         - ./data:/data
-         - /mnt/virtual/Medias:/mnt/virtual/Medias
-         - /mnt/alldebrid:/mnt/alldebrid:rshared
-       restart: unless-stopped
-   ```
-3. Lancez le conteneur en arrière-plan :
-   ```bash
-   docker compose up -d
-   ```
-4. Accédez au tableau de bord sur `http://localhost:6505` ou `http://<IP_SERVEUR>:6505`.
-
----
-
-### 2. Linux (Bare-Metal / Sans Docker)
-
-Compatible Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, Alpine.
-
-1. Lancez le script d'installation automatique :
+2. Exécutez le script d'installation :
    ```bash
    bash install.sh
    ```
-   *Ce script vérifie et installe Python 3.10+, configure un environnement virtuel `venv`, installe les dépendances et propose d'activer un service `systemd`.*
-2. **Gestion du service (si activé lors de l'installation)** :
+3. Commandes de gestion du service systemd :
    ```bash
-   sudo systemctl status pyrdt    # Vérifier l'état
-   sudo journalctl -u pyrdt -f    # Voir les logs en direct
-   sudo systemctl restart pyrdt   # Redémarrer
-   sudo systemctl stop pyrdt      # Arrêter
-   ```
-3. **Lancement manuel (sans service systemd)** :
-   ```bash
-   ./start.sh
+   sudo systemctl status debridflow    # Statut
+   sudo journalctl -u debridflow -f    # Journaux en direct
+   sudo systemctl restart debridflow   # Redémarrer
+   sudo systemctl stop debridflow      # Arrêter
    ```
 
 ---
 
 ### 3. Windows
 
-1. **Prérequis** :
-   * Installez **Python 3.10 ou supérieur** depuis [python.org](https://www.python.org/downloads/) (veillez à cocher la case *"Add python.exe to PATH"* lors de l'installation).
-2. **Installation** (dans une invite de commande PowerShell ou CMD) :
+1. Installez **Python 3.10+** (en cochant *"Add python.exe to PATH"*).
+2. Ouvrez PowerShell ou l'invite de commandes :
    ```powershell
-   cd C:\chemin\vers\pyrdt
+   git clone https://github.com/billouetaudrey/debridflow.git
+   cd debridflow
    python -m venv venv
    .\venv\Scripts\activate
-   pip install --upgrade pip
    pip install -r requirements.txt
-   ```
-3. **Démarrage** :
-   ```powershell
-   .\venv\Scripts\activate
    uvicorn app.main:app --host 0.0.0.0 --port 6505
    ```
 
@@ -128,118 +150,117 @@ Compatible Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, Alpine.
 
 ### 4. macOS
 
-1. **Prérequis** :
-   * Installez Python 3 via [Homebrew](https://brew.sh) si nécessaire :
-     ```bash
-     brew install python
-     ```
-2. **Installation** :
-   ```bash
-   cd /chemin/vers/pyrdt
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-3. **Démarrage** :
-   ```bash
-   source venv/bin/activate
-   uvicorn app.main:app --host 0.0.0.0 --port 6505
-   ```
-
----
-
-## ⚙️ Configuration de Sonarr / Radarr / Whisparr
-
-### 1. Client de téléchargement (Download Client)
-
-Dans vos applications \*arr, rendez-vous dans **Settings** > **Download Clients** et ajoutez un client :
-
-| Paramètre | Valeur |
-| :--- | :--- |
-| **Type de client** | **qBittorrent** |
-| **Nom** | `PyRDT` |
-| **Hôte (Host)** | `localhost` ou l'adresse IP de votre serveur PyRDT |
-| **Port** | `6505` |
-| **Nom d'utilisateur** | *(Laisser vide sauf si configuré dans Sécurité)* |
-| **Mot de passe** | *(Laisser vide sauf si configuré dans Sécurité)* |
-| **Catégorie** | `tv-sonarr` (pour Sonarr) / `radarr` (pour Radarr) / `whisparr` (pour Whisparr) |
-
-> [!TIP]
-> Dans PyRDT, rendez-vous dans l'onglet **Paramètres** > **Services (*arr)** pour définir pour chaque catégorie si elle doit utiliser le mode **Symlink** ou **Téléchargement réel**.
-
----
-
-### 2. Webhook de notification (Scan automatique de la médiathèque)
-
-Pour déclencher automatiquement la vérification des liens symboliques et de la médiathèque après chaque import terminé par Sonarr ou Radarr :
-
-1. Dans **Sonarr** ou **Radarr**, allez dans **Settings** > **Connect** > bouton **+** > **Webhook**.
-2. Renseignez les paramètres suivants :
-   * **Name** : `PyRDT Scanner`
-   * **Notification Triggers** : Cochez uniquement **On Download** / **On Import** (ou **On Upgrade**).
-   * **URL** : `http://127.0.0.1:6505/api/scanner/webhook` *(ou l'IP de votre serveur)*
-   * **Method** : `POST`
-3. Enregistrez. Dès qu'un téléchargement est finalisé et importé, PyRDT analyse les nouveaux liens en tâche de fond.
-
-> [!NOTE]
-> Grâce au système de sécurité intégré (coalescing & cooldown), si Sonarr importe une saison complète de 20 épisodes à la suite, PyRDT regroupe automatiquement tous les webhooks pour n'exécuter qu'une seule analyse globale, sans saturer le serveur ni les disques.
-
----
-
-## 🔍 Module "Médiathèque & Liens"
-
-Accessible via l'onglet dédié (activable/désactivable dans les paramètres) :
-
-* **Statistiques globales** : Total des liens morts, des torrents/magnets cloud, des doublons et des fichiers locaux indexés.
-* **Résolution des liens morts** :
-  * Recherche automatique : PyRDT contacte l'API de Radarr ou Sonarr pour déclencher une nouvelle recherche automatique du film ou de l'épisode correspondant au lien mort, puis purge le symlink cassé.
-  * Suppression locale : Nettoie les fichiers/symlinks orphelins du stockage.
-* **Gestion des magnets Debrid** :
-  * Filtrez par : **Tous**, **Doublons**, **Non symlinkés** ou **Liens morts**.
-  * Suppression sélective ou par lot directement depuis l'interface avec confirmation.
-
----
-
-## 📁 Architecture du Code
-
-```text
-pyrdt/
-├── app.py                      # Point d'entrée rétrocompatible
-├── docker-compose.yml          # Déploiement conteneurisé
-├── install.sh                  # Installeur automatique Linux (bare-metal)
-├── start.sh                    # Script de démarrage direct
-├── requirements.txt            # Dépendances Python (FastAPI, Uvicorn, HTTPX)
-├── data/                       # Stockage persistant de l'état (state.json, scanner_cache.json)
-└── app/
-    ├── main.py                 # Initialisation FastAPI, middlewares, lifespan
-    ├── config.py               # Paramètres par défaut, logging
-    ├── state.py                # Gestion du fichier JSON d'état et verrous
-    ├── storage.py              # Détection rclone, création symlinks/copies, auto-clean
-    ├── scanner.py              # Moteur d'analyse de médiathèque, AllDebrid & Radarr/Sonarr
-    ├── worker.py               # Tâche de fond asynchrone pour le suivi des téléchargements
-    ├── bencode.py              # Décodeur Bencode (.torrent) et parseur de magnets
-    ├── providers/              # Connecteurs d'API de débridage (Adapter Pattern)
-    │   ├── base.py             # Interface commune BaseDebridProvider
-    │   ├── alldebrid.py        # AllDebrid
-    │   ├── realdebrid.py       # Real-Debrid
-    │   ├── premiumize.py       # Premiumize.me
-    │   ├── debridlink.py       # Debrid-Link
-    │   ├── torbox.py           # TorBox
-    │   └── highway.py          # High-Way.me
-    ├── routers/
-    │   ├── qbittorrent.py      # Endpoints compatibles qBittorrent WebAPI v2
-    │   ├── scanner.py          # Endpoints API du scanner de médiathèque et webhooks
-    │   └── web.py              # Endpoints du tableau de bord Web et des paramètres
-    ├── templates/
-    │   └── index.html          # Interface utilisateur HTML5 responsive
-    └── static/
-        ├── css/style.css       # Thèmes sombre & clair (CSS variables) et responsive
-        └── js/app.js           # Moteur i18n, gestion scanner et rafraîchissement temps réel
+```bash
+git clone https://github.com/billouetaudrey/debridflow.git
+cd debridflow
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 6505
 ```
 
 ---
 
-## 📄 Licence
+## ⚙️ Configuration avec Sonarr / Radarr / Whisparr
 
-Ce projet est sous licence MIT — vous êtes libre de l'utiliser, le modifier et le distribuer.
+### 1. Ajout du Client de Téléchargement
+
+Dans **Sonarr / Radarr**, naviguez vers **Settings** > **Download Clients** > **+** > **qBittorrent** :
+
+| Champ | Paramètre recommandé |
+| :--- | :--- |
+| **Nom** | `DebridFlow` |
+| **Hôte** | `localhost` ou adresse IP de votre machine DebridFlow |
+| **Port** | `6505` |
+| **Nom d'utilisateur** | *(Laisser vide sauf si configuré dans Sécurité)* |
+| **Mot de passe** | *(Laisser vide sauf si configuré dans Sécurité)* |
+| **Catégorie** | `radarr` (pour Radarr) / `tv-sonarr` (pour Sonarr) / `whisparr` |
+
+> [!TIP]
+> Dans DebridFlow (**Paramètres > Services \*arr**), configurez pour chaque catégorie si les fichiers doivent être créés en **Symlink** (instantané) ou en **Téléchargement réel**.
+
+### 2. Automatisation du Scanner via Webhook
+
+Pour analyser automatiquement vos liens après chaque import :
+1. Dans **Sonarr** ou **Radarr**, allez dans **Settings** > **Connect** > **+** > **Webhook**.
+2. Paramètres :
+   * **Name** : `DebridFlow Scanner`
+   * **Notification Triggers** : Cochez **On Download** / **On Import** (et **On Upgrade**).
+   * **URL** : `http://127.0.0.1:6505/api/scanner/webhook`
+   * **Method** : `POST`
+3. DebridFlow utilise un mécanisme de coalescing : les requêtes rapprochées sont regroupées pour éviter les scans redondants.
+
+---
+
+## 🔍 Scanner de Médiathèque & Liens Morts
+
+L'onglet **Médiathèque & Liens** analyse récursivement vos bibliothèques multimédia :
+* **Détection instantanée** : Repérage des liens symboliques orphelins dont la source cloud a été supprimée.
+* **Auto-Repair Radarr / Sonarr** : Envoi direct d'une commande de recherche à l'API de votre gestionnaire pour télécharger automatiquement une version de remplacement.
+* **Gestion des Magnets Cloud** : Inspection de tous les torrents stockés chez votre fournisseur Debrid avec détection des doublons et suppression ciblée.
+
+---
+
+## 🔎 Finder Multi-Moteurs DDL
+
+Le module de recherche intégré permet de trouver des fichiers multimédia sur plusieurs moteurs indépendants (DuckDuckGo, Brave, Google, Bing, Yandex, Mojeek) et de lancer le débridage immédiatement sans quitter DebridFlow.
+
+---
+
+## 📊 Speedtest Réseau & Datacenters
+
+Mesurez les performances de votre connexion directement depuis le serveur hôte :
+* Ping AllDebrid et latence globale.
+* Vitesse de débit descendant (Download) et montant (Upload) affichée en Mbps et Mo/s.
+* Raccourcis directs vers les plateformes de diagnostic officielles.
+
+---
+
+## 🔔 Notifications Telegram
+
+Configurez un bot Telegram dans **Paramètres > Notifications** pour être alerté en direct :
+* Fin de téléchargement avec vitesse moyenne et taille.
+* Rapport d'analyse du scanner de médiathèque.
+* Détection de liens morts nécessitant votre attention.
+* Alertes d'erreurs critiques d'API de débridage.
+
+---
+
+## 📐 Structure du Projet
+
+```text
+debridflow/
+├── docker-compose.yml          # Déploiement conteneurisé Docker
+├── install.sh                  # Script d'installation automatique Linux
+├── start.sh                    # Script de lancement direct
+├── requirements.txt            # Dépendances du projet (FastAPI, HTTPX, etc.)
+├── data/                       # Stockage persistant (état, caches, configuration)
+└── app/
+    ├── main.py                 # Application FastAPI et cycle de vie
+    ├── config.py               # Paramètres globaux et journalisation
+    ├── state.py                # Persistance de l'état JSON et verrous
+    ├── storage.py              # Gestion des montages rclone et symlinks
+    ├── scanner.py              # Moteur de scan, détection et liaison *arr
+    ├── worker.py               # Traitement asynchrone des téléchargements
+    ├── notifications.py        # Module de notifications Telegram
+    ├── bencode.py              # Décodeur Bencode et parseur torrent/magnet
+    ├── providers/              # Connecteurs API Debrid (AllDebrid, Real-Debrid...)
+    ├── routers/
+    │   ├── qbittorrent.py      # Endpoints WebAPI v2 qBittorrent
+    │   ├── scanner.py          # Endpoints du scanner et webhooks
+    │   ├── speedtest.py        # Endpoints du test de vitesse
+    │   └── web.py              # Tableau de bord et endpoints de configuration
+    ├── templates/
+    │   └── index.html          # Interface utilisateur web responsive
+    └── static/
+        ├── css/style.css       # Thèmes clair/sombre et styles adaptatifs
+        └── js/app.js           # Moteur frontend, traductions et requêtes temps réel
+```
+
+---
+
+## ⚖️ Avertissement Légal & Licence
+
+**DebridFlow** est un outil logiciel indépendant développé à des fins de gestion technique et d'automatisation de flux multimédia personnels. Les auteurs ne cautionnent ni n'encouragent le téléchargement de contenus non autorisés. Vous êtes responsable du respect des lois en vigueur dans votre juridiction.
+
+Ce projet est distribué sous licence [MIT](LICENSE).
