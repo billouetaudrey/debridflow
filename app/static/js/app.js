@@ -1,8 +1,8 @@
-// PyRDT Frontend Logic & Multilingual Engine
+// DebridFlow Frontend Logic & Multilingual Engine
 const TRANSLATIONS = {
   fr: {
     // Brand & Header
-    brand_title: "PyRDT — Client Multi-Debrid Symlink & DL",
+    brand_title: "DebridFlow — Client Multi-Debrid Symlink & DL",
     tab_queue: "File d'attente",
     tab_settings: "Paramètres",
     api_test_ok: "Test API OK",
@@ -10,7 +10,7 @@ const TRANSLATIONS = {
     api_testing: "Vérification API...",
     status_dl: "DL en cours ({n})",
     status_sym: "Symlink en cours ({n})",
-    status_unreachable: "Serveur PyRDT injoignable",
+    status_unreachable: "Serveur DebridFlow injoignable",
 
     // Toolbar
     btn_add_torrent: "Ajouter un torrent / magnet",
@@ -60,7 +60,7 @@ const TRANSLATIONS = {
     // Multi-Engine Finder
     tab_finder_nav: "Recherche",
     finder_title: "Recherche Multi-Moteurs (Torrents, Magnets & DDL)",
-    finder_subtitle: "Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans PyRDT.",
+    finder_subtitle: "Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans DebridFlow.",
     opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
     opt_finder_mode_hoster: "🔗 Liens DDL (site:)",
     opt_finder_mode_both: "⚡ Tout (Torrent + DDL)",
@@ -84,8 +84,8 @@ const TRANSLATIONS = {
     btn_sel_magnets: "Magnets seuls",
     btn_sel_ddl: "DDL seuls",
     btn_copy_selected: "📋 Copier sélectionnés",
-    btn_dl_selected_pyrdt: "Télécharger la sélection dans PyRDT",
-    btn_dl_item: "Télécharger dans PyRDT",
+    btn_dl_selected_pyrdt: "Télécharger la sélection dans DebridFlow",
+    btn_dl_item: "Télécharger dans DebridFlow",
     title_rejected_items: "⚠️ Liens écartés / non retenus",
     lbl_dest_service: "Service / Catégorie :",
     lbl_transfer_mode: "Mode de transfert :",
@@ -124,7 +124,7 @@ const TRANSLATIONS = {
 
     // Delete Modal
     modal_title: "Options de suppression",
-    modal_desc: "Retirer {n} élément(s) de la liste PyRDT :",
+    modal_desc: "Retirer {n} élément(s) de la liste DebridFlow :",
     opt_del_files: "Supprimer aussi les fichiers / liens symboliques locaux",
     opt_del_ad: "Supprimer aussi le magnet chez le fournisseur",
     btn_cancel: "Annuler",
@@ -158,7 +158,7 @@ const TRANSLATIONS = {
     lbl_api_key: "Clé / Token API",
     hint_api_key: "Clé ou Token secret généré chez votre fournisseur.",
     lbl_agent: "Nom de l'agent / User-Agent",
-    hint_agent: "Identifiant envoyé aux API (ex: PyRDT-Billou).",
+    hint_agent: "Identifiant envoyé aux API (ex: DebridFlow-Billou).",
     lbl_api_base: "URL de l'API",
     hint_api_base: "Pré-remplie automatiquement selon le service sélectionné.",
     btn_test_api: "Tester la connexion API",
@@ -193,8 +193,20 @@ const TRANSLATIONS = {
 
     lbl_poll_interval: "Intervalle de vérification API (secondes)",
     hint_poll_interval: "Fréquence d'interrogation du fournisseur (défaut : 3.0s).",
-    title_speedtests: "Tests de Débit & Performance Réseau :",
-    desc_speedtests: "Mesurez les performances de votre connexion Internet globale et votre bande passante directe vers les serveurs AllDebrid :",
+    title_speedtests: "Tests de Débit & Performance Réseau",
+    desc_speedtests: "Mesurez la bande passante réelle de votre serveur et testez les serveurs AllDebrid sans quitter l'interface :",
+    title_integrated_speedtest: "Test de Débit Serveur Direct",
+    hint_integrated_speedtest: "Mesure le ping AllDebrid, la latence globale et le débit descendant/montant réel de votre machine.",
+    btn_run_speedtest: "Lancer le Test Direct",
+    lbl_st_ad_ping: "Ping AllDebrid",
+    lbl_st_global_ping: "Ping Global",
+    lbl_st_dl_speed: "Débit Descendant",
+    lbl_st_ul_speed: "Débit Montant",
+    lbl_speedtest_ad_inapp: "Speedtest Officiel AllDebrid (Multi-Serveurs In-App)",
+    hint_speedtest_ad_inapp: "Teste les nœuds de datacenters AllDebrid (Paris, Francfort, Amsterdam...) directement dans DebridFlow.",
+    btn_show_ad_speedtest_inapp: "Afficher le test intégré",
+    btn_hide_ad_speedtest_inapp: "Masquer le test intégré",
+    btn_fullscreen: "Plein écran",
     lbl_speedtest_ad: "Speedtest AllDebrid (Direct CDN)",
     hint_speedtest_ad: "Teste la vitesse de téléchargement directe et la latence entre votre connexion et les serveurs de débridage AllDebrid.",
     btn_launch_speedtest_ad: "Lancer le Speedtest AllDebrid ↗",
@@ -285,7 +297,7 @@ const TRANSLATIONS = {
     tg_test_err: "Échec de l'envoi vers Telegram.",
 
     // Onboarding
-    ob_title: "Bienvenue sur PyRDT 🚀",
+    ob_title: "Bienvenue sur DebridFlow 🚀",
     ob_subtitle: "Assistant de première configuration pas à pas",
     ob_tab_styles: "1. Styles",
     ob_tab_provider: "2. Fournisseur",
@@ -302,17 +314,17 @@ const TRANSLATIONS = {
     ob_relaunch_btn: "🚀 Relancer l'assistant",
     ob_relaunch_hint: "Relance le guide pas à pas pour revoir ou modifier l'ensemble de vos paramètres.",
     ob_summary_title: "🎉 Tout est prêt ! Bon DL",
-    ob_summary_desc: "Votre configuration PyRDT est prête. Cliquez ci-dessous pour appliquer vos réglages et démarrer vos téléchargements.",
-    ob_hint_step1: "Personnalisez l'apparence et le confort visuel de PyRDT. Vous pouvez changer le thème ou la langue à tout moment.",
+    ob_summary_desc: "Votre configuration DebridFlow est prête. Cliquez ci-dessous pour appliquer vos réglages et démarrer vos téléchargements.",
+    ob_hint_step1: "Personnalisez l'apparence et le confort visuel de DebridFlow. Vous pouvez changer le thème ou la langue à tout moment.",
     ob_hint_step2: "Connectez votre compte Debrid pour débrider et récupérer vos fichiers à vitesse maximale.",
-    ob_hint_step3: "Configurez les chemins où Rclone monte le disque distant et où PyRDT stocke les téléchargements et liens symboliques.",
+    ob_hint_step3: "Configurez les chemins où Rclone monte le disque distant et où DebridFlow stocke les téléchargements et liens symboliques.",
     ob_hint_step4: "Configurez les catégories correspondant à Sonarr, Radarr, etc. Choisissez le mode Symlink (instantané) ou Téléchargement réel (copie sur disque).",
-    ob_hint_step5: "Ajustez le comportement de nettoyage automatique et protégez l'accès à PyRDT.",
+    ob_hint_step5: "Ajustez le comportement de nettoyage automatique et protégez l'accès à DebridFlow.",
     ob_hint_step6: "Activez la surveillance des liens morts dans votre médiathèque et recevez des alertes en temps réel sur Telegram.",
     sec_reset: "Zone de Réinitialisation & Assistant",
     title_reset_settings: "Supprimer tous les paramètres & Réafficher l'Onboarding",
     btn_reset_settings: "🗑️ Supprimer & Relancer l'onboarding",
-    hint_reset_settings: "Réinitialise tous les paramètres de PyRDT à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.",
+    hint_reset_settings: "Réinitialise tous les paramètres de DebridFlow à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.",
     confirm_reset_settings: "Êtes-vous sûr de vouloir supprimer tous les paramètres, restaurer les valeurs par défaut et relancer l'assistant de configuration initiale ?",
     opt_theme_dark: "🌙 Sombre (Dark Mode)",
     opt_theme_light: "☀️ Clair (Light Mode)",
@@ -326,7 +338,7 @@ const TRANSLATIONS = {
     recap_dl_dir_title: "📁 Dossier Téléchargements :",
     recap_services_title: "🎬 Services *arr configurés :",
     recap_tg_title: "🔔 Notifications Telegram :",
-    ob_btn_finish_alt: "Bon DL ! Lancer PyRDT 🚀",
+    ob_btn_finish_alt: "Bon DL ! Lancer DebridFlow 🚀",
     ob_active: "Activées",
     ob_disabled: "Désactivées",
     ob_services_count: "{n} service(s)",
@@ -378,7 +390,7 @@ const TRANSLATIONS = {
   },
   en: {
     // Brand & Header
-    brand_title: "PyRDT — Multi-Debrid Symlink & DL Client",
+    brand_title: "DebridFlow — Multi-Debrid Symlink & DL Client",
     tab_queue: "Queue",
     tab_settings: "Settings",
     api_test_ok: "API Test OK",
@@ -386,7 +398,7 @@ const TRANSLATIONS = {
     api_testing: "Checking API...",
     status_dl: "Downloading ({n})",
     status_sym: "Symlinking ({n})",
-    status_unreachable: "PyRDT server unreachable",
+    status_unreachable: "DebridFlow server unreachable",
 
     // Toolbar
     btn_add_torrent: "Add torrent / magnet",
@@ -436,7 +448,7 @@ const TRANSLATIONS = {
     // Multi-Engine Finder
     tab_finder_nav: "Search",
     finder_title: "Multi-Engine Finder (Torrents, Magnets & DDL)",
-    finder_subtitle: "Simultaneously queries DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... to extract verified links directly downloadable in PyRDT.",
+    finder_subtitle: "Simultaneously queries DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... to extract verified links directly downloadable in DebridFlow.",
     opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
     opt_finder_mode_hoster: "🔗 DDL Links (site:)",
     opt_finder_mode_both: "⚡ All (Torrent + DDL)",
@@ -460,8 +472,8 @@ const TRANSLATIONS = {
     btn_sel_magnets: "Magnets only",
     btn_sel_ddl: "DDL only",
     btn_copy_selected: "📋 Copy selected",
-    btn_dl_selected_pyrdt: "Download selection in PyRDT",
-    btn_dl_item: "Download to PyRDT",
+    btn_dl_selected_pyrdt: "Download selection in DebridFlow",
+    btn_dl_item: "Download to DebridFlow",
     title_rejected_items: "⚠️ Discarded / rejected links",
     lbl_dest_service: "Service / Category:",
     lbl_transfer_mode: "Transfer mode:",
@@ -500,7 +512,7 @@ const TRANSLATIONS = {
 
     // Delete Modal
     modal_title: "Deletion Options",
-    modal_desc: "Remove {n} item(s) from PyRDT list:",
+    modal_desc: "Remove {n} item(s) from DebridFlow list:",
     opt_del_files: "Also delete local files / symbolic links",
     opt_del_ad: "Also delete magnet on provider",
     btn_cancel: "Cancel",
@@ -534,7 +546,7 @@ const TRANSLATIONS = {
     lbl_api_key: "API Key / Token",
     hint_api_key: "API Key or secret token generated with your provider.",
     lbl_agent: "Agent Name / User-Agent",
-    hint_agent: "Identifier sent to APIs (e.g. PyRDT-Billou).",
+    hint_agent: "Identifier sent to APIs (e.g. DebridFlow-Billou).",
     lbl_api_base: "API Base URL",
     hint_api_base: "Automatically filled according to selected provider.",
     btn_test_api: "Test API Connection",
@@ -569,8 +581,20 @@ const TRANSLATIONS = {
 
     lbl_poll_interval: "API Polling Interval (seconds)",
     hint_poll_interval: "Provider query frequency (default: 3.0s).",
-    title_speedtests: "Speed Tests & Network Performance:",
-    desc_speedtests: "Measure your overall Internet speed and your direct bandwidth to AllDebrid servers:",
+    title_speedtests: "Speed Tests & Network Performance",
+    desc_speedtests: "Measure your actual server bandwidth and test AllDebrid servers directly inside the UI:",
+    title_integrated_speedtest: "Direct Server Speed Test",
+    hint_integrated_speedtest: "Measures AllDebrid ping, global latency and actual download/upload bandwidth of your machine.",
+    btn_run_speedtest: "Run Direct Speed Test",
+    lbl_st_ad_ping: "AllDebrid Ping",
+    lbl_st_global_ping: "Global Ping",
+    lbl_st_dl_speed: "Download Speed",
+    lbl_st_ul_speed: "Upload Speed",
+    lbl_speedtest_ad_inapp: "Official AllDebrid Speedtest (Multi-Servers In-App)",
+    hint_speedtest_ad_inapp: "Tests AllDebrid datacenter nodes (Paris, Frankfurt, Amsterdam...) directly inside DebridFlow.",
+    btn_show_ad_speedtest_inapp: "Show In-App Test",
+    btn_hide_ad_speedtest_inapp: "Hide In-App Test",
+    btn_fullscreen: "Fullscreen",
     lbl_speedtest_ad: "AllDebrid Speedtest (Direct CDN)",
     hint_speedtest_ad: "Tests download speed and latency directly between your connection and AllDebrid debriding servers.",
     btn_launch_speedtest_ad: "Launch AllDebrid Speedtest ↗",
@@ -661,7 +685,7 @@ const TRANSLATIONS = {
     tg_test_err: "Telegram sending failed.",
 
     // Onboarding
-    ob_title: "Welcome to PyRDT 🚀",
+    ob_title: "Welcome to DebridFlow 🚀",
     ob_subtitle: "Step-by-step first-time setup wizard",
     ob_tab_styles: "1. Styles",
     ob_tab_provider: "2. Provider",
@@ -678,17 +702,17 @@ const TRANSLATIONS = {
     ob_relaunch_btn: "🚀 Relaunch wizard",
     ob_relaunch_hint: "Relaunches the step-by-step guide to review or edit all your settings.",
     ob_summary_title: "🎉 All set! Happy Downloading",
-    ob_summary_desc: "Your PyRDT configuration is ready. Click below to apply your settings and start downloading.",
-    ob_hint_step1: "Customize the appearance and visual comfort of PyRDT. You can change theme and language at any time.",
+    ob_summary_desc: "Your DebridFlow configuration is ready. Click below to apply your settings and start downloading.",
+    ob_hint_step1: "Customize the appearance and visual comfort of DebridFlow. You can change theme and language at any time.",
     ob_hint_step2: "Connect your Debrid account to debrid and download files at maximum speed.",
-    ob_hint_step3: "Configure the paths where Rclone mounts the cloud drive and where PyRDT stores downloads and symlinks.",
+    ob_hint_step3: "Configure the paths where Rclone mounts the cloud drive and where DebridFlow stores downloads and symlinks.",
     ob_hint_step4: "Configure categories for Sonarr, Radarr, etc. Choose Symlink mode (instant) or Real Download mode (disk copy).",
-    ob_hint_step5: "Adjust automatic cleanup behavior and secure access to PyRDT.",
+    ob_hint_step5: "Adjust automatic cleanup behavior and secure access to DebridFlow.",
     ob_hint_step6: "Enable dead links monitoring in your media library and receive real-time Telegram alerts.",
     sec_reset: "Reset & Wizard Zone",
     title_reset_settings: "Delete all settings & Redisplay Onboarding",
     btn_reset_settings: "🗑️ Delete & Relaunch Onboarding",
-    hint_reset_settings: "Resets all PyRDT settings back to factory defaults and redisplays the initial setup wizard.",
+    hint_reset_settings: "Resets all DebridFlow settings back to factory defaults and redisplays the initial setup wizard.",
     confirm_reset_settings: "Are you sure you want to delete all settings, restore defaults, and restart the onboarding wizard?",
     opt_theme_dark: "🌙 Dark Mode",
     opt_theme_light: "☀️ Light Mode",
@@ -702,7 +726,7 @@ const TRANSLATIONS = {
     recap_dl_dir_title: "📁 Downloads Folder:",
     recap_services_title: "🎬 Configured *arr Services:",
     recap_tg_title: "🔔 Telegram Notifications:",
-    ob_btn_finish_alt: "Happy DL! Launch PyRDT 🚀",
+    ob_btn_finish_alt: "Happy DL! Launch DebridFlow 🚀",
     ob_active: "Active",
     ob_disabled: "Disabled",
     ob_services_count: "{n} service(s)",
@@ -1861,7 +1885,7 @@ function openOnboarding(force = false) {
   const obApiKey = document.getElementById('ob_api_key');
   if (obApiKey) obApiKey.value = getVal('api_key');
   const obAgent = document.getElementById('ob_agent');
-  if (obAgent) obAgent.value = getVal('agent', 'PyRDT-Billou');
+  if (obAgent) obAgent.value = getVal('agent', 'DebridFlow-Billou');
   const obApiBase = document.getElementById('ob_api_base');
   if (obApiBase) obApiBase.value = getVal('api_base');
 
@@ -3339,7 +3363,7 @@ async function downloadFinderSelected() {
   const origText = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> ' + (currentLang === 'en' ? 'Adding to PyRDT...' : 'Ajout en cours...');
+    btn.innerHTML = '<span>⏳</span> ' + (currentLang === 'en' ? 'Adding to DebridFlow...' : 'Ajout en cours...');
   }
 
   try {
@@ -3353,7 +3377,7 @@ async function downloadFinderSelected() {
     });
     const data = await res.json();
     if (res.ok && data.status === 'ok') {
-      alert(data.message || (currentLang === 'en' ? 'Downloads added to PyRDT!' : 'Téléchargements ajoutés à PyRDT !'));
+      alert(data.message || (currentLang === 'en' ? 'Downloads added to DebridFlow!' : 'Téléchargements ajoutés à DebridFlow !'));
       refreshQueue();
     } else {
       alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.message || data.detail || 'Failed'));
@@ -3367,5 +3391,125 @@ async function downloadFinderSelected() {
     }
   }
 }
+
+// --- SPEEDTEST & BENCHMARK ENGINE ---
+let isRunningSpeedtest = false;
+
+async function runIntegratedSpeedtest() {
+  if (isRunningSpeedtest) return;
+  isRunningSpeedtest = true;
+
+  const btn = document.getElementById('btn-run-speedtest');
+  const statusBar = document.getElementById('st-status-bar');
+  const statusMsg = document.getElementById('st-status-msg');
+
+  if (btn) btn.disabled = true;
+  if (statusBar) statusBar.style.display = 'flex';
+  if (statusMsg) statusMsg.textContent = currentLang === 'en' ? 'Testing latency, download and upload speeds...' : 'Mesure des latences et du débit réel en cours...';
+
+  const resetFields = () => {
+    const elAd = document.getElementById('st-ad-ping');
+    const elAdSt = document.getElementById('st-ad-status');
+    const elGlobal = document.getElementById('st-global-ping');
+    const elDl = document.getElementById('st-dl-speed');
+    const elDlMb = document.getElementById('st-dl-mbs');
+    const elUl = document.getElementById('st-ul-speed');
+    const elUlMb = document.getElementById('st-ul-mbs');
+    if (elAd) elAd.textContent = '...';
+    if (elAdSt) elAdSt.textContent = '';
+    if (elGlobal) elGlobal.textContent = '...';
+    if (elDl) elDl.textContent = '...';
+    if (elDlMb) elDlMb.textContent = '';
+    if (elUl) elUl.textContent = '...';
+    if (elUlMb) elUlMb.textContent = '';
+  };
+  resetFields();
+
+  try {
+    const res = await fetch('/api/speedtest/run', { method: 'POST' });
+    const data = await res.json();
+
+    const elAd = document.getElementById('st-ad-ping');
+    const elAdSt = document.getElementById('st-ad-status');
+    const elGlobal = document.getElementById('st-global-ping');
+    const elDl = document.getElementById('st-dl-speed');
+    const elDlMb = document.getElementById('st-dl-mbs');
+    const elUl = document.getElementById('st-ul-speed');
+    const elUlMb = document.getElementById('st-ul-mbs');
+    const lastRun = document.getElementById('st-last-run');
+
+    if (elAd) elAd.textContent = data.alldebrid_ping_ms !== null ? `${data.alldebrid_ping_ms} ms` : 'Injoignable';
+    if (elAdSt) elAdSt.textContent = data.alldebrid_status ? `(${data.alldebrid_status})` : '';
+    if (elGlobal) elGlobal.textContent = data.ping_ms !== null ? `${data.ping_ms} ms` : '-- ms';
+    if (elDl) elDl.textContent = data.download_mbps > 0 ? `${data.download_mbps} Mbps` : '-- Mbps';
+    if (elDlMb) elDlMb.textContent = data.download_mbs > 0 ? `(${data.download_mbs} Mo/s)` : '';
+    if (elUl) elUl.textContent = data.upload_mbps > 0 ? `${data.upload_mbps} Mbps` : '-- Mbps';
+    if (elUlMb) elUlMb.textContent = data.upload_mbs > 0 ? `(${data.upload_mbs} Mo/s)` : '';
+
+    if (lastRun) {
+      const now = new Date();
+      lastRun.textContent = (currentLang === 'en' ? 'Last test: ' : 'Dernier test : ') + now.toLocaleTimeString();
+    }
+
+    if (statusMsg) statusMsg.textContent = currentLang === 'en' ? 'Speed test completed successfully!' : 'Test de débit terminé avec succès !';
+    setTimeout(() => {
+      if (statusBar) statusBar.style.display = 'none';
+    }, 4000);
+  } catch (err) {
+    if (statusMsg) statusMsg.textContent = (currentLang === 'en' ? 'Error: ' : 'Erreur : ') + err;
+  } finally {
+    isRunningSpeedtest = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+function toggleAdSpeedtestFrame() {
+  const container = document.getElementById('ad-speedtest-frame-container');
+  const iframe = document.getElementById('ad-speedtest-iframe');
+  const label = document.getElementById('lbl-btn-toggle-ad-frame');
+  if (!container || !iframe) return;
+
+  const isVisible = container.style.display !== 'none';
+  if (isVisible) {
+    container.style.display = 'none';
+    if (label) label.textContent = t('btn_show_ad_speedtest_inapp');
+  } else {
+    container.style.display = 'block';
+    if (!iframe.src || iframe.src === 'about:blank' || iframe.src === window.location.href) {
+      iframe.src = 'https://alldebrid.com/speedtest?from=contact&autostart=1';
+    }
+    if (label) label.textContent = t('btn_hide_ad_speedtest_inapp');
+  }
+}
+
+function reloadAdSpeedtestIframe() {
+  const iframe = document.getElementById('ad-speedtest-iframe');
+  if (iframe) {
+    iframe.src = 'https://alldebrid.com/speedtest?from=contact&autostart=1';
+  }
+}
+
+function openAdSpeedtestModal() {
+  const modal = document.getElementById('ad-speedtest-modal');
+  const iframe = document.getElementById('ad-speedtest-modal-iframe');
+  if (!modal || !iframe) return;
+  modal.style.display = 'flex';
+  if (!iframe.src || iframe.src === 'about:blank' || iframe.src === window.location.href) {
+    iframe.src = 'https://alldebrid.com/speedtest?from=contact&autostart=1';
+  }
+}
+
+function closeAdSpeedtestModal() {
+  const modal = document.getElementById('ad-speedtest-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function reloadAdSpeedtestModalIframe() {
+  const iframe = document.getElementById('ad-speedtest-modal-iframe');
+  if (iframe) {
+    iframe.src = 'https://alldebrid.com/speedtest?from=contact&autostart=1';
+  }
+}
+
 
 

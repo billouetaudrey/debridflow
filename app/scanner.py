@@ -470,7 +470,7 @@ class ScannerService:
 
                 # 4. Récupération des magnets AllDebrid
                 api_key = settings_db.get("api_key", "").strip()
-                agent = settings_db.get("agent", "PyRDT")
+                agent = settings_db.get("agent", "DebridFlow")
                 grouped: Dict[str, List[Dict[str, Any]]] = {}
                 total_mags = 0
 
@@ -721,7 +721,7 @@ class ScannerService:
         # 3. Suppression sur AllDebrid si le magnet existe encore sur AllDebrid
         ad_deleted = 0
         api_key = settings_db.get("api_key", "").strip()
-        agent = settings_db.get("agent", "PyRDT")
+        agent = settings_db.get("agent", "DebridFlow")
         rclone_mount = Path(settings_db.get("rclone_mount_dir", "/mnt/alldebrid/magnets"))
         rclone_parts = rclone_mount.parts
 
@@ -777,7 +777,7 @@ class ScannerService:
         delete_local: bool = True
     ) -> int:
         api_key = settings_db.get("api_key", "").strip()
-        agent = settings_db.get("agent", "PyRDT")
+        agent = settings_db.get("agent", "DebridFlow")
         deleted_count = 0
         deleted_ids: Set[str] = set()
 

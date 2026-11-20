@@ -239,7 +239,7 @@ def download_http_file_chunked(
         tmp_dst.unlink()
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PyRDT",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DebridFlow",
     }
 
     with httpx.Client(follow_redirects=True, timeout=60.0) as client:

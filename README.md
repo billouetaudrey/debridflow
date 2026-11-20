@@ -1,6 +1,6 @@
-# PyRDT — Multi-Debrid Symlink & Download Client
+# DebridFlow — Multi-Debrid Symlink & Download Client
 
-> **PyRDT** est un client de téléchargement et d'émulation qBittorrent léger, rapide et modulaire conçu pour connecter vos applications de la suite \*arr (**Sonarr**, **Radarr**, **Whisparr**, **Prowlarr**, etc.) à vos fournisseurs de débridage favoris, avec gestion intelligente de médiathèque et détection des liens morts.
+> **DebridFlow** (anciennement PyRDT) est un client de téléchargement et d'émulation qBittorrent léger, rapide et modulaire conçu pour connecter vos applications de la suite \*arr (**Sonarr**, **Radarr**, **Whisparr**, **Prowlarr**, etc.) à vos fournisseurs de débridage favoris, avec gestion intelligente de médiathèque, recherche multi-moteurs et détection des liens morts.
 
 ---
 

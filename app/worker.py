@@ -32,7 +32,7 @@ from app.storage import (
 
 
 async def background_worker() -> None:
-    logger.info("Worker PyRDT actif et en écoute.")
+    logger.info("Worker DebridFlow actif et en écoute.")
     copying_hashes: Set[str] = set()
     active_downloads: Set[str] = set()
 

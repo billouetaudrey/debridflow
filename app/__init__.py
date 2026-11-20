@@ -1,4 +1,4 @@
-"""PyRDT - Fast AllDebrid Symlink & Download Client for *arr stack."""
+"""DebridFlow - Fast Multi-Debrid Symlink & Download Client for *arr stack."""
 
 from app.main import app
 

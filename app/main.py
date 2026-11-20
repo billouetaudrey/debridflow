@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse
 
-from app.routers import finder, qbittorrent, scanner, web
+from app.routers import finder, qbittorrent, scanner, speedtest, web
 from app.state import load_state, settings_db
 from app.worker import background_worker
 
@@ -20,7 +20,7 @@ async def lifespan(app_instance: FastAPI):
     task.cancel()
 
 
-app = FastAPI(title="PyRDT - Fast AllDebrid Symlink & Download Client", lifespan=lifespan)
+app = FastAPI(title="DebridFlow - Fast Multi-Debrid Symlink & Download Client", lifespan=lifespan)
 
 
 # --- AUTHENTIFICATION OPTIONNELLE (UI + API QBITTORRENT) ---
@@ -56,7 +56,7 @@ async def auth_middleware(request: Request, call_next):
     return Response(
         content="Authentification requise",
         status_code=401,
-        headers={"WWW-Authenticate": 'Basic realm="PyRDT"'},
+        headers={"WWW-Authenticate": 'Basic realm="DebridFlow"'},
     )
 
 
@@ -65,3 +65,4 @@ app.include_router(qbittorrent.router)
 app.include_router(web.router)
 app.include_router(scanner.router)
 app.include_router(finder.router)
+app.include_router(speedtest.router)
