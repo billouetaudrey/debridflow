@@ -40,6 +40,36 @@ const TRANSLATIONS = {
     st_resolving: "Débridage AllDebrid...",
     st_queued: "En attente (slot DL)",
     tag_ddl: "DDL Direct",
+    // Multi-Engine Finder
+    tab_finder_nav: "🔍 Recherche",
+    finder_title: "Recherche Multi-Moteurs (Torrents, Magnets & DDL)",
+    finder_subtitle: "Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans PyRDT.",
+    opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
+    opt_finder_mode_hoster: "🔗 Liens DDL (site:)",
+    opt_finder_mode_both: "⚡ Tout (Torrent + DDL)",
+    ph_finder_query: "Ex: Dune Part Two 2024 MULTI 1080p...",
+    btn_finder_search: "Rechercher",
+    finder_adv_settings: "⚙️ Paramètres avancés (moteurs actifs, filtres, similarité)",
+    finder_lbl_engines: "Moteurs de recherche actifs :",
+    finder_site_filter: "Domaine hébergeur (mode site:)",
+    finder_region: "Région",
+    finder_safesearch: "Filtre parental",
+    finder_max_results: "Résultats max / moteur",
+    finder_max_scrape: "Pages max à analyser (Torrent)",
+    finder_min_sim: "Similarité minimum (%)",
+    finder_timeout: "Timeout réseau (sec)",
+    finder_chk_verify: "Vérifier validité des liens",
+    btn_save_finder_default: "💾 Enregistrer comme défaut",
+    finder_searching_title: "Recherche sur les moteurs et scan des liens...",
+    finder_searching_desc: "Interrogation des moteurs configurés, extraction des trackers et test de validité des liens.",
+    btn_sel_all: "Tout cocher",
+    btn_sel_none: "Tout décocher",
+    btn_sel_magnets: "Magnets seuls",
+    btn_sel_ddl: "DDL seuls",
+    btn_copy_selected: "📋 Copier sélectionnés",
+    btn_dl_selected_pyrdt: "Télécharger la sélection dans PyRDT",
+    btn_dl_item: "Télécharger dans PyRDT",
+    title_rejected_items: "⚠️ Liens écartés / non retenus",
     lbl_dest_service: "Service / Catégorie :",
     lbl_transfer_mode: "Mode de transfert :",
     opt_mode_auto: "Auto (selon le service)",
@@ -361,6 +391,36 @@ const TRANSLATIONS = {
     st_resolving: "Debriding...",
     st_queued: "Queued (DL slot)",
     tag_ddl: "Direct DDL",
+    // Multi-Engine Finder
+    tab_finder_nav: "🔍 Search",
+    finder_title: "Multi-Engine Finder (Torrents, Magnets & DDL)",
+    finder_subtitle: "Simultaneously queries DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... to extract verified links directly downloadable in PyRDT.",
+    opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
+    opt_finder_mode_hoster: "🔗 DDL Links (site:)",
+    opt_finder_mode_both: "⚡ All (Torrent + DDL)",
+    ph_finder_query: "Ex: Dune Part Two 2024 MULTI 1080p...",
+    btn_finder_search: "Search",
+    finder_adv_settings: "⚙️ Advanced settings (active engines, filters, similarity)",
+    finder_lbl_engines: "Active search engines:",
+    finder_site_filter: "Hoster domain (site: mode)",
+    finder_region: "Region",
+    finder_safesearch: "SafeSearch",
+    finder_max_results: "Max results / engine",
+    finder_max_scrape: "Max pages to scrape (Torrent)",
+    finder_min_sim: "Min similarity (%)",
+    finder_timeout: "Network timeout (sec)",
+    finder_chk_verify: "Verify links validity",
+    btn_save_finder_default: "💾 Save as default",
+    finder_searching_title: "Searching engines and scanning links...",
+    finder_searching_desc: "Querying configured engines, extracting trackers and testing link validity.",
+    btn_sel_all: "Select all",
+    btn_sel_none: "Deselect all",
+    btn_sel_magnets: "Magnets only",
+    btn_sel_ddl: "DDL only",
+    btn_copy_selected: "📋 Copy selected",
+    btn_dl_selected_pyrdt: "Download selection in PyRDT",
+    btn_dl_item: "Download to PyRDT",
+    title_rejected_items: "⚠️ Discarded / rejected links",
     lbl_dest_service: "Service / Category:",
     lbl_transfer_mode: "Transfer mode:",
     opt_mode_auto: "Auto (from service)",
@@ -846,6 +906,8 @@ function showTab(tab) {
   document.getElementById('tab-queue').style.display = tab === 'queue' ? 'block' : 'none';
   const tabDdl = document.getElementById('tab-ddl');
   if (tabDdl) tabDdl.style.display = tab === 'ddl' ? 'block' : 'none';
+  const tabFinder = document.getElementById('tab-finder');
+  if (tabFinder) tabFinder.style.display = tab === 'finder' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
   const tabScanner = document.getElementById('tab-scanner');
   if (tabScanner) tabScanner.style.display = tab === 'scanner' ? 'block' : 'none';
@@ -853,6 +915,8 @@ function showTab(tab) {
   document.getElementById('btn-queue').classList.toggle('active', tab === 'queue');
   const btnDdl = document.getElementById('btn-ddl');
   if (btnDdl) btnDdl.classList.toggle('active', tab === 'ddl');
+  const btnFinder = document.getElementById('btn-finder');
+  if (btnFinder) btnFinder.classList.toggle('active', tab === 'finder');
   document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
   if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
 
@@ -863,6 +927,7 @@ function showTab(tab) {
   }
 
   if (tab === 'queue' || tab === 'ddl') refreshQueue();
+  if (tab === 'finder') loadFinderSettings();
   if (tab === 'scanner') {
     loadScannerData();
     checkScannerStatusOnLoad();
