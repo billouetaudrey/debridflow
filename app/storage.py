@@ -4,6 +4,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import httpx
+
 from app.bencode import sanitize_filename
 from app.state import get_allowed_exts, settings_db
 
@@ -213,3 +215,73 @@ def is_already_imported_by_arr(item: Dict[str, Any]) -> bool:
     if cpath.is_dir():
         return len(list(cpath.iterdir())) == 0
     return False
+
+
+def download_http_file_chunked(
+    url: str,
+    dst: Path,
+    tmp_dst: Path,
+    speed_limit_bytes: int = 0,
+    total_expected: int = 0,
+    progress_callback: Optional[Callable[[int, int, float], None]] = None,
+) -> Tuple[int, float]:
+    """
+    Télécharge un fichier HTTP/HTTPS en streaming par blocs avec limitation de vitesse
+    et callback de progression vers un fichier temporaire tmp_dst avant renommage en dst.
+    """
+    chunk_size = 256 * 1024  # 256 KB
+    copied = 0
+    t_start = time.time()
+    last_callback_time = t_start
+    last_callback_bytes = 0
+
+    if tmp_dst.exists():
+        tmp_dst.unlink()
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PyRDT",
+    }
+
+    with httpx.Client(follow_redirects=True, timeout=60.0) as client:
+        with client.stream("GET", url, headers=headers) as resp:
+            resp.raise_for_status()
+            content_len = resp.headers.get("content-length")
+            if content_len and content_len.isdigit():
+                exp = int(content_len)
+                if exp > 0:
+                    total_expected = exp
+
+            with open(tmp_dst, "wb") as fdst:
+                for chunk in resp.iter_bytes(chunk_size=chunk_size):
+                    chunk_start = time.time()
+                    if not chunk:
+                        continue
+                    fdst.write(chunk)
+                    buf_len = len(chunk)
+                    copied += buf_len
+
+                    if speed_limit_bytes > 0:
+                        elapsed_chunk = time.time() - chunk_start
+                        expected_chunk_time = buf_len / speed_limit_bytes
+                        if elapsed_chunk < expected_chunk_time:
+                            time.sleep(expected_chunk_time - elapsed_chunk)
+
+                    now = time.time()
+                    if progress_callback and (now - last_callback_time >= 0.5):
+                        interval_bytes = copied - last_callback_bytes
+                        interval_time = max(0.001, now - last_callback_time)
+                        instant_speed = interval_bytes / interval_time
+                        progress_callback(copied, total_expected, instant_speed)
+                        last_callback_time = now
+                        last_callback_bytes = copied
+
+    if progress_callback:
+        total_time = max(0.001, time.time() - t_start)
+        instant_speed = copied / total_time
+        progress_callback(copied, total_expected, instant_speed)
+
+    if dst.exists() or dst.is_symlink():
+        dst.unlink()
+    os.replace(tmp_dst, dst)
+    duration = max(0.001, time.time() - t_start)
+    return copied, duration

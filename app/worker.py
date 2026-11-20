@@ -9,8 +9,10 @@ from app.alldebrid import (
     alldebrid_delete_magnet,
     alldebrid_get_magnet_files,
     alldebrid_get_statuses,
+    alldebrid_unlock_link,
     check_alldebrid_api_health,
 )
+from app.bencode import sanitize_filename
 from app.config import logger
 from app.state import (
     api_health,
@@ -21,6 +23,7 @@ from app.state import (
     torrents_db,
 )
 from app.storage import (
+    download_http_file_chunked,
     find_mounted_files,
     is_already_imported_by_arr,
     materialize_files_for_torrent,
@@ -31,6 +34,7 @@ from app.storage import (
 async def background_worker() -> None:
     logger.info("Worker PyRDT actif et en écoute.")
     copying_hashes: Set[str] = set()
+    active_downloads: Set[str] = set()
 
     async def _run_transfer(
         http_client: httpx.AsyncClient,
@@ -134,6 +138,123 @@ async def background_worker() -> None:
                 pass
         finally:
             copying_hashes.discard(info_hash)
+            active_downloads.discard(info_hash)
+
+    async def _run_ddl_download(
+        http_client: httpx.AsyncClient,
+        item_id: str,
+        item_snapshot: Dict[str, Any],
+        dest_dir: Path,
+    ) -> None:
+        try:
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            raw_name = item_snapshot.get("name") or "fichier"
+            clean_name = sanitize_filename(raw_name) or "fichier"
+            target_file = dest_dir / clean_name
+            tmp_file = dest_dir / f".{clean_name}.part"
+            download_url = item_snapshot.get("download_url")
+
+            if not download_url:
+                raise RuntimeError("URL de téléchargement direct absente")
+
+            total_expected = int(item_snapshot.get("size") or 0)
+            speed_limit_mb = float(settings_db.get("download_speed_limit", 0))
+            speed_limit_bytes = int(speed_limit_mb * 1024 * 1024)
+
+            async with state_lock:
+                if item_id in torrents_db:
+                    torrents_db[item_id]["state"] = "copying"
+                    torrents_db[item_id]["save_path"] = str(dest_dir)
+                    save_state()
+
+            logger.info(f"Début téléchargement DDL -> {target_file} (Taille : {total_expected} octets)")
+
+            def on_progress(bytes_copied: int, total_exp: int, instant_speed: float):
+                if item_id in torrents_db:
+                    torrents_db[item_id]["dlspeed"] = int(instant_speed)
+                    if total_exp > 0:
+                        torrents_db[item_id]["progress"] = min(0.99, round(bytes_copied / total_exp, 4))
+                        rem = max(0, total_exp - bytes_copied)
+                        torrents_db[item_id]["eta"] = int(rem / instant_speed) if instant_speed > 0 else 0
+
+            total_copied, duration = await asyncio.to_thread(
+                download_http_file_chunked,
+                download_url,
+                target_file,
+                tmp_file,
+                speed_limit_bytes,
+                total_expected,
+                on_progress,
+            )
+
+            now_done = int(time.time())
+            avg_speed = int(total_copied / duration) if duration > 0 and total_copied > 0 else 0
+
+            settings_db["last_download_stat"] = {
+                "name": clean_name,
+                "size": total_copied,
+                "duration": round(duration, 1),
+                "avg_speed": avg_speed,
+                "timestamp": now_done,
+            }
+
+            async with state_lock:
+                if item_id in torrents_db:
+                    torrents_db[item_id].update(
+                        {
+                            "name": clean_name,
+                            "size": total_copied,
+                            "progress": 1.0,
+                            "dlspeed": 0,
+                            "avg_speed": avg_speed,
+                            "state": "pausedUP",
+                            "transfer_mode": "download",
+                            "save_path": str(dest_dir),
+                            "content_path": str(target_file),
+                            "completion_on": now_done,
+                            "error_msg": "",
+                        }
+                    )
+                    save_state()
+
+            speed_str = (
+                f"{avg_speed / (1024*1024):.2f} Mo/s"
+                if avg_speed >= 1024 * 1024
+                else f"{avg_speed / 1024:.1f} Ko/s"
+            )
+            logger.info(f"Fichier DDL téléchargé -> {target_file} (Vitesse moy : {speed_str} en {duration:.1f}s)")
+
+            try:
+                from app.notifications import notifier
+                await notifier.notify_download_complete(
+                    name=clean_name,
+                    category=item_snapshot.get("category", ""),
+                    mode="download",
+                    size_bytes=total_copied,
+                    duration=round(duration, 1),
+                    avg_speed=avg_speed,
+                )
+            except Exception as notif_err:
+                logger.warning(f"Worker: erreur notif download complete DDL : {notif_err}")
+
+        except Exception as exc:
+            logger.error(f"Erreur téléchargement DDL pour {item_snapshot.get('name')} : {exc}")
+            async with state_lock:
+                if item_id in torrents_db:
+                    torrents_db[item_id]["state"] = "error"
+                    torrents_db[item_id]["error_msg"] = f"Erreur DDL : {exc}"
+                    save_state()
+            try:
+                from app.notifications import notifier
+                await notifier.notify_error(
+                    title=f"Erreur DDL : {item_snapshot.get('name')}",
+                    message=str(exc),
+                )
+            except Exception:
+                pass
+        finally:
+            copying_hashes.discard(item_id)
+            active_downloads.discard(item_id)
 
     async with httpx.AsyncClient() as client:
         await check_alldebrid_api_health(client)
@@ -185,10 +306,68 @@ async def background_worker() -> None:
                     await asyncio.sleep(poll_interval)
                     continue
 
-                tracked_ids = [int(item["ad_id"]) for _, item in active_items if item.get("ad_id")]
-                statuses = await alldebrid_get_statuses(client, tracked_ids)
+                max_concurrent = max(1, int(settings_db.get("max_concurrent_downloads", 3)))
 
-                for info_hash, item in active_items:
+                # 1. Traitement des liens DDL directs
+                ddl_items = [(h, item) for h, item in active_items if item.get("is_ddl")]
+                for ddl_h, ddl_item in ddl_items:
+                    if ddl_h in copying_hashes:
+                        continue
+                    # Débridage si en attente de résolution
+                    if ddl_item.get("state") == "resolving":
+                        try:
+                            logger.info(f"Débridage du lien DDL [{ddl_h[:8]}]...")
+                            link_info = await alldebrid_unlock_link(
+                                client, ddl_item.get("original_url", ""), password=ddl_item.get("password")
+                            )
+                            async with state_lock:
+                                if ddl_h in torrents_db:
+                                    torrents_db[ddl_h].update(
+                                        {
+                                            "name": link_info.get("filename") or ddl_item.get("name"),
+                                            "size": link_info.get("size") or 0,
+                                            "download_url": link_info.get("link") or "",
+                                            "state": "queued",
+                                            "error_msg": "",
+                                        }
+                                    )
+                                    save_state()
+                            logger.info(f"Lien DDL débridé [{ddl_h[:8]}] : {link_info.get('filename')}")
+                        except Exception as unlock_err:
+                            logger.warning(f"Échec débridage DDL [{ddl_h[:8]}] : {unlock_err}")
+                            async with state_lock:
+                                if ddl_h in torrents_db:
+                                    torrents_db[ddl_h]["state"] = "error"
+                                    torrents_db[ddl_h]["error_msg"] = f"Échec débridage : {unlock_err}"
+                                    save_state()
+                            continue
+
+                    # Téléchargement si prêt et slot dispo
+                    if ddl_item.get("state") in ("queued", "downloading") and ddl_item.get("download_url"):
+                        if len(active_downloads) < max_concurrent:
+                            copying_hashes.add(ddl_h)
+                            active_downloads.add(ddl_h)
+                            _, ddl_dest = resolve_service(ddl_item.get("category", ""))
+                            if ddl_item.get("save_path"):
+                                ddl_dest = Path(ddl_item["save_path"])
+                            entry_copy = dict(ddl_item)
+                            asyncio.create_task(_run_ddl_download(client, ddl_h, entry_copy, ddl_dest))
+                        else:
+                            async with state_lock:
+                                if ddl_h in torrents_db and torrents_db[ddl_h]["state"] != "queued":
+                                    torrents_db[ddl_h]["state"] = "queued"
+                                    save_state()
+
+                # 2. Traitement des torrents
+                torrent_items = [(h, item) for h, item in active_items if not item.get("is_ddl")]
+                tracked_ids = [
+                    int(item["ad_id"])
+                    for _, item in torrent_items
+                    if item.get("ad_id") and str(item.get("ad_id")).isdigit()
+                ]
+                statuses = await alldebrid_get_statuses(client, tracked_ids) if tracked_ids else {}
+
+                for info_hash, item in torrent_items:
                     if info_hash in copying_hashes:
                         continue
                     ad_id = int(item.get("ad_id") or 0)
@@ -307,16 +486,27 @@ async def background_worker() -> None:
                         logger.info(f"Attente montage rclone ({waited}s/{mount_timeout}s) : {ad_filename}")
                         continue
 
-                    copying_hashes.add(info_hash)
-                    if mode == "download":
-                        async with state_lock:
-                            if info_hash in torrents_db:
-                                torrents_db[info_hash]["state"] = "copying"
-                                save_state()
-                        logger.info(f"Début copie locale ({len(mounted_files)} fichier(s)) -> {dest_dir} : {ad_filename}")
-
-                    entry_copy = dict(item, name=ad_filename, size=ad_size)
-                    asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir))
+                    if mode == "symlink":
+                        copying_hashes.add(info_hash)
+                        entry_copy = dict(item, name=ad_filename, size=ad_size)
+                        asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir))
+                    else:
+                        # mode == "download" (DDL copie locale)
+                        if len(active_downloads) < max_concurrent:
+                            copying_hashes.add(info_hash)
+                            active_downloads.add(info_hash)
+                            async with state_lock:
+                                if info_hash in torrents_db:
+                                    torrents_db[info_hash]["state"] = "copying"
+                                    save_state()
+                            logger.info(f"Début copie locale ({len(mounted_files)} fichier(s)) -> {dest_dir} : {ad_filename}")
+                            entry_copy = dict(item, name=ad_filename, size=ad_size)
+                            asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir))
+                        else:
+                            async with state_lock:
+                                if info_hash in torrents_db and torrents_db[info_hash]["state"] != "queued":
+                                    torrents_db[info_hash]["state"] = "queued"
+                                    save_state()
 
             except Exception as exc:
                 logger.error(f"Erreur boucle worker : {exc}", exc_info=True)

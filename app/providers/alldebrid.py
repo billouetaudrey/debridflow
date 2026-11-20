@@ -1,5 +1,7 @@
+import asyncio
 import datetime
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -240,3 +242,73 @@ class AllDebridProvider(BaseDebridProvider):
             logger.info(f"Magnet ID={item_id} supprimé sur AllDebrid.")
         except Exception as exc:
             logger.warning(f"Impossible de supprimer ID={item_id} sur AllDebrid : {exc}")
+
+    async def unlock_link(
+        self,
+        client: httpx.AsyncClient,
+        link: str,
+        password: Optional[str],
+        api_key: str,
+        api_base: str,
+        agent: str,
+    ) -> Dict[str, Any]:
+        """Débride un lien hébergeur direct via AllDebrid v4 (/link/unlock)."""
+        data_payload: Dict[str, str] = {"link": link.strip()}
+        if password:
+            data_payload["password"] = password.strip()
+
+        resp = await client.post(
+            f"{api_base.rstrip('/')}/link/unlock",
+            params={"agent": agent, "apikey": api_key},
+            data=data_payload,
+            timeout=25.0,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        if payload.get("status") != "success":
+            err = payload.get("error", {})
+            err_msg = err.get("message") or f"Erreur AllDebrid: {err.get('code', 'UNKNOWN')}"
+            raise RuntimeError(err_msg)
+
+        res_data = payload.get("data", {})
+        if "delayed" in res_data:
+            delayed_id = res_data["delayed"]
+            for _ in range(12):
+                await asyncio.sleep(5)
+                d_resp = await client.get(
+                    f"{api_base.rstrip('/')}/link/delayed",
+                    params={"agent": agent, "apikey": api_key, "id": str(delayed_id)},
+                    timeout=15.0,
+                )
+                d_resp.raise_for_status()
+                d_payload = d_resp.json()
+                if d_payload.get("status") == "success":
+                    d_data = d_payload.get("data", {})
+                    d_status = int(d_data.get("status", 0))
+                    if d_status == 2:  # Prêt
+                        res_data = d_data
+                        break
+                    elif d_status == 3:  # Échec
+                        raise RuntimeError("Échec de la génération du lien différé chez AllDebrid")
+            else:
+                raise RuntimeError("Délai dépassé pour la génération du lien différé AllDebrid")
+
+        direct_link = res_data.get("link") or ""
+        if not direct_link:
+            raise RuntimeError("AllDebrid n'a retourné aucun lien de téléchargement direct")
+
+        raw_fname = res_data.get("filename")
+        if not raw_fname:
+            try:
+                raw_fname = Path(link.split("?")[0]).name
+            except Exception:
+                raw_fname = "fichier"
+
+        fsize = int(res_data.get("filesize") or res_data.get("size") or 0)
+        return {
+            "link": direct_link,
+            "filename": raw_fname,
+            "size": fsize,
+            "host": res_data.get("host") or res_data.get("hostDomain") or "",
+            "id": res_data.get("id"),
+        }

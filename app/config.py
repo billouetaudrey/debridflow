@@ -37,6 +37,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "delete_on_provider": os.getenv("DELETE_ON_PROVIDER", "false").lower() == "true",
     "delete_on_dl_complete": os.getenv("DELETE_ON_DL_COMPLETE", "true").lower() == "true",
     "download_speed_limit": float(os.getenv("DOWNLOAD_SPEED_LIMIT", "0")),
+    "max_concurrent_downloads": int(os.getenv("MAX_CONCURRENT_DOWNLOADS", "3")),
     "hide_last_download_name": os.getenv("HIDE_LAST_DOWNLOAD_NAME", "true").lower() == "true",
     "last_download_stat": {},
     "allowed_exts": ".mkv,.mp4,.avi,.mov,.wmv,.m4v,.ts,.webm,.srt,.ass,.ssa,.sub,.vtt",

@@ -72,3 +72,18 @@ class BaseDebridProvider(ABC):
     ) -> None:
         """Supprime le torrent/magnet chez le fournisseur de débridage."""
         pass
+
+    async def unlock_link(
+        self,
+        client: httpx.AsyncClient,
+        link: str,
+        password: Optional[str],
+        api_key: str,
+        api_base: str,
+        agent: str,
+    ) -> Dict[str, Any]:
+        """
+        Débride un lien direct (ex: Rapidgator, 1fichier, etc.) et retourne un dict
+        {'link': str, 'filename': str, 'size': int, 'host': str, 'id': Any}.
+        """
+        raise NotImplementedError(f"Le débridage de liens direct n'est pas supporté par {self.name or self.__class__.__name__}")

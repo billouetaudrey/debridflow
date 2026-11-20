@@ -1,3 +1,4 @@
+import hashlib
 import html
 import time
 from pathlib import Path
@@ -67,16 +68,25 @@ async def ui_queue_feed():
                 "dlspeed": int(item.get("dlspeed") or 0),
                 "avg_speed": int(item.get("avg_speed") or 0),
                 "error_msg": item.get("error_msg") or "",
+                "is_ddl": bool(item.get("is_ddl", False)),
+                "download_url": item.get("download_url") or "",
             }
             for h, item in items_sorted
         ]
         last_stat = dict(settings_db.get("last_download_stat", {}))
+        max_concurrent = int(settings_db.get("max_concurrent_downloads", 3))
+        active_dl_count = sum(
+            1 for it in torrents_db.values()
+            if it.get("state") == "copying" or (it.get("is_ddl") and it.get("state") in ("copying", "downloading"))
+        )
     return JSONResponse(
         {
             "items": payload,
             "api_health": dict(api_health),
             "last_download_stat": last_stat,
             "download_speed_limit": float(settings_db.get("download_speed_limit", 0)),
+            "max_concurrent_downloads": max_concurrent,
+            "active_downloads_count": active_dl_count,
             "hide_last_download_name": bool(settings_db.get("hide_last_download_name", True)),
         },
         headers={"Cache-Control": "no-store"},
@@ -90,6 +100,8 @@ async def api_upload_torrent(
     transfer_mode: Optional[str] = Form("auto"),
     torrent_files: Optional[List[UploadFile]] = File(None),
     torrent_file: Optional[UploadFile] = File(None),
+    ddl_links: Optional[str] = Form(None),
+    ddl_password: Optional[str] = Form(None),
 ):
     api_key = settings_db.get("api_key", "").strip()
     if not api_key:
@@ -120,14 +132,53 @@ async def api_upload_torrent(
         if torrent_file not in files_to_process:
             files_to_process.append(torrent_file)
 
-    if not magnet_list and not files_to_process:
+    ddl_list: List[str] = []
+    if ddl_links:
+        for line in ddl_links.splitlines():
+            line_str = line.strip()
+            if line_str and not line_str.startswith("#"):
+                ddl_list.append(line_str)
+
+    if not magnet_list and not files_to_process and not ddl_list:
         return JSONResponse(
-            {"status": "error", "message": "Veuillez fournir un lien magnet ou sélectionner un fichier .torrent."},
+            {"status": "error", "message": "Veuillez fournir un lien magnet, des liens DDL ou sélectionner un fichier .torrent."},
             status_code=400,
         )
 
     added_items: List[Dict[str, Any]] = []
     errors: List[str] = []
+
+    if ddl_list:
+        now_ts = int(time.time())
+        async with state_lock:
+            for raw_url in ddl_list:
+                info_hash = hashlib.sha1(raw_url.encode("utf-8")).hexdigest()
+                raw_fname = Path(raw_url.split("?")[0]).name or "fichier_ddl"
+                torrents_db[info_hash] = {
+                    "hash": info_hash,
+                    "ad_id": "DDL",
+                    "name": sanitize_filename(raw_fname) or "fichier_ddl",
+                    "category": cat,
+                    "transfer_mode": "download",
+                    "save_path": str(save_dir),
+                    "content_path": str(save_dir / sanitize_filename(raw_fname)),
+                    "linked_paths": [],
+                    "size": 0,
+                    "progress": 0.0,
+                    "state": "resolving",
+                    "added_on": now_ts,
+                    "completion_on": -1,
+                    "deleted_on_ad": False,
+                    "missing_count": 0,
+                    "is_ddl": True,
+                    "original_url": raw_url,
+                    "password": (ddl_password or "").strip(),
+                    "download_url": "",
+                    "error_msg": "",
+                }
+                added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
+            save_state()
+        logger.info(f"{len(ddl_list)} lien(s) DDL ajouté(s) (cat={cat}).")
 
     async with httpx.AsyncClient() as client:
         for raw_url in magnet_list:
@@ -224,6 +275,78 @@ async def api_upload_torrent(
     )
 
 
+@router.post("/api/ddl/upload")
+async def api_upload_ddl(
+    links: str = Form(...),
+    password: Optional[str] = Form(None),
+    category: Optional[str] = Form("torrent-direct"),
+):
+    api_key = settings_db.get("api_key", "").strip()
+    if not api_key:
+        return JSONResponse(
+            {"status": "error", "message": "Clé API non configurée dans les paramètres."},
+            status_code=400,
+        )
+
+    cat = (category or "torrent-direct").strip()
+    _, configured_dir = resolve_service(cat)
+    save_dir = configured_dir
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    ddl_list: List[str] = []
+    for line in (links or "").splitlines():
+        line_str = line.strip()
+        if line_str and not line_str.startswith("#"):
+            ddl_list.append(line_str)
+
+    if not ddl_list:
+        return JSONResponse(
+            {"status": "error", "message": "Veuillez fournir au moins un lien direct à débrider."},
+            status_code=400,
+        )
+
+    added_items: List[Dict[str, Any]] = []
+    now_ts = int(time.time())
+    async with state_lock:
+        for raw_url in ddl_list:
+            info_hash = hashlib.sha1(raw_url.encode("utf-8")).hexdigest()
+            raw_fname = Path(raw_url.split("?")[0]).name or "fichier_ddl"
+            torrents_db[info_hash] = {
+                "hash": info_hash,
+                "ad_id": "DDL",
+                "name": sanitize_filename(raw_fname) or "fichier_ddl",
+                "category": cat,
+                "transfer_mode": "download",
+                "save_path": str(save_dir),
+                "content_path": str(save_dir / sanitize_filename(raw_fname)),
+                "linked_paths": [],
+                "size": 0,
+                "progress": 0.0,
+                "state": "resolving",
+                "added_on": now_ts,
+                "completion_on": -1,
+                "deleted_on_ad": False,
+                "missing_count": 0,
+                "is_ddl": True,
+                "original_url": raw_url,
+                "password": (password or "").strip(),
+                "download_url": "",
+                "error_msg": "",
+            }
+            added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
+        save_state()
+
+    logger.info(f"{len(added_items)} lien(s) DDL ajouté(s) (cat={cat}).")
+    return JSONResponse(
+        {
+            "status": "ok",
+            "added": len(added_items),
+            "items": added_items,
+            "message": f"{len(added_items)} lien(s) DDL ajouté(s) avec succès !",
+        }
+    )
+
+
 @router.post("/api/test")
 async def test_api_connection(
     provider: str = Form("alldebrid"),
@@ -288,6 +411,7 @@ async def update_settings(
     delete_on_provider: Optional[str] = Form(None),
     delete_on_dl_complete: Optional[str] = Form(None),
     download_speed_limit: float = Form(0.0),
+    max_concurrent_downloads: int = Form(3),
     hide_last_download_name: Optional[str] = Form(None),
     enable_scanner_tab: Optional[str] = Form(None),
     allowed_exts: str = Form(""),
@@ -352,6 +476,7 @@ async def update_settings(
         settings_db["delete_on_provider"] = delete_on_provider == "on"
         settings_db["delete_on_dl_complete"] = delete_on_dl_complete == "on"
         settings_db["download_speed_limit"] = max(0.0, float(download_speed_limit))
+        settings_db["max_concurrent_downloads"] = max(1, int(max_concurrent_downloads))
         settings_db["hide_last_download_name"] = hide_last_download_name == "on"
         settings_db["allowed_exts"] = allowed_exts.strip() or DEFAULT_SETTINGS["allowed_exts"]
         settings_db["username"] = username.strip()
@@ -583,6 +708,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__RCLONE_MOUNT_DIR__", html.escape(s["rclone_mount_dir"]))
         .replace("__DOWNLOAD_BASE_DIR__", html.escape(s["download_base_dir"]))
         .replace("__DOWNLOAD_SPEED_LIMIT__", str(s.get("download_speed_limit", 0)))
+        .replace("__MAX_CONCURRENT_DOWNLOADS__", str(s.get("max_concurrent_downloads", 3)))
         .replace("__CHECKED_HIDE_LAST_DL_NAME__", "checked" if s.get("hide_last_download_name", True) else "")
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))

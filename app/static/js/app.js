@@ -14,15 +14,32 @@ const TRANSLATIONS = {
 
     // Toolbar
     btn_add_torrent: "Ajouter un torrent / magnet",
-    modal_upload_title: "Ajouter un Torrent / Magnet",
+    btn_add_ddl: "Ajouter liens DDL",
+    modal_upload_title: "Ajouter un Téléchargement",
     tab_magnet: "Lien Magnet",
     tab_torrent_file: "Fichier .torrent",
+    tab_ddl: "Liens DDL (Direct)",
+    tab_ddl_nav: "Liens DDL",
     lbl_magnet_input: "Lien(s) Magnet ou URL(s) :",
     ph_magnet_input: "magnet:?xt=urn:btih:...",
     hint_magnet_multiple: "Vous pouvez coller un ou plusieurs liens (un par ligne).",
     lbl_torrent_file: "Sélectionner ou glisser un fichier .torrent :",
     dropzone_prompt: "Glissez vos fichiers .torrent ici ou cliquez pour parcourir",
     dropzone_files_selected: "{n} fichier(s) sélectionné(s) :",
+    lbl_ddl_input: "Lien(s) direct(s) (Rapidgator, 1fichier, Turbobit, etc.) :",
+    ph_ddl_input: "https://rapidgator.net/file/...&#10;https://1fichier.com/?...",
+    lbl_ddl_password: "Mot de passe éventuel (optionnel) :",
+    ph_ddl_password: "Mot de passe des archives / liens si nécessaire",
+    hint_ddl_multiple: "Collez vos liens directs hébergeurs (un par ligne). Débridage automatique via AllDebrid.",
+    ddl_card_title: "Téléchargements Directs Hébergeurs (DDL)",
+    ddl_card_desc: "Débridez vos liens Rapidgator, 1fichier, Turbobit, Nitroflare... directement via AllDebrid et téléchargez-les sur votre serveur.",
+    btn_ddl_submit: "Débrider & Télécharger en DDL",
+    title_ddl_queue: "Téléchargements DDL en cours & terminés",
+    lbl_max_concurrent_dl: "Nombre de téléchargements simultanés en DDL :",
+    hint_max_concurrent_dl: "Nombre de téléchargements simultanés (torrents/magnets en mode copie et liens directs DDL). Par défaut : 3.",
+    st_resolving: "Débridage AllDebrid...",
+    st_queued: "En attente (slot DL)",
+    tag_ddl: "DDL Direct",
     lbl_dest_service: "Service / Catégorie :",
     lbl_transfer_mode: "Mode de transfert :",
     opt_mode_auto: "Auto (selon le service)",
@@ -318,15 +335,32 @@ const TRANSLATIONS = {
 
     // Toolbar
     btn_add_torrent: "Add torrent / magnet",
-    modal_upload_title: "Add Torrent / Magnet",
+    btn_add_ddl: "Add DDL links",
+    modal_upload_title: "Add Download",
     tab_magnet: "Magnet Link",
     tab_torrent_file: ".torrent File",
+    tab_ddl: "DDL Links (Direct)",
+    tab_ddl_nav: "DDL Links",
     lbl_magnet_input: "Magnet link(s) or URL(s):",
     ph_magnet_input: "magnet:?xt=urn:btih:...",
     hint_magnet_multiple: "You can paste one or multiple links (one per line).",
     lbl_torrent_file: "Select or drop a .torrent file:",
     dropzone_prompt: "Drag and drop your .torrent files here or click to browse",
     dropzone_files_selected: "{n} file(s) selected:",
+    lbl_ddl_input: "Direct link(s) (Rapidgator, 1fichier, Turbobit, etc.):",
+    ph_ddl_input: "https://rapidgator.net/file/...&#10;https://1fichier.com/?...",
+    lbl_ddl_password: "Password (optional):",
+    ph_ddl_password: "Password for archives / links if needed",
+    hint_ddl_multiple: "Paste hoster direct links (one per line). Automatic debriding via AllDebrid.",
+    ddl_card_title: "Hosters Direct Downloads (DDL)",
+    ddl_card_desc: "Debrid your Rapidgator, 1fichier, Turbobit, Nitroflare... links directly through AllDebrid and download them to your server.",
+    btn_ddl_submit: "Debrid & Download DDL",
+    title_ddl_queue: "Active & completed DDL downloads",
+    lbl_max_concurrent_dl: "Simultaneous DDL downloads limit:",
+    hint_max_concurrent_dl: "Simultaneous downloads limit (torrents/magnets in copy mode and direct DDL links). Default: 3.",
+    st_resolving: "Debriding...",
+    st_queued: "Queued (DL slot)",
+    tag_ddl: "Direct DDL",
     lbl_dest_service: "Service / Category:",
     lbl_transfer_mode: "Transfer mode:",
     opt_mode_auto: "Auto (from service)",
@@ -810,11 +844,15 @@ function showTab(tab) {
   }
   currentTab = tab;
   document.getElementById('tab-queue').style.display = tab === 'queue' ? 'block' : 'none';
+  const tabDdl = document.getElementById('tab-ddl');
+  if (tabDdl) tabDdl.style.display = tab === 'ddl' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
   const tabScanner = document.getElementById('tab-scanner');
   if (tabScanner) tabScanner.style.display = tab === 'scanner' ? 'block' : 'none';
 
   document.getElementById('btn-queue').classList.toggle('active', tab === 'queue');
+  const btnDdl = document.getElementById('btn-ddl');
+  if (btnDdl) btnDdl.classList.toggle('active', tab === 'ddl');
   document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
   if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
 
@@ -824,7 +862,7 @@ function showTab(tab) {
     } catch (e) {}
   }
 
-  if (tab === 'queue') refreshQueue();
+  if (tab === 'queue' || tab === 'ddl') refreshQueue();
   if (tab === 'scanner') {
     loadScannerData();
     checkScannerStatusOnLoad();
@@ -1004,9 +1042,12 @@ function renderQueue(items) {
     const pct = Math.round((Number(item.progress) || 0) * 100);
     const state = item.state || 'downloading';
     const isDl = item.transfer_mode === 'download';
-    const modeBadge = isDl
-      ? `<span class="tag dl">${esc(t('tag_dl'))}</span>`
-      : `<span class="tag sym">${esc(t('tag_sym'))}</span>`;
+    const isDdl = Boolean(item.is_ddl);
+    const modeBadge = isDdl
+      ? `<span class="tag dl" style="background:#8957e5;color:#fff;">${esc(t('tag_ddl') || 'DDL')}</span>`
+      : (isDl
+        ? `<span class="tag dl">${esc(t('tag_dl'))}</span>`
+        : `<span class="tag sym">${esc(t('tag_sym'))}</span>`);
 
     let badgeCls = 'run';
     let stateTxt = `${esc(t('st_downloading'))} (${pct}%)`;
@@ -1020,6 +1061,12 @@ function renderQueue(items) {
     } else if (state === 'error') {
       badgeCls = 'err';
       stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
+    } else if (state === 'resolving') {
+      badgeCls = 'run';
+      stateTxt = `${esc(t('st_resolving') || 'Débridage AllDebrid...')}`;
+    } else if (state === 'queued') {
+      badgeCls = 'pause';
+      stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
     } else if (state === 'checkingDL') {
       badgeCls = 'run';
       stateTxt = `${esc(t('st_rclone_wait'))} (${pct}%)`;
@@ -1035,7 +1082,7 @@ function renderQueue(items) {
 
     const fullId = esc(item.hash);
     const shortId = esc(String(item.hash).slice(0, 8));
-    const adId = esc(item.ad_id);
+    const adId = isDdl ? 'DDL' : esc(item.ad_id);
     const isChecked = checkedSet.has(item.hash) ? 'checked' : '';
     const pauseBtn = state === 'pausedDL'
       ? `<button class="btn-sec" onclick="batchAction('resume', ['${fullId}'])">${esc(t('btn_resume'))}</button>`
@@ -1058,6 +1105,62 @@ function renderQueue(items) {
     </tr>`;
   }).join('');
 
+  // Rendu dans le tableau dédié DDL
+  const ddlTbody = document.getElementById('ddl-queue-tbody');
+  if (ddlTbody) {
+    const ddlItems = items.filter(it => it.is_ddl);
+    if (ddlItems.length === 0) {
+      ddlTbody.innerHTML = `<tr><td colspan='4' style='color:#8b949e;text-align:center;'>Aucun téléchargement DDL</td></tr>`;
+    } else {
+      ddlTbody.innerHTML = ddlItems.map(item => {
+        const pct = Math.round((Number(item.progress) || 0) * 100);
+        const state = item.state || 'downloading';
+        let badgeCls = 'run';
+        let stateTxt = `${esc(t('st_downloading'))} (${pct}%)`;
+
+        if (state === 'pausedUP' || state === 'stalledUP') {
+          badgeCls = 'ok';
+          stateTxt = `${esc(t('st_completed'))} (${pct}%)`;
+        } else if (state === 'pausedDL') {
+          badgeCls = 'pause';
+          stateTxt = `${esc(t('st_paused'))} (${pct}%)`;
+        } else if (state === 'error') {
+          badgeCls = 'err';
+          stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
+        } else if (state === 'resolving') {
+          badgeCls = 'run';
+          stateTxt = `${esc(t('st_resolving') || 'Débridage AllDebrid...')}`;
+        } else if (state === 'queued') {
+          badgeCls = 'pause';
+          stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
+        } else if (state === 'copying' || item.dlspeed > 0) {
+          badgeCls = 'run';
+          stateTxt = `${esc(t('st_downloading'))} (${pct}%)`;
+          if (item.dlspeed > 0) stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
+        }
+
+        const fullId = esc(item.hash);
+        const pauseBtn = state === 'pausedDL'
+          ? `<button class="btn-sec" onclick="batchAction('resume', ['${fullId}'])">${esc(t('btn_resume'))}</button>`
+          : `<button class="btn-warn" onclick="batchAction('pause', ['${fullId}'])">${esc(t('btn_pause'))}</button>`;
+
+        return `<tr>
+          <td class="col-name"><strong>${esc(item.name)}</strong><div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
+          <td class="col-cat"><span class="tag">${esc(item.category)}</span><div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
+          <td class="col-status">
+            <span class="badge ${badgeCls}">${stateTxt}</span>
+            <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
+          </td>
+          <td class="actions col-actions" style="text-align:right;">
+            <button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>
+            ${pauseBtn}
+            <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
   updateSelection();
 }
 
@@ -1070,8 +1173,14 @@ async function refreshQueue() {
       const data = await res.json();
       const items = data.items || [];
       updateHeaderStatus(items, data.api_health);
-      if (currentTab === 'queue') {
+      if (currentTab === 'queue' || currentTab === 'ddl') {
         renderQueue(items);
+      }
+      const activeCountEl = document.getElementById('ddl-active-count-txt');
+      if (activeCountEl && data.max_concurrent_downloads !== undefined) {
+        const act = data.active_downloads_count || 0;
+        const maxDl = data.max_concurrent_downloads || 3;
+        activeCountEl.textContent = `Téléchargements simultanés actifs : ${act} / ${maxDl}`;
       }
       if (data.hide_last_download_name !== undefined) {
         serverHideLastDlName = Boolean(data.hide_last_download_name);
@@ -1150,7 +1259,7 @@ async function confirmDelete() {
 let currentUploadTab = 'magnet';
 let selectedTorrentFiles = [];
 
-function openUploadModal() {
+function openUploadModal(initialTab = 'magnet') {
   modalOpen = true;
   const modal = document.getElementById('upload-modal');
   if (!modal) return;
@@ -1159,6 +1268,10 @@ function openUploadModal() {
   if (magnetInput) magnetInput.value = '';
   const fileInput = document.getElementById('upload-torrent-files');
   if (fileInput) fileInput.value = '';
+  const ddlInput = document.getElementById('upload-ddl-text');
+  if (ddlInput) ddlInput.value = '';
+  const ddlPwd = document.getElementById('upload-ddl-password');
+  if (ddlPwd) ddlPwd.value = '';
   selectedTorrentFiles = [];
   updateDropzoneFileList();
 
@@ -1176,7 +1289,7 @@ function openUploadModal() {
   const btnText = document.getElementById('upload-btn-text');
   if (btnText) btnText.textContent = t('btn_send_debrid');
 
-  switchUploadTab('magnet');
+  switchUploadTab(initialTab || 'magnet');
   onUploadCategoryChange();
 
   modal.style.display = 'flex';
@@ -1192,19 +1305,22 @@ function switchUploadTab(tab) {
   currentUploadTab = tab;
   const tabBtnMag = document.getElementById('tab-btn-magnet');
   const tabBtnFile = document.getElementById('tab-btn-file');
+  const tabBtnDdl = document.getElementById('tab-btn-ddl');
   const secMag = document.getElementById('upload-sec-magnet');
   const secFile = document.getElementById('upload-sec-file');
+  const secDdl = document.getElementById('upload-sec-ddl');
 
-  if (tab === 'file') {
-    if (tabBtnMag) tabBtnMag.classList.remove('active');
-    if (tabBtnFile) tabBtnFile.classList.add('active');
-    if (secMag) secMag.style.display = 'none';
-    if (secFile) secFile.style.display = 'block';
-  } else {
-    if (tabBtnFile) tabBtnFile.classList.remove('active');
-    if (tabBtnMag) tabBtnMag.classList.add('active');
-    if (secFile) secFile.style.display = 'none';
-    if (secMag) secMag.style.display = 'block';
+  if (tabBtnMag) tabBtnMag.classList.toggle('active', tab === 'magnet');
+  if (tabBtnFile) tabBtnFile.classList.toggle('active', tab === 'file');
+  if (tabBtnDdl) tabBtnDdl.classList.toggle('active', tab === 'ddl');
+
+  if (secMag) secMag.style.display = tab === 'magnet' ? 'block' : 'none';
+  if (secFile) secFile.style.display = tab === 'file' ? 'block' : 'none';
+  if (secDdl) secDdl.style.display = tab === 'ddl' ? 'block' : 'none';
+
+  const modeSel = document.getElementById('upload-transfer-mode');
+  if (tab === 'ddl' && modeSel) {
+    modeSel.value = 'download';
   }
 }
 
@@ -1257,10 +1373,13 @@ async function submitTorrentUpload() {
   const catSel = document.getElementById('upload-category');
   const modeSel = document.getElementById('upload-transfer-mode');
   const magnetInput = document.getElementById('upload-magnet-text');
+  const ddlInput = document.getElementById('upload-ddl-text');
+  const ddlPwd = document.getElementById('upload-ddl-password');
 
   const category = catSel ? catSel.value : 'torrent-direct';
   const transferMode = modeSel ? modeSel.value : 'auto';
   const magnetVal = magnetInput ? magnetInput.value.trim() : '';
+  const ddlVal = ddlInput ? ddlInput.value.trim() : '';
 
   if (currentUploadTab === 'magnet' && !magnetVal) {
     if (statusMsg) {
@@ -1280,16 +1399,28 @@ async function submitTorrentUpload() {
     return;
   }
 
+  if (currentUploadTab === 'ddl' && !ddlVal) {
+    if (statusMsg) {
+      statusMsg.className = 'upload-msg-error';
+      statusMsg.textContent = 'Veuillez saisir au moins un lien direct à débrider.';
+      statusMsg.style.display = 'block';
+    }
+    return;
+  }
+
   const fd = new FormData();
   fd.append('category', category);
   fd.append('transfer_mode', transferMode);
 
   if (currentUploadTab === 'magnet') {
     fd.append('magnet', magnetVal);
-  } else {
+  } else if (currentUploadTab === 'file') {
     for (const file of selectedTorrentFiles) {
       fd.append('torrent_files', file, file.name);
     }
+  } else if (currentUploadTab === 'ddl') {
+    fd.append('ddl_links', ddlVal);
+    if (ddlPwd && ddlPwd.value.trim()) fd.append('ddl_password', ddlPwd.value.trim());
   }
 
   if (submitBtn) submitBtn.disabled = true;
@@ -1306,7 +1437,7 @@ async function submitTorrentUpload() {
       body: fd,
     });
     const data = await res.json();
-    if (res.ok && data.status === 'success') {
+    if (res.ok && (data.status === 'success' || data.status === 'ok')) {
       closeUploadModal();
       await refreshQueue();
     } else {
@@ -1327,6 +1458,67 @@ async function submitTorrentUpload() {
     if (submitBtn) submitBtn.disabled = false;
     if (spinner) spinner.style.display = 'none';
     if (btnText) btnText.textContent = t('btn_send_debrid');
+  }
+}
+
+async function submitDdlPageUpload() {
+  const linksEl = document.getElementById('ddl-page-links');
+  const pwdEl = document.getElementById('ddl-page-password');
+  const catEl = document.getElementById('ddl-page-category');
+  const statusEl = document.getElementById('ddl-page-status-msg');
+  const btnEl = document.getElementById('btn-submit-ddl-page');
+  const spinnerEl = document.getElementById('ddl-page-spinner');
+
+  const linksVal = linksEl ? linksEl.value.trim() : '';
+  if (!linksVal) {
+    if (statusEl) {
+      statusEl.className = 'upload-msg-error';
+      statusEl.textContent = 'Veuillez saisir au moins un lien direct à débrider.';
+      statusEl.style.display = 'block';
+    }
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('links', linksVal);
+  if (pwdEl && pwdEl.value.trim()) fd.append('password', pwdEl.value.trim());
+  if (catEl) fd.append('category', catEl.value);
+
+  if (btnEl) btnEl.disabled = true;
+  if (spinnerEl) spinnerEl.style.display = 'inline-block';
+  if (statusEl) statusEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/ddl/upload', {
+      method: 'POST',
+      body: fd,
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      if (statusEl) {
+        statusEl.className = 'upload-msg-success';
+        statusEl.textContent = data.message || `${data.added} lien(s) DDL ajouté(s) !`;
+        statusEl.style.display = 'block';
+      }
+      if (linksEl) linksEl.value = '';
+      if (pwdEl) pwdEl.value = '';
+      await refreshQueue();
+    } else {
+      if (statusEl) {
+        statusEl.className = 'upload-msg-error';
+        statusEl.textContent = data.message || 'Erreur lors de l\'ajout des liens DDL.';
+        statusEl.style.display = 'block';
+      }
+    }
+  } catch (err) {
+    if (statusEl) {
+      statusEl.className = 'upload-msg-error';
+      statusEl.textContent = 'Erreur réseau : ' + err.message;
+      statusEl.style.display = 'block';
+    }
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+    if (spinnerEl) spinnerEl.style.display = 'none';
   }
 }
 
@@ -1486,6 +1678,8 @@ function openOnboarding(force = false) {
   if (obMountTimeout) obMountTimeout.value = getVal('mount_timeout', '60');
   const obSpeedLimit = document.getElementById('ob_download_speed_limit');
   if (obSpeedLimit) obSpeedLimit.value = getVal('download_speed_limit', '0');
+  const obConcurrent = document.getElementById('ob_max_concurrent_downloads');
+  if (obConcurrent) obConcurrent.value = getVal('max_concurrent_downloads', '3');
   const obPoll = document.getElementById('ob_poll_interval');
   if (obPoll) obPoll.value = getVal('poll_interval', '3.0');
   const obExts = document.getElementById('ob_allowed_exts');
@@ -1810,6 +2004,8 @@ function finishOnboarding() {
   setVal('download_base_dir', document.getElementById('ob_download_base_dir').value);
   setVal('mount_timeout', document.getElementById('ob_mount_timeout').value);
   setVal('download_speed_limit', document.getElementById('ob_download_speed_limit').value);
+  const obConcurrentEl = document.getElementById('ob_max_concurrent_downloads');
+  if (obConcurrentEl) setVal('max_concurrent_downloads', obConcurrentEl.value);
   setVal('poll_interval', document.getElementById('ob_poll_interval').value);
   setVal('allowed_exts', document.getElementById('ob_allowed_exts').value);
 

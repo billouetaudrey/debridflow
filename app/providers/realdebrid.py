@@ -1,5 +1,6 @@
 import datetime
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -242,3 +243,46 @@ class RealDebridProvider(BaseDebridProvider):
             logger.info(f"Torrent ID={item_id} supprimé sur Real-Debrid.")
         except Exception as exc:
             logger.warning(f"Impossible de supprimer ID={item_id} sur Real-Debrid : {exc}")
+
+    async def unlock_link(
+        self,
+        client: httpx.AsyncClient,
+        link: str,
+        password: Optional[str],
+        api_key: str,
+        api_base: str,
+        agent: str,
+    ) -> Dict[str, Any]:
+        """Débride un lien direct via Real-Debrid (/unrestrict/link)."""
+        base = (api_base or self.default_api_base).rstrip("/")
+        data_payload: Dict[str, str] = {"link": link.strip()}
+        if password:
+            data_payload["password"] = password.strip()
+
+        resp = await client.post(
+            f"{base}/unrestrict/link",
+            headers=self._headers(api_key),
+            data=data_payload,
+            timeout=25.0,
+        )
+        resp.raise_for_status()
+        res_data = resp.json()
+        direct_link = res_data.get("download") or ""
+        if not direct_link:
+            raise RuntimeError("Real-Debrid n'a retourné aucun lien de téléchargement direct")
+
+        raw_fname = res_data.get("filename")
+        if not raw_fname:
+            try:
+                raw_fname = Path(link.split("?")[0]).name
+            except Exception:
+                raw_fname = "fichier"
+
+        fsize = int(res_data.get("filesize") or 0)
+        return {
+            "link": direct_link,
+            "filename": raw_fname,
+            "size": fsize,
+            "host": res_data.get("host") or "",
+            "id": res_data.get("id"),
+        }

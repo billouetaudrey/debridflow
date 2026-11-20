@@ -78,3 +78,17 @@ async def alldebrid_delete_magnet(client: httpx.AsyncClient, ad_id: Any) -> None
         api_base=settings_db.get("api_base", provider.default_api_base),
         agent=settings_db.get("agent", "PyRDT-Billou"),
     )
+
+
+async def alldebrid_unlock_link(
+    client: httpx.AsyncClient, link: str, password: Optional[str] = None
+) -> Dict[str, Any]:
+    provider = get_provider(settings_db.get("provider", "alldebrid"))
+    return await provider.unlock_link(
+        client,
+        link,
+        password=password,
+        api_key=settings_db.get("api_key", ""),
+        api_base=settings_db.get("api_base", provider.default_api_base),
+        agent=settings_db.get("agent", "PyRDT-Billou"),
+    )

@@ -109,6 +109,11 @@ def load_state() -> None:
                     settings_db[k] = saved_settings[k]
                 elif k in saved_settings and not v:
                     settings_db[k] = saved_settings[k]
+            if "max_concurrent_downloads" in settings_db:
+                try:
+                    settings_db["max_concurrent_downloads"] = max(1, int(settings_db["max_concurrent_downloads"]))
+                except Exception:
+                    settings_db["max_concurrent_downloads"] = 3
             torrents_db = data.get("torrents", {})
             logger.info(f"État chargé : {len(torrents_db)} torrent(s), {len(get_services_config())} service(s) configuré(s).")
         except Exception as exc:
