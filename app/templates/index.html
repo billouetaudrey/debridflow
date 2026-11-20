@@ -947,38 +947,54 @@
                   </div>
                 </div>
 
-                <!-- Bloc 2: Speedtest Officiel AllDebrid In-App (Option 2) -->
+                <!-- Bloc 2: Speedtest Officiel AllDebrid In-App (Option 2 - Affichage Réduit & Adapté) -->
                 <div style="background:var(--bg-card);padding:16px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:14px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
                     <div>
                       <div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;">
                         <span>🖥️</span> <span data-i18n="lbl_speedtest_ad_inapp">Speedtest Officiel AllDebrid (Multi-Serveurs In-App)</span>
                       </div>
-                      <small class="hint" data-i18n="hint_speedtest_ad_inapp">Teste les nœuds de datacenters AllDebrid (Paris, Francfort, Amsterdam...) directement dans DebridFlow.</small>
+                      <small class="hint" data-i18n="hint_speedtest_ad_inapp">Affichage compact et adapté des nœuds AllDebrid (Paris, Francfort, Amsterdam...) directement dans DebridFlow.</small>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                      <button type="button" class="btn-main" onclick="toggleAdSpeedtestFrame()" id="btn-toggle-ad-frame" style="padding:8px 14px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
-                        <span>🖥️</span> <span id="lbl-btn-toggle-ad-frame" data-i18n="btn_show_ad_speedtest_inapp">Afficher le test intégré</span>
+                      <button type="button" class="btn-sec" onclick="toggleAdSpeedtestFrame()" id="btn-toggle-ad-frame" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                        <span>↕️</span> <span id="lbl-btn-toggle-ad-frame" data-i18n="btn_hide_ad_speedtest_inapp">Replier le cadre</span>
                       </button>
-                      <button type="button" class="btn-sec" onclick="openAdSpeedtestModal()" style="padding:8px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px;" title="Agrandir en plein écran">
+                      <button type="button" class="btn-sec" onclick="openAdSpeedtestModal()" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;" title="Agrandir en plein écran">
                         <span>⛶</span> <span data-i18n="btn_fullscreen">Plein écran</span>
                       </button>
-                      <a href="https://alldebrid.com/speedtest?from=contact&autostart=1" target="_blank" rel="noopener noreferrer" class="btn-sec" style="text-decoration:none;padding:8px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px;" title="Ouvrir dans un nouvel onglet">
+                      <a href="https://alldebrid.com/speedtest?from=contact&autostart=1" target="_blank" rel="noopener noreferrer" class="btn-sec" style="text-decoration:none;padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;" title="Ouvrir dans un nouvel onglet">
                         <span>↗</span>
                       </a>
                     </div>
                   </div>
 
-                  <!-- Cadre In-App pliable -->
-                  <div id="ad-speedtest-frame-container" style="display:none;margin-top:14px;border:1px solid var(--border-muted);border-radius:8px;overflow:hidden;background:#0d1117;">
-                    <div style="padding:8px 12px;background:var(--bg-input);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-muted);">
-                      <span style="font-size:12px;font-weight:600;color:var(--text-bright);">⚡ AllDebrid Network Speedtest</span>
-                      <div style="display:flex;gap:8px;">
-                        <button type="button" class="btn-sec" onclick="reloadAdSpeedtestIframe()" style="padding:4px 8px;font-size:11px;">🔄 Recharger</button>
-                        <button type="button" class="btn-sec" onclick="toggleAdSpeedtestFrame()" style="padding:4px 8px;font-size:11px;">✕ Masquer</button>
+                  <!-- Cadre In-App Adapté / Réduit -->
+                  <div id="ad-speedtest-frame-container" style="display:block;margin-top:10px;border:1px solid var(--border-muted);border-radius:8px;overflow:hidden;background:#0d1117;">
+                    <!-- Barre de contrôle de l'affichage réduit -->
+                    <div style="padding:8px 12px;background:var(--bg-input);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-muted);flex-wrap:wrap;gap:8px;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:12px;font-weight:600;color:var(--text-bright);">⚡ AllDebrid Network Speedtest</span>
+                        <span style="font-size:11px;color:var(--text-muted);">— Affichage compact</span>
+                      </div>
+                      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">Zoom :</span>
+                        <button type="button" class="btn-sec ad-zoom-btn active" data-scale="0.75" onclick="setAdSpeedtestZoom(0.75)" style="padding:3px 8px;font-size:11px;background:var(--accent, #58a6ff);color:#fff;" title="Échelle compacte 75%">75%</button>
+                        <button type="button" class="btn-sec ad-zoom-btn" data-scale="0.85" onclick="setAdSpeedtestZoom(0.85)" style="padding:3px 8px;font-size:11px;" title="Échelle moyenne 85%">85%</button>
+                        <button type="button" class="btn-sec ad-zoom-btn" data-scale="1.0" onclick="setAdSpeedtestZoom(1.0)" style="padding:3px 8px;font-size:11px;" title="Échelle normale 100%">100%</button>
+                        <button type="button" id="btn-ad-focus" class="btn-sec" onclick="toggleAdSpeedtestFocus()" style="padding:3px 8px;font-size:11px;margin-left:4px;" title="Masquer l'entête du site AllDebrid et cadrer sur le testeur">🎯 Cadrer sur le test</button>
+                        <button type="button" class="btn-sec" onclick="reloadAdSpeedtestIframe()" style="padding:3px 8px;font-size:11px;margin-left:4px;" title="Recharger le test AllDebrid">🔄</button>
                       </div>
                     </div>
-                    <iframe id="ad-speedtest-iframe" src="" style="width:100%;height:580px;border:none;display:block;" loading="lazy"></iframe>
+                    <!-- Zone de clipping avec zoom CSS -->
+                    <div id="ad-speedtest-wrapper" style="width:100%;height:600px;overflow:hidden;position:relative;background:#0d1117;">
+                      <iframe id="ad-speedtest-iframe"
+                        src="https://alldebrid.com/speedtest?from=contact&autostart=1"
+                        style="width:133.33%;height:800px;transform:scale(0.75);transform-origin:0 0;border:none;display:block;margin-top:-80px;"
+                        loading="lazy"
+                        allow="clipboard-write; fullscreen">
+                      </iframe>
+                    </div>
                   </div>
                 </div>
 

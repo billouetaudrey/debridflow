@@ -3463,6 +3463,52 @@ async function runIntegratedSpeedtest() {
   }
 }
 
+let adSpeedtestZoom = 0.75;
+let adSpeedtestFocus = true;
+
+function setAdSpeedtestZoom(scale) {
+  adSpeedtestZoom = scale;
+  const iframe = document.getElementById('ad-speedtest-iframe');
+  if (!iframe) return;
+
+  document.querySelectorAll('.ad-zoom-btn').forEach(btn => {
+    if (parseFloat(btn.dataset.scale) === scale) {
+      btn.classList.add('active');
+      btn.style.background = 'var(--accent, #58a6ff)';
+      btn.style.color = '#fff';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'var(--bg-input)';
+      btn.style.color = 'var(--text-bright)';
+    }
+  });
+
+  const widthPct = Math.round((100 / scale) * 100) / 100;
+  const heightPx = Math.round(600 / scale);
+  const marginTopPx = adSpeedtestFocus ? Math.round(-80 * (1 / scale)) : 0;
+
+  iframe.style.width = widthPct + '%';
+  iframe.style.height = heightPx + 'px';
+  iframe.style.transform = `scale(${scale})`;
+  iframe.style.transformOrigin = '0 0';
+  iframe.style.marginTop = marginTopPx + 'px';
+}
+
+function toggleAdSpeedtestFocus() {
+  adSpeedtestFocus = !adSpeedtestFocus;
+  const btn = document.getElementById('btn-ad-focus');
+  if (btn) {
+    if (adSpeedtestFocus) {
+      btn.style.background = 'var(--accent, #58a6ff)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'var(--bg-input)';
+      btn.style.color = 'var(--text-bright)';
+    }
+  }
+  setAdSpeedtestZoom(adSpeedtestZoom);
+}
+
 function toggleAdSpeedtestFrame() {
   const container = document.getElementById('ad-speedtest-frame-container');
   const iframe = document.getElementById('ad-speedtest-iframe');
