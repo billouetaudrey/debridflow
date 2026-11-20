@@ -158,6 +158,10 @@ body {
 }
 .tabs { display: flex; gap: 8px; }
 .tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: var(--bg-card);
   color: var(--text-muted);
   border: 1px solid var(--border-main);
@@ -167,6 +171,12 @@ body {
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s ease;
+}
+.tab-btn .tab-icon {
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 .tab-btn:hover { background: var(--btn-sec-bg); color: var(--text-main); }
 .tab-btn.active { background: #238636; color: #fff; border-color: #2ea043; }

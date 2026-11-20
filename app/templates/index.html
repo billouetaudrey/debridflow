@@ -27,10 +27,11 @@
     
     <div class="header-controls">
       <div class="tabs">
-        <button id="btn-queue" class="tab-btn active" onclick="showTab('queue')" data-i18n="tab_queue">File d'attente</button>
-        <button id="btn-finder" class="tab-btn" onclick="showTab('finder')" data-i18n="tab_finder_nav">🔍 Recherche</button>
-        <button id="btn-scanner" class="tab-btn" onclick="showTab('scanner')" data-i18n="tab_scanner" style="__SCANNER_TAB_DISPLAY__">Médiathèque &amp; Liens</button>
-        <button id="btn-settings" class="tab-btn" onclick="showTab('settings')" data-i18n="tab_settings">Paramètres</button>
+        <button id="btn-queue" class="tab-btn active" onclick="showTab('queue')" style="__QUEUE_TAB_DISPLAY__"><span class="tab-icon">📥</span> <span data-i18n="tab_queue">File d'attente</span></button>
+        <button id="btn-ddl" class="tab-btn" onclick="showTab('ddl')" style="__DDL_TAB_DISPLAY__"><span class="tab-icon">🔗</span> <span data-i18n="tab_ddl_nav">Liens DDL</span></button>
+        <button id="btn-finder" class="tab-btn" onclick="showTab('finder')" style="__FINDER_TAB_DISPLAY__"><span class="tab-icon">🔍</span> <span data-i18n="tab_finder_nav">Recherche</span></button>
+        <button id="btn-scanner" class="tab-btn" onclick="showTab('scanner')" data-i18n="tab_scanner" style="__SCANNER_TAB_DISPLAY__"><span class="tab-icon">📁</span> <span data-i18n="tab_scanner">Médiathèque &amp; Liens</span></button>
+        <button id="btn-settings" class="tab-btn" onclick="showTab('settings')"><span class="tab-icon">⚙️</span> <span data-i18n="tab_settings">Paramètres</span></button>
       </div>
 
       <div class="header-utils">
@@ -105,7 +106,90 @@
     </table>
   </div>
 
-  <!-- Onglet 2 : Recherche Multi-Moteurs (Magnets, Torrents & DDL) -->
+  <!-- Onglet Liens DDL : Téléchargements Directs Hébergeurs (DDL / JDownloader-like) -->
+  <div id="tab-ddl" class="card" style="display:none">
+    <div style="margin-bottom:16px;">
+      <h3 style="margin:0 0 6px 0; font-size:18px; display:flex; align-items:center; gap:8px;">
+        <span>🔗</span> <span data-i18n="ddl_card_title">Téléchargements Directs Hébergeurs (DDL)</span>
+      </h3>
+      <p style="margin:0; font-size:13px; color:var(--text-muted);" data-i18n="ddl_card_desc">
+        Débridez vos liens Rapidgator, 1fichier, Turbobit, Nitroflare... directement via AllDebrid et téléchargez-les sur votre serveur.
+      </p>
+    </div>
+
+    <!-- Carte d'ajout DDL rapide -->
+    <div style="background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px; padding:16px; margin-bottom:20px;">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:13px; font-weight:600; color:var(--text-bright); display:block; margin-bottom:6px;" data-i18n="lbl_ddl_input">
+          Lien(s) direct(s) (Rapidgator, 1fichier, etc.) :
+        </label>
+        <textarea id="ddl-page-links" rows="3" placeholder="https://rapidgator.net/file/...&#10;https://1fichier.com/?..." style="width:100%; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);" data-i18n-placeholder="ph_ddl_input"></textarea>
+        <small class="hint" style="margin-top:4px; display:block;" data-i18n="hint_ddl_multiple">Collez vos liens direct (un par ligne). Débridage automatique via AllDebrid.</small>
+      </div>
+
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;" data-i18n="lbl_ddl_password">
+            Mot de passe éventuel (optionnel) :
+          </label>
+          <input type="text" id="ddl-page-password" placeholder="Mot de passe des archives / liens si nécessaire" style="width:100%; box-sizing:border-box; font-size:12px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);" data-i18n-placeholder="ph_ddl_password">
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="font-size:12px; font-weight:600; color:var(--text-bright);" data-i18n="lbl_ddl_dest_path">
+              📁 Dossier de destination complet :
+            </label>
+            <select id="ddl-page-category-preset" onchange="applyDdlPreset(this.value, 'ddl-page-dest-path')" style="font-size:11px; padding:2px 6px; border-radius:4px; background:var(--bg-card); color:var(--text-bright); border:1px solid var(--border-muted);">
+              <option value="">Sélectionner un dossier prédéfini...</option>
+              __SERVICES_OPTIONS__
+            </select>
+          </div>
+          <input type="text" id="ddl-page-dest-path" value="__DDL_DOWNLOAD_DIR__" placeholder="/mnt/virtual/Medias/DL/DDL" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:12px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="ddl-page-remember-dest" style="cursor:pointer;">
+          <label for="ddl-page-remember-dest" style="font-size:12px; cursor:pointer; color:var(--text-bright); font-weight:600;" data-i18n="lbl_remember_ddl_dest">Retenir ce dossier par défaut pour les prochains téléchargements DDL</label>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div id="ddl-concurrency-indicator" style="font-size:12px; color:var(--text-muted);">
+          ⚡ <span id="ddl-active-count-txt">Téléchargements simultanés actifs : 0 / __MAX_CONCURRENT_DOWNLOADS__</span>
+        </div>
+        <button type="button" id="btn-submit-ddl-page" class="btn-main" onclick="submitDdlPageUpload()" style="display:inline-flex; align-items:center; gap:6px;">
+          <span id="ddl-page-spinner" style="display:none;">⏳</span>
+          <span>🚀</span> <span data-i18n="btn_ddl_submit">Débrider &amp; Télécharger en DDL</span>
+        </button>
+      </div>
+      <div id="ddl-page-status-msg" style="display:none; margin-top:12px; padding:8px 12px; border-radius:6px; font-size:12px;"></div>
+    </div>
+
+    <!-- Tableau spécifique DDL -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h4 style="margin:0; font-size:14px; font-weight:600;" data-i18n="title_ddl_queue">Téléchargements DDL en cours &amp; terminés</h4>
+      <button class="btn-sec" onclick="purgeCompleted()" data-i18n="btn_purge_completed" style="font-size:11px; padding:4px 8px;">Purger terminés</button>
+    </div>
+    <div class="table-responsive">
+      <table id="ddl-queue-table">
+        <thead>
+          <tr>
+            <th data-i18n="th_name">Nom</th>
+            <th data-i18n="th_service">Destination</th>
+            <th data-i18n="th_status">Statut &amp; Vitesse</th>
+            <th data-i18n="th_actions" style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ddl-queue-tbody">
+          <tr><td colspan="4" style="color:#8b949e;text-align:center;">Aucun téléchargement DDL</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Onglet 3 : Recherche Multi-Moteurs (Magnets, Torrents & DDL) -->
   <div id="tab-finder" class="card" style="display:none">
     <div style="margin-bottom:16px;">
       <h3 style="margin:0 0 6px 0; font-size:18px; display:flex; align-items:center; gap:8px;">
@@ -492,6 +576,13 @@
                   <input type="number" min="1" max="20" step="1" name="max_concurrent_downloads" value="__MAX_CONCURRENT_DOWNLOADS__" required>
                   <small class="hint" data-i18n="hint_max_concurrent_dl">Nombre de téléchargements simultanés (torrents/magnets en mode copie et liens directs DDL). Par défaut : 3.</small>
                 </div>
+                <div class="field full" style="background:var(--bg-subpanel);padding:12px;border-radius:8px;border:1px solid var(--border-muted);">
+                  <label style="font-weight:600;display:flex;align-items:center;gap:6px;" data-i18n="lbl_ddl_download_dir">
+                    <span>📁</span> <span>Dossier de destination complet pour les liens DDL</span>
+                  </label>
+                  <input type="text" name="ddl_download_dir" id="ddl_download_dir" value="__DDL_DOWNLOAD_DIR__" required style="font-family:monospace;margin-top:4px;">
+                  <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_ddl_download_dir">Chemin complet où sont enregistrés les téléchargements directs hébergeurs (Rapidgator, 1fichier, etc.). Modifiable à tout moment ici ou directement lors de chaque ajout.</small>
+                </div>
               </div>
             </div>
           </div>
@@ -656,11 +747,60 @@
                   <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_hide_last_dl_name">Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.</small>
                 </div>
 
-                <!-- Activer / Désactiver l'onglet Médiathèque -->
-                <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);">
-                  <input type="checkbox" id="chk_enable_scanner" name="enable_scanner_tab" __CHECKED_SCANNER_TAB__ style="cursor:pointer;">
-                  <label for="chk_enable_scanner" style="font-weight:600;cursor:pointer;" data-i18n="lbl_enable_scanner_tab">Afficher l'onglet Médiathèque &amp; Liens dans la barre de navigation</label>
-                  <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_enable_scanner_tab">Active ou masque l'accès à l'onglet et au tableau de bord Médiathèque.</small>
+                <!-- Gestion des onglets de navigation affichés -->
+                <div style="margin-top:20px;border-top:1px solid var(--border-muted);padding-top:16px;">
+                  <h4 style="font-size:13px;margin:0 0 4px 0;color:var(--text-bright);display:flex;align-items:center;gap:6px;">
+                    <span>🗂️</span> <span data-i18n="title_tabs_visibility">Gestion des onglets de navigation</span>
+                  </h4>
+                  <small class="hint" style="display:block;margin-bottom:14px;" data-i18n="desc_tabs_visibility">
+                    Activez ou masquez individuellement les onglets de la barre de navigation selon vos besoins :
+                  </small>
+
+                  <div class="tabs-toggles-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:12px;margin-bottom:12px;">
+                    <!-- Onglet File d'attente -->
+                    <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;align-items:flex-start;gap:10px;">
+                      <input type="checkbox" id="chk_enable_queue" name="enable_queue_tab" __CHECKED_QUEUE_TAB__ style="cursor:pointer;margin-top:3px;">
+                      <div>
+                        <label for="chk_enable_queue" style="font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                          <span>📥</span> <span data-i18n="lbl_enable_queue_tab">Onglet File d'attente</span>
+                        </label>
+                        <small class="hint" style="display:block;margin-top:3px;" data-i18n="hint_enable_queue_tab">File globale des torrents, magnets et téléchargements.</small>
+                      </div>
+                    </div>
+
+                    <!-- Onglet Liens DDL -->
+                    <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;align-items:flex-start;gap:10px;">
+                      <input type="checkbox" id="chk_enable_ddl" name="enable_ddl_tab" __CHECKED_DDL_TAB__ style="cursor:pointer;margin-top:3px;">
+                      <div>
+                        <label for="chk_enable_ddl" style="font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                          <span>🔗</span> <span data-i18n="lbl_enable_ddl_tab">Onglet Liens DDL</span>
+                        </label>
+                        <small class="hint" style="display:block;margin-top:3px;" data-i18n="hint_enable_ddl_tab">Espace dédié aux téléchargements directs hébergeurs (JDownloader).</small>
+                      </div>
+                    </div>
+
+                    <!-- Onglet Recherche Multi-moteurs -->
+                    <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;align-items:flex-start;gap:10px;">
+                      <input type="checkbox" id="chk_enable_finder" name="enable_finder_tab" __CHECKED_FINDER_TAB__ style="cursor:pointer;margin-top:3px;">
+                      <div>
+                        <label for="chk_enable_finder" style="font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                          <span>🔍</span> <span data-i18n="lbl_enable_finder_tab">Onglet Recherche</span>
+                        </label>
+                        <small class="hint" style="display:block;margin-top:3px;" data-i18n="hint_enable_finder_tab">Moteur de recherche unifié (Torrents, Magnets &amp; DDL).</small>
+                      </div>
+                    </div>
+
+                    <!-- Onglet Médiathèque & Liens -->
+                    <div class="chk-line" style="background:var(--bg-card);padding:12px 14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;align-items:flex-start;gap:10px;">
+                      <input type="checkbox" id="chk_enable_scanner" name="enable_scanner_tab" __CHECKED_SCANNER_TAB__ style="cursor:pointer;margin-top:3px;">
+                      <div>
+                        <label for="chk_enable_scanner" style="font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                          <span>📁</span> <span data-i18n="lbl_enable_scanner_tab">Onglet Médiathèque &amp; Liens</span>
+                        </label>
+                        <small class="hint" style="display:block;margin-top:3px;" data-i18n="hint_enable_scanner_tab">Exploration et surveillance des liens et fichiers médias.</small>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -848,23 +988,44 @@
 
     <!-- Options de destination et mode -->
     <div style="margin-top:16px; padding:12px; background:var(--bg-subpanel); border:1px solid var(--border-muted); border-radius:8px;">
-      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px;">
-        <div class="field" style="margin-bottom:0;">
-          <label style="font-size:12px; font-weight:600;" data-i18n="lbl_dest_service">Service / Catégorie :</label>
-          <select id="upload-category" onchange="onUploadCategoryChange()" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+      <!-- Options pour Torrents / Magnets -->
+      <div id="upload-opts-torrent">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px; font-weight:600;" data-i18n="lbl_dest_service">Service / Catégorie :</label>
+            <select id="upload-category" onchange="onUploadCategoryChange()" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+              __SERVICES_OPTIONS__
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px; font-weight:600;" data-i18n="lbl_transfer_mode">Mode de transfert :</label>
+            <select id="upload-transfer-mode" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+              <option value="auto" data-i18n="opt_mode_auto">Auto (selon le service)</option>
+              <option value="download" data-i18n="opt_mode_download">Téléchargement réel (copie locale)</option>
+              <option value="symlink" data-i18n="opt_mode_symlink">Symlink (instantané)</option>
+            </select>
+          </div>
+        </div>
+        <div id="upload-dest-preview" style="margin-top:8px; font-size:11px; color:var(--text-muted); word-break:break-all;"></div>
+      </div>
+
+      <!-- Options spécifiques pour DDL -->
+      <div id="upload-opts-ddl" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+          <label style="font-size:12px; font-weight:600; color:var(--text-bright);" data-i18n="lbl_ddl_dest_path">
+            📁 Dossier de destination complet :
+          </label>
+          <select id="upload-ddl-preset" onchange="applyDdlPreset(this.value, 'upload-ddl-dest-path')" style="font-size:11px; padding:3px 6px; border-radius:4px; background:var(--bg-card); color:var(--text-bright); border:1px solid var(--border-muted);">
+            <option value="">Sélectionner un sous-dossier prédéfini...</option>
             __SERVICES_OPTIONS__
           </select>
         </div>
-        <div class="field" style="margin-bottom:0;">
-          <label style="font-size:12px; font-weight:600;" data-i18n="lbl_transfer_mode">Mode de transfert :</label>
-          <select id="upload-transfer-mode" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
-            <option value="auto" data-i18n="opt_mode_auto">Auto (selon le service)</option>
-            <option value="download" data-i18n="opt_mode_download">Téléchargement réel (copie locale)</option>
-            <option value="symlink" data-i18n="opt_mode_symlink">Symlink (instantané)</option>
-          </select>
+        <input type="text" id="upload-ddl-dest-path" value="__DDL_DOWNLOAD_DIR__" placeholder="/mnt/virtual/Medias/DL/DDL" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:12px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);">
+        <div class="chk-line" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="upload-ddl-remember-dest" style="cursor:pointer;">
+          <label for="upload-ddl-remember-dest" style="font-size:12px; cursor:pointer; color:var(--text-bright); font-weight:600;" data-i18n="lbl_remember_ddl_dest">Retenir ce dossier par défaut pour les prochains téléchargements DDL</label>
         </div>
       </div>
-      <div id="upload-dest-preview" style="margin-top:8px; font-size:11px; color:var(--text-muted); word-break:break-all;"></div>
     </div>
 
     <!-- Message de statut / erreur -->

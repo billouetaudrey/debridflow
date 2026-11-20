@@ -40,8 +40,22 @@ const TRANSLATIONS = {
     st_resolving: "Débridage AllDebrid...",
     st_queued: "En attente (slot DL)",
     tag_ddl: "DDL Direct",
+    title_tabs_visibility: "Gestion des onglets de navigation",
+    desc_tabs_visibility: "Activez ou masquez individuellement les onglets de la barre de navigation selon vos besoins :",
+    lbl_enable_queue_tab: "Onglet File d'attente",
+    hint_enable_queue_tab: "File globale des torrents, magnets et téléchargements.",
+    lbl_enable_ddl_tab: "Onglet Liens DDL",
+    hint_enable_ddl_tab: "Espace dédié aux téléchargements directs hébergeurs (JDownloader).",
+    lbl_enable_finder_tab: "Onglet Recherche",
+    hint_enable_finder_tab: "Moteur de recherche unifié (Torrents, Magnets & DDL).",
+    lbl_enable_scanner_tab: "Onglet Médiathèque & Liens",
+    hint_enable_scanner_tab: "Exploration et surveillance des liens et fichiers médias.",
+    lbl_ddl_download_dir: "Dossier de destination complet pour les liens DDL",
+    hint_ddl_download_dir: "Chemin complet où sont enregistrés les téléchargements directs hébergeurs (Rapidgator, 1fichier, etc.). Modifiable à tout moment ici ou directement lors de chaque ajout.",
+    lbl_ddl_dest_path: "Dossier de destination complet :",
+    lbl_remember_ddl_dest: "Retenir ce dossier par défaut pour les prochains téléchargements DDL",
     // Multi-Engine Finder
-    tab_finder_nav: "🔍 Recherche",
+    tab_finder_nav: "Recherche",
     finder_title: "Recherche Multi-Moteurs (Torrents, Magnets & DDL)",
     finder_subtitle: "Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans PyRDT.",
     opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
@@ -391,8 +405,22 @@ const TRANSLATIONS = {
     st_resolving: "Debriding...",
     st_queued: "Queued (DL slot)",
     tag_ddl: "Direct DDL",
+    title_tabs_visibility: "Navigation Tabs Management",
+    desc_tabs_visibility: "Individually enable or hide tabs in the top navigation bar according to your needs:",
+    lbl_enable_queue_tab: "Queue Tab",
+    hint_enable_queue_tab: "Global queue for torrents, magnets and downloads.",
+    lbl_enable_ddl_tab: "Direct Links (DDL) Tab",
+    hint_enable_ddl_tab: "Dedicated section for hosters direct downloads (JDownloader-like).",
+    lbl_enable_finder_tab: "Search Tab",
+    hint_enable_finder_tab: "Unified multi-engine search tool (Torrents, Magnets & DDL).",
+    lbl_enable_scanner_tab: "Library & Links Tab",
+    hint_enable_scanner_tab: "Media library explorer and symlink health checker.",
+    lbl_ddl_download_dir: "Default complete destination folder for DDL",
+    hint_ddl_download_dir: "Complete path where direct downloads (Rapidgator, etc.) are saved. Can be modified on each add.",
+    lbl_ddl_dest_path: "Complete destination folder:",
+    lbl_remember_ddl_dest: "Remember this folder as default for upcoming DDL downloads",
     // Multi-Engine Finder
-    tab_finder_nav: "🔍 Search",
+    tab_finder_nav: "Search",
     finder_title: "Multi-Engine Finder (Torrents, Magnets & DDL)",
     finder_subtitle: "Simultaneously queries DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... to extract verified links directly downloadable in PyRDT.",
     opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
@@ -898,23 +926,40 @@ function esc(str) {
 }
 
 function showTab(tab) {
-  const btnScanner = document.getElementById('btn-scanner');
-  if (tab === 'scanner' && btnScanner && (btnScanner.style.display === 'none' || getComputedStyle(btnScanner).display === 'none')) {
-    tab = 'queue';
+  const btnTarget = document.getElementById('btn-' + tab);
+  if (tab !== 'settings' && btnTarget && (btnTarget.style.display === 'none' || getComputedStyle(btnTarget).display === 'none')) {
+    const candidateTabs = ['queue', 'ddl', 'finder', 'scanner', 'settings'];
+    for (const c of candidateTabs) {
+      const b = document.getElementById('btn-' + c);
+      if (b && b.style.display !== 'none' && getComputedStyle(b).display !== 'none') {
+        tab = c;
+        break;
+      }
+    }
   }
+
   currentTab = tab;
-  document.getElementById('tab-queue').style.display = tab === 'queue' ? 'block' : 'none';
+  const tabQueue = document.getElementById('tab-queue');
+  if (tabQueue) tabQueue.style.display = tab === 'queue' ? 'block' : 'none';
+  const tabDdl = document.getElementById('tab-ddl');
+  if (tabDdl) tabDdl.style.display = tab === 'ddl' ? 'block' : 'none';
   const tabFinder = document.getElementById('tab-finder');
   if (tabFinder) tabFinder.style.display = tab === 'finder' ? 'block' : 'none';
-  document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
   const tabScanner = document.getElementById('tab-scanner');
   if (tabScanner) tabScanner.style.display = tab === 'scanner' ? 'block' : 'none';
+  const tabSettings = document.getElementById('tab-settings');
+  if (tabSettings) tabSettings.style.display = tab === 'settings' ? 'block' : 'none';
 
-  document.getElementById('btn-queue').classList.toggle('active', tab === 'queue');
+  const btnQueue = document.getElementById('btn-queue');
+  if (btnQueue) btnQueue.classList.toggle('active', tab === 'queue');
+  const btnDdl = document.getElementById('btn-ddl');
+  if (btnDdl) btnDdl.classList.toggle('active', tab === 'ddl');
   const btnFinder = document.getElementById('btn-finder');
   if (btnFinder) btnFinder.classList.toggle('active', tab === 'finder');
-  document.getElementById('btn-settings').classList.toggle('active', tab === 'settings');
+  const btnScanner = document.getElementById('btn-scanner');
   if (btnScanner) btnScanner.classList.toggle('active', tab === 'scanner');
+  const btnSettings = document.getElementById('btn-settings');
+  if (btnSettings) btnSettings.classList.toggle('active', tab === 'settings');
 
   if (window.location.search) {
     try {
@@ -922,7 +967,7 @@ function showTab(tab) {
     } catch (e) {}
   }
 
-  if (tab === 'queue') refreshQueue();
+  if (tab === 'queue' || tab === 'ddl') refreshQueue();
   if (tab === 'finder') loadFinderSettings();
   if (tab === 'scanner') {
     loadScannerData();
@@ -1370,6 +1415,8 @@ function switchUploadTab(tab) {
   const secMag = document.getElementById('upload-sec-magnet');
   const secFile = document.getElementById('upload-sec-file');
   const secDdl = document.getElementById('upload-sec-ddl');
+  const optsTorrent = document.getElementById('upload-opts-torrent');
+  const optsDdl = document.getElementById('upload-opts-ddl');
 
   if (tabBtnMag) tabBtnMag.classList.toggle('active', tab === 'magnet');
   if (tabBtnFile) tabBtnFile.classList.toggle('active', tab === 'file');
@@ -1379,10 +1426,31 @@ function switchUploadTab(tab) {
   if (secFile) secFile.style.display = tab === 'file' ? 'block' : 'none';
   if (secDdl) secDdl.style.display = tab === 'ddl' ? 'block' : 'none';
 
+  if (optsTorrent) optsTorrent.style.display = tab === 'ddl' ? 'none' : 'block';
+  if (optsDdl) optsDdl.style.display = tab === 'ddl' ? 'block' : 'none';
+
   const modeSel = document.getElementById('upload-transfer-mode');
   if (tab === 'ddl' && modeSel) {
     modeSel.value = 'download';
   }
+}
+
+function applyDdlPreset(val, targetInputId) {
+  if (!val) return;
+  const input = document.getElementById(targetInputId);
+  if (!input) return;
+  const baseInput = document.getElementById('download_base_dir');
+  const baseDir = (baseInput ? baseInput.value.trim() : '') || '/mnt/virtual/Medias/DL';
+  const cleanBase = baseDir.replace(/\/+$/, '');
+
+  let sub = val;
+  const sel = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+  if (sel && sel.options && sel.selectedIndex >= 0) {
+    const opt = sel.options[sel.selectedIndex];
+    sub = opt.getAttribute('data-subpath') || val;
+  }
+  const fullPath = sub.startsWith('/') ? sub : `${cleanBase}/${sub}`;
+  input.value = fullPath;
 }
 
 function onUploadCategoryChange() {
@@ -1482,6 +1550,18 @@ async function submitTorrentUpload() {
   } else if (currentUploadTab === 'ddl') {
     fd.append('ddl_links', ddlVal);
     if (ddlPwd && ddlPwd.value.trim()) fd.append('ddl_password', ddlPwd.value.trim());
+    const ddlDestInput = document.getElementById('upload-ddl-dest-path');
+    const ddlRemChk = document.getElementById('upload-ddl-remember-dest');
+    if (ddlDestInput && ddlDestInput.value.trim()) {
+      fd.append('ddl_destination', ddlDestInput.value.trim());
+    }
+    if (ddlRemChk && ddlRemChk.checked) {
+      fd.append('ddl_remember_default', 'true');
+      const pageDest = document.getElementById('ddl-page-dest-path');
+      if (pageDest) pageDest.value = ddlDestInput.value.trim();
+      const cfgDest = document.getElementById('ddl_download_dir');
+      if (cfgDest) cfgDest.value = ddlDestInput.value.trim();
+    }
   }
 
   if (submitBtn) submitBtn.disabled = true;
@@ -1544,6 +1624,19 @@ async function submitDdlPageUpload() {
   fd.append('links', linksVal);
   if (pwdEl && pwdEl.value.trim()) fd.append('password', pwdEl.value.trim());
   if (catEl) fd.append('category', catEl.value);
+
+  const destEl = document.getElementById('ddl-page-dest-path');
+  const remEl = document.getElementById('ddl-page-remember-dest');
+  if (destEl && destEl.value.trim()) {
+    fd.append('destination', destEl.value.trim());
+  }
+  if (remEl && remEl.checked) {
+    fd.append('remember_default', 'true');
+    const modalDest = document.getElementById('upload-ddl-dest-path');
+    if (modalDest) modalDest.value = destEl.value.trim();
+    const cfgDest = document.getElementById('ddl_download_dir');
+    if (cfgDest) cfgDest.value = destEl.value.trim();
+  }
 
   if (btnEl) btnEl.disabled = true;
   if (spinnerEl) spinnerEl.style.display = 'inline-block';

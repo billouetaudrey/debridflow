@@ -102,6 +102,8 @@ async def api_upload_torrent(
     torrent_file: Optional[UploadFile] = File(None),
     ddl_links: Optional[str] = Form(None),
     ddl_password: Optional[str] = Form(None),
+    ddl_destination: Optional[str] = Form(None),
+    ddl_remember_default: Optional[str] = Form(None),
 ):
     api_key = settings_db.get("api_key", "").strip()
     if not api_key:
@@ -149,6 +151,19 @@ async def api_upload_torrent(
     errors: List[str] = []
 
     if ddl_list:
+        if ddl_destination and ddl_destination.strip():
+            ddl_save_dir = Path(ddl_destination.strip())
+        else:
+            custom_ddl_dir = settings_db.get("ddl_download_dir")
+            ddl_save_dir = Path(custom_ddl_dir) if custom_ddl_dir else save_dir
+        ddl_save_dir.mkdir(parents=True, exist_ok=True)
+
+        if str(ddl_remember_default).lower() in ("true", "1", "on"):
+            async with state_lock:
+                settings_db["ddl_download_dir"] = str(ddl_save_dir)
+                save_state()
+            logger.info(f"Nouveau dossier DDL par défaut retenu : {ddl_save_dir}")
+
         now_ts = int(time.time())
         async with state_lock:
             for raw_url in ddl_list:
@@ -160,8 +175,8 @@ async def api_upload_torrent(
                     "name": sanitize_filename(raw_fname) or "fichier_ddl",
                     "category": cat,
                     "transfer_mode": "download",
-                    "save_path": str(save_dir),
-                    "content_path": str(save_dir / sanitize_filename(raw_fname)),
+                    "save_path": str(ddl_save_dir),
+                    "content_path": str(ddl_save_dir / sanitize_filename(raw_fname)),
                     "linked_paths": [],
                     "size": 0,
                     "progress": 0.0,
@@ -178,7 +193,7 @@ async def api_upload_torrent(
                 }
                 added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
             save_state()
-        logger.info(f"{len(ddl_list)} lien(s) DDL ajouté(s) (cat={cat}).")
+        logger.info(f"{len(ddl_list)} lien(s) DDL ajouté(s) (dest={ddl_save_dir}).")
 
     async with httpx.AsyncClient() as client:
         for raw_url in magnet_list:
@@ -280,6 +295,8 @@ async def api_upload_ddl(
     links: str = Form(...),
     password: Optional[str] = Form(None),
     category: Optional[str] = Form("torrent-direct"),
+    destination: Optional[str] = Form(None),
+    remember_default: Optional[str] = Form(None),
 ):
     api_key = settings_db.get("api_key", "").strip()
     if not api_key:
@@ -290,8 +307,18 @@ async def api_upload_ddl(
 
     cat = (category or "torrent-direct").strip()
     _, configured_dir = resolve_service(cat)
-    save_dir = configured_dir
+    if destination and destination.strip():
+        save_dir = Path(destination.strip())
+    else:
+        custom_ddl_dir = settings_db.get("ddl_download_dir")
+        save_dir = Path(custom_ddl_dir) if custom_ddl_dir else configured_dir
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    if str(remember_default).lower() in ("true", "1", "on"):
+        async with state_lock:
+            settings_db["ddl_download_dir"] = str(save_dir)
+            save_state()
+        logger.info(f"Nouveau dossier DDL par défaut retenu : {save_dir}")
 
     ddl_list: List[str] = []
     for line in (links or "").splitlines():
@@ -412,7 +439,11 @@ async def update_settings(
     delete_on_dl_complete: Optional[str] = Form(None),
     download_speed_limit: float = Form(0.0),
     max_concurrent_downloads: int = Form(3),
+    ddl_download_dir: str = Form("/mnt/virtual/Medias/DL/DDL"),
     hide_last_download_name: Optional[str] = Form(None),
+    enable_queue_tab: Optional[str] = Form(None),
+    enable_ddl_tab: Optional[str] = Form(None),
+    enable_finder_tab: Optional[str] = Form(None),
     enable_scanner_tab: Optional[str] = Form(None),
     allowed_exts: str = Form(""),
     username: str = Form(""),
@@ -495,7 +526,18 @@ async def update_settings(
         settings_db["radarr_api_key"] = radarr_api_key.strip()
         settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
         settings_db["sonarr_api_key"] = sonarr_api_key.strip()
-        settings_db["enable_scanner_tab"] = enable_scanner_tab == "on"
+        settings_db["ddl_download_dir"] = ddl_download_dir.strip() or "/mnt/virtual/Medias/DL/DDL"
+        # Visibilité des onglets
+        q_tab = enable_queue_tab == "on"
+        d_tab = enable_ddl_tab == "on"
+        f_tab = enable_finder_tab == "on"
+        s_tab = enable_scanner_tab == "on"
+        if not (q_tab or d_tab or f_tab or s_tab):
+            q_tab = True
+        settings_db["enable_queue_tab"] = q_tab
+        settings_db["enable_ddl_tab"] = d_tab
+        settings_db["enable_finder_tab"] = f_tab
+        settings_db["enable_scanner_tab"] = s_tab
         settings_db["telegram_enabled"] = telegram_enabled == "on"
         settings_db["telegram_bot_token"] = telegram_bot_token.strip()
         settings_db["telegram_chat_id"] = telegram_chat_id.strip()
@@ -734,6 +776,13 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__RADARR_API_KEY__", html.escape(s.get("radarr_api_key", "")))
         .replace("__SONARR_URL__", html.escape(s.get("sonarr_url", "http://127.0.0.1:8989")))
         .replace("__SONARR_API_KEY__", html.escape(s.get("sonarr_api_key", "")))
+        .replace("__DDL_DOWNLOAD_DIR__", html.escape(str(s.get("ddl_download_dir", "/mnt/virtual/Medias/DL/DDL"))))
+        .replace("__CHECKED_QUEUE_TAB__", "checked" if s.get("enable_queue_tab", True) else "")
+        .replace("__QUEUE_TAB_DISPLAY__", "" if s.get("enable_queue_tab", True) else "display:none;")
+        .replace("__CHECKED_DDL_TAB__", "checked" if s.get("enable_ddl_tab", False) else "")
+        .replace("__DDL_TAB_DISPLAY__", "" if s.get("enable_ddl_tab", False) else "display:none;")
+        .replace("__CHECKED_FINDER_TAB__", "checked" if s.get("enable_finder_tab", True) else "")
+        .replace("__FINDER_TAB_DISPLAY__", "" if s.get("enable_finder_tab", True) else "display:none;")
         .replace("__CHECKED_SCANNER_TAB__", "checked" if s.get("enable_scanner_tab", True) else "")
         .replace("__SCANNER_TAB_DISPLAY__", "" if s.get("enable_scanner_tab", True) else "display:none;")
         .replace("__CHECKED_DL_DONE__", "checked" if s.get("delete_on_dl_complete") else "")

@@ -228,6 +228,13 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                 else:
                     info_hash = hashlib.sha1(raw_url.encode("utf-8")).hexdigest()
                     raw_fname = Path(raw_url.split("?")[0]).name or hint_name or "fichier_ddl"
+                    ddl_cfg_dir = settings_db.get("ddl_download_dir")
+                    if ddl_cfg_dir and cat in ("direct", "torrent-direct", ""):
+                        ddl_save_dir = Path(ddl_cfg_dir)
+                    else:
+                        ddl_save_dir = save_dir
+                    ddl_save_dir.mkdir(parents=True, exist_ok=True)
+
                     async with state_lock:
                         torrents_db[info_hash] = {
                             "hash": info_hash,
@@ -235,8 +242,8 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                             "name": sanitize_filename(hint_name or raw_fname) or "fichier_ddl",
                             "category": cat,
                             "transfer_mode": "download",
-                            "save_path": str(save_dir),
-                            "content_path": str(save_dir / sanitize_filename(raw_fname)),
+                            "save_path": str(ddl_save_dir),
+                            "content_path": str(ddl_save_dir / sanitize_filename(raw_fname)),
                             "linked_paths": [],
                             "size": 0,
                             "progress": 0.0,
