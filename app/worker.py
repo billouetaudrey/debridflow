@@ -434,12 +434,19 @@ async def background_worker() -> None:
                     if status_code != 4:
                         downloaded = int(ad_info.get("downloaded") or 0)
                         progress = (downloaded / ad_size) if ad_size > 0 else 0.1
+                        seeders = int(ad_info.get("seeders") or 0)
+                        cloud_speed = int(ad_info.get("downloadSpeed") or 0)
                         async with state_lock:
                             if info_hash in torrents_db and torrents_db[info_hash]["state"] != "pausedDL":
                                 torrents_db[info_hash]["name"] = ad_filename
                                 torrents_db[info_hash]["size"] = ad_size
                                 torrents_db[info_hash]["progress"] = min(0.99, round(progress, 4))
                                 torrents_db[info_hash]["state"] = "downloading"
+                                torrents_db[info_hash]["is_debrided"] = False
+                                torrents_db[info_hash]["debrid_cached"] = False
+                                torrents_db[info_hash]["seeders"] = seeders
+                                torrents_db[info_hash]["cloud_speed"] = cloud_speed
+                                torrents_db[info_hash]["cloud_status"] = ad_status_str or "Téléchargement cloud"
                                 save_state()
                         continue
 
@@ -458,6 +465,8 @@ async def background_worker() -> None:
                             torrents_db[info_hash]["transfer_mode"] = mode
                             torrents_db[info_hash]["save_path"] = str(dest_dir)
                             torrents_db[info_hash]["state"] = "checkingDL"
+                            torrents_db[info_hash]["is_debrided"] = True
+                            torrents_db[info_hash]["cloud_status"] = "Débridé"
                             save_state()
 
                     links = ad_info.get("links") or []

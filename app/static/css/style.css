@@ -253,6 +253,9 @@ th { color: var(--text-muted); font-weight: 600; }
 .tag { background: var(--btn-sec-bg); padding: 3px 8px; border-radius: 12px; font-size: 12px; display: inline-block; font-weight: 500; }
 .tag.dl { background: rgba(163,113,247,0.18); color: #a371f7; border: 1px solid rgba(163,113,247,0.35); }
 .tag.sym { background: rgba(56,139,253,0.15); color: #0969da; border: 1px solid rgba(56,139,253,0.3); }
+.tag.debrid-cache { background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 600; font-size: 11px; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.tag.debrid-ready { background: rgba(46, 160, 67, 0.16); color: #3fb950; border: 1px solid rgba(46, 160, 67, 0.35); font-weight: 600; font-size: 11px; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.tag.debrid-pending { background: rgba(210, 153, 34, 0.16); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.35); font-weight: 600; font-size: 11px; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
 
 .badge { padding: 4px 9px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
 .badge.ok { background: rgba(46,160,67,0.2); color: #3fb950; }

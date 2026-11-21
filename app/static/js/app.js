@@ -113,6 +113,13 @@ const TRANSLATIONS = {
     no_torrents: "Aucun torrent en file d'attente",
     tag_dl: "DL réel",
     tag_sym: "Symlink",
+    tag_debrided_cache: "Déjà débridé (Cache)",
+    tag_debrided_ready: "Débridé",
+    tag_debrided_pending: "Non débridé",
+    tip_debrided_cache: "Fichier déjà présent sur les serveurs Debrid (Instantané)",
+    tip_debrided_ready: "Fichier débridé et disponible sur le cloud",
+    tip_debrided_pending: "Fichier en cours de téléchargement chez le fournisseur (non débridé)",
+    st_cloud_dl: "Débridage cloud",
 
     // Statuses
     st_completed: "Terminé",
@@ -501,6 +508,13 @@ const TRANSLATIONS = {
     no_torrents: "No torrents in queue",
     tag_dl: "Real DL",
     tag_sym: "Symlink",
+    tag_debrided_cache: "Cached (Instant)",
+    tag_debrided_ready: "Debrided",
+    tag_debrided_pending: "Not Cached",
+    tip_debrided_cache: "File already cached on Debrid servers (Instant)",
+    tip_debrided_ready: "File debrided and ready on cloud",
+    tip_debrided_pending: "File downloading on provider (not yet cached)",
+    st_cloud_dl: "Cloud debriding",
 
     // Statuses
     st_completed: "Completed",
@@ -1201,6 +1215,20 @@ function renderQueue(items) {
         ? `<span class="tag dl">${esc(t('tag_dl'))}</span>`
         : `<span class="tag sym">${esc(t('tag_sym'))}</span>`);
 
+    const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
+    const isCached = Boolean(item.debrid_cached);
+    let debridBadge = '';
+    if (isDebrided) {
+      if (isCached) {
+        debridBadge = `<span class="tag debrid-cache" title="${esc(t('tip_debrided_cache'))}">⚡ ${esc(t('tag_debrided_cache'))}</span>`;
+      } else {
+        debridBadge = `<span class="tag debrid-ready" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>`;
+      }
+    } else {
+      const seedersTxt = item.seeders ? ` • ${item.seeders} src` : '';
+      debridBadge = `<span class="tag debrid-pending" title="${esc(t('tip_debrided_pending'))}">⏳ ${esc(t('tag_debrided_pending'))}${seedersTxt}</span>`;
+    }
+
     let badgeCls = 'run';
     let stateTxt = pct > 0 ? `${esc(t('st_downloading'))} (${pct}%)` : `${esc(t('st_in_progress'))}`;
 
@@ -1228,6 +1256,12 @@ function renderQueue(items) {
       if (item.dlspeed && item.dlspeed > 0) {
         stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
       }
+    } else if (state === 'downloading' && !isDebrided) {
+      badgeCls = 'run';
+      stateTxt = `${esc(t('st_cloud_dl'))} (${pct}%)`;
+      if (item.seeders && item.seeders > 0) {
+        stateTxt += ` • ${item.seeders} sources`;
+      }
     } else if (isDl && item.dlspeed && item.dlspeed > 0) {
       stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
     }
@@ -1250,7 +1284,10 @@ function renderQueue(items) {
       <td class="col-name">${esc(item.name)}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
       <td class="col-cat"><span class="tag">${esc(item.category)}</span> ${modeBadge}</td>
       <td class="col-status">
-        <span class="badge ${badgeCls}">${stateTxt}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+          <span class="badge ${badgeCls}">${stateTxt}</span>
+          ${debridBadge}
+        </div>
         <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
       </td>
       <td class="actions col-actions">
@@ -1308,7 +1345,10 @@ function renderQueue(items) {
           <td class="col-name"><strong>${esc(item.name)}</strong><div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
           <td class="col-cat"><span class="tag">${esc(item.category)}</span><div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
           <td class="col-status">
-            <span class="badge ${badgeCls}">${stateTxt}</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+              <span class="badge ${badgeCls}">${stateTxt}</span>
+              <span class="tag debrid-cache" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>
+            </div>
             <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
           </td>
           <td class="actions col-actions" style="text-align:right;">

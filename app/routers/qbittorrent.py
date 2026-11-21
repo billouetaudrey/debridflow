@@ -124,6 +124,10 @@ async def qb_add_torrent(
                         "completion_on": -1,
                         "deleted_on_ad": False,
                         "error_msg": "",
+                        "is_debrided": bool(ad_data.get("ready", False)),
+                        "debrid_cached": bool(ad_data.get("ready", False)),
+                        "seeders": 0,
+                        "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
                     }
                     save_state()
                 logger.info(f"Magnet ajouté [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
@@ -152,6 +156,10 @@ async def qb_add_torrent(
                         "completion_on": -1,
                         "deleted_on_ad": False,
                         "error_msg": "",
+                        "is_debrided": bool(ad_data.get("ready", False)),
+                        "debrid_cached": bool(ad_data.get("ready", False)),
+                        "seeders": 0,
+                        "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
                     }
                     save_state()
                 logger.info(f"Fichier .torrent ajouté [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
@@ -326,7 +334,11 @@ async def qb_torrents_retry(hashes: str = Form(...)):
                                 item["ad_id"] = int(ad_data["id"])
                                 if ad_data.get("name") and not item.get("name"):
                                     item["name"] = ad_data["name"]
-                                logger.info(f"Relance débridage AllDebrid [{h[:8]}] -> nouvel ID={item['ad_id']}")
+                                is_rdy = bool(ad_data.get("ready", False))
+                                item["is_debrided"] = is_rdy
+                                item["debrid_cached"] = is_rdy
+                                item["cloud_status"] = "Débridé (Cache)" if is_rdy else "En attente débridage"
+                                logger.info(f"Relance débridage AllDebrid [{h[:8]}] -> nouvel ID={item['ad_id']} (ready={is_rdy})")
                         except Exception as e:
                             logger.warning(f"Échec ré-upload magnet pour {h[:8]} lors du retry: {e}")
                         item["state"] = "downloading"

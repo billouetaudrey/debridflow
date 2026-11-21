@@ -70,6 +70,14 @@ async def ui_queue_feed():
                 "error_msg": item.get("error_msg") or "",
                 "is_ddl": bool(item.get("is_ddl", False)),
                 "download_url": item.get("download_url") or "",
+                "is_debrided": bool(
+                    item.get("is_debrided")
+                    or item.get("state") in ("copying", "checkingDL", "pausedUP", "stalledUP")
+                    or item.get("is_ddl")
+                ),
+                "debrid_cached": bool(item.get("debrid_cached", False)),
+                "seeders": int(item.get("seeders") or 0),
+                "cloud_status": str(item.get("cloud_status") or ""),
             }
             for h, item in items_sorted
         ]
@@ -190,6 +198,10 @@ async def api_upload_torrent(
                     "password": (ddl_password or "").strip(),
                     "download_url": "",
                     "error_msg": "",
+                    "is_debrided": True,
+                    "debrid_cached": True,
+                    "seeders": 0,
+                    "cloud_status": "Lien direct débridé",
                 }
                 added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
             save_state()
@@ -226,6 +238,10 @@ async def api_upload_torrent(
                         "completion_on": -1,
                         "deleted_on_ad": False,
                         "error_msg": "",
+                        "is_debrided": bool(ad_data.get("ready", False)),
+                        "debrid_cached": bool(ad_data.get("ready", False)),
+                        "seeders": 0,
+                        "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
                     }
                     save_state()
                 logger.info(f"Magnet ajouté manuellement [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
@@ -268,6 +284,10 @@ async def api_upload_torrent(
                         "completion_on": -1,
                         "deleted_on_ad": False,
                         "error_msg": "",
+                        "is_debrided": bool(ad_data.get("ready", False)),
+                        "debrid_cached": bool(ad_data.get("ready", False)),
+                        "seeders": 0,
+                        "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
                     }
                     save_state()
                 logger.info(f"Fichier .torrent ajouté manuellement [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
@@ -689,13 +709,36 @@ async def web_dashboard(saved: Optional[str] = None):
                 else f'<button class="btn-warn" onclick="batchAction(\'pause\', [\'{full_id}\'])">Pause</button>'
             )
 
+            is_deb = bool(
+                item.get("is_debrided")
+                or state in ("copying", "checkingDL", "pausedUP", "stalledUP")
+                or item.get("is_ddl")
+            )
+            is_cached = bool(item.get("debrid_cached", False))
+
+            if is_deb:
+                if is_cached:
+                    debrid_badge = '<span class="tag debrid-cache" title="Fichier déjà présent sur les serveurs Debrid (Instantané)">⚡ Déjà débridé (Cache)</span>'
+                else:
+                    debrid_badge = '<span class="tag debrid-ready" title="Fichier débridé et disponible sur le cloud">⚡ Débridé</span>'
+            else:
+                seeders_cnt = int(item.get("seeders") or 0)
+                seeders_txt = f" • {seeders_cnt} src" if seeders_cnt > 0 else ""
+                debrid_badge = f'<span class="tag debrid-pending" title="Fichier en cours de téléchargement chez le fournisseur (non débridé)">⏳ Non débridé{seeders_txt}</span>'
+
             rows.append(
                 f'<tr>'
                 f'<td class="col-chk"><input type="checkbox" class="row-chk" value="{full_id}" onchange="updateSelection()"></td>'
                 f'<td class="mono col-id"><div>#{ad_id}</div><small title="{full_id}" onclick="copyId(\'{full_id}\')" style="cursor:pointer;color:#8b949e">{short_id} 📋</small></td>'
                 f'<td class="col-name">{name_esc}<div style="color:#8b949e;font-size:11px;margin-top:2px;">{save_path_txt}</div></td>'
                 f'<td class="col-cat"><span class="tag">{cat_esc}</span> {mode_badge}</td>'
-                f'<td class="col-status"><span class="badge {badge_cls}">{state_txt}</span><div class="pbar"><div class="pbar-fill {badge_cls}" style="width:{pct}%"></div></div></td>'
+                f'<td class="col-status">'
+                f'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
+                f'<span class="badge {badge_cls}">{state_txt}</span>'
+                f'{debrid_badge}'
+                f'</div>'
+                f'<div class="pbar"><div class="pbar-fill {badge_cls}" style="width:{pct}%"></div></div>'
+                f'</td>'
                 f'<td class="actions col-actions">'
                 f'<button class="btn-sec" onclick="batchAction(\'retry\', [\'{full_id}\'])">Relancer</button> '
                 f'{pause_btn} '

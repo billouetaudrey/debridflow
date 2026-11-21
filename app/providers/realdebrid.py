@@ -97,10 +97,12 @@ class RealDebridProvider(BaseDebridProvider):
         )
         info_data = info_resp.json() if info_resp.is_success else {}
 
+        is_ready = (info_data.get("status") or "").lower() == "downloaded"
         return {
             "id": item_id,
             "name": info_data.get("filename") or f"Torrent-{item_id}",
             "size": int(info_data.get("bytes") or 0),
+            "ready": is_ready,
         }
 
     async def upload_file(
@@ -207,6 +209,9 @@ class RealDebridProvider(BaseDebridProvider):
                     "downloaded": downloaded,
                     "status": raw_status,
                     "links": links,
+                    "seeders": int(info.get("seeders") or 0),
+                    "downloadSpeed": int(info.get("speed") or 0),
+                    "is_ready": is_ready,
                 }
             except Exception as exc:
                 logger.debug(f"Real-Debrid get_statuses erreur {target_id} : {exc}")

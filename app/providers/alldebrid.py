@@ -101,6 +101,8 @@ class AllDebridProvider(BaseDebridProvider):
             "id": mag["id"],
             "name": mag.get("name") or "",
             "size": int(mag.get("size") or 0),
+            "ready": bool(mag.get("ready", False)),
+            "hash": mag.get("hash"),
         }
 
     async def upload_file(
@@ -127,6 +129,8 @@ class AllDebridProvider(BaseDebridProvider):
             "id": f["id"],
             "name": f.get("name") or filename,
             "size": int(f.get("size") or 0),
+            "ready": bool(f.get("ready", False)),
+            "hash": f.get("hash"),
         }
 
     async def get_statuses(
@@ -151,14 +155,18 @@ class AllDebridProvider(BaseDebridProvider):
                     for item in items:
                         if isinstance(item, dict) and "id" in item:
                             mid = int(item["id"])
+                            st_code = int(item.get("statusCode", 0))
                             result[mid] = {
                                 "id": mid,
-                                "statusCode": int(item.get("statusCode", 0)),
+                                "statusCode": st_code,
                                 "filename": item.get("filename") or "",
                                 "size": int(item.get("size") or 0),
                                 "downloaded": int(item.get("downloaded") or 0),
                                 "status": item.get("status") or "",
                                 "links": item.get("links") or [],
+                                "seeders": int(item.get("seeders") or 0),
+                                "downloadSpeed": int(item.get("downloadSpeed") or 0),
+                                "is_ready": st_code == 4,
                             }
                 elif p_single.get("status") == "error":
                     err = p_single.get("error") or {}
