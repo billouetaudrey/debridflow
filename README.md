@@ -244,6 +244,9 @@ Test network connectivity and throughput directly from your host server:
 
 DebridFlow includes full Progressive Web App (PWA) support:
 * **Standalone Display Mode**: Runs borderless in full-screen without address bars or browser controls on Android, iOS, Windows, macOS, and Linux.
+* **Android Native Share Target (MyJDownloader Replacement)**: Integrates directly into Android's native **"Share"** (Partager) sheet. Share any DDL link (1fichier, Rapidgator...), magnet URI, or `.torrent` file from any mobile browser or app directly to DebridFlow in 1 tap!
+* **Magnet Protocol Handler**: Tapping `magnet:` links on Android automatically prompts to open in DebridFlow and queues the download.
+* **Home Screen Shortcuts**: Long-press the DebridFlow app icon for quick actions (*"Add Download"*, *"DDL Finder"*).
 * **Service Worker Caching**: Ultra-responsive App Shell loading with resilient Network-First caching.
 * **Installation Guide**:
   * **Android**: Open DebridFlow over HTTPS (or `localhost`) in Chrome, tap `⋮`, then **"Install application"** or **"Add to Home screen"**.
@@ -271,13 +274,11 @@ Send downloads directly to your DebridFlow instance from any website:
 
 ---
 
-## 🔔 Telegram Notifications
+## 🔔 Telegram Notifications & 2-Way Mobile Bot
 
-Configure automated alerts under **Settings > Notifications**:
-* Completed downloads with average speed and file size.
-* Scan summary reports.
-* Immediate notifications when broken links are detected.
-* Debrid provider API warnings or quota limits.
+Configure automated alerts and 2-way bot control under **Settings > Notifications**:
+* **2-Way Remote Download Receiver**: Send or share any magnet, DDL link, or `.torrent` file directly to your private Telegram bot from anywhere in the world (works seamlessly on 4G/5G without VPN or port forwarding). DebridFlow immediately queues the download and replies with live confirmation!
+* **Automated Alerts**: Real-time notifications for completed downloads (with average speed & file size), scan summaries, broken link alerts, and debrid API quota warnings.
 
 ---
 

@@ -28,6 +28,12 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - Icônes haute résolution DebridFlow (PNG 192x192 et 512x512, incluant les variantes adaptatives `maskable` pour les lanceurs Android).
   - Service Worker léger et performant (`sw.js`) avec stratégie Réseau d'abord (Network-First) et pré-mise en cache de l'App Shell hors-ligne.
   - Routes racine `/manifest.json`, `/sw.js` et `/favicon.ico` avec en-tête `Service-Worker-Allowed: /` et exclusion de l'authentification pour garantir l'installation PWA.
+  - **Intégration Native Android Web Share Target** : S'intègre directement dans le menu natif « Partager » d'Android pour recevoir des liens DDL, magnets ou fichiers `.torrent` depuis n'importe quelle application (remplacement complet de MyJDownloader).
+  - **Gestionnaire de Protocole Magnet** : L'appui sur un lien `magnet:` ouvre directement DebridFlow.
+  - **Raccourcis d'Écran d'Accueil** : Actions rapides sur appui long sur l'icône de l'application.
+- **Contrôleur Telegram Bidirectionnel** :
+  - Écouteur en tâche de fond permettant l'ajout de téléchargements à distance directement via Telegram.
+  - Envoyez ou partagez des magnets, liens DDL ou fichiers `.torrent` à votre bot privé depuis n'importe où (fonctionne en 4G/5G sans VPN ni ouverture de port) ; DebridFlow les ajoute immédiatement à la file et répond avec le statut.
 
 ---
 

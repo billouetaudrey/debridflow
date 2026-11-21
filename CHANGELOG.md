@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dedicated high-resolution application icons (192x192 and 512x512 PNG, including adaptive `maskable` variants for Android launchers).
   - Lightweight and resilient Service Worker (`sw.js`) with Network-First strategy and App Shell offline caching.
   - Root endpoints `/manifest.json`, `/sw.js`, and `/favicon.ico` mounted with `Service-Worker-Allowed: /` header and bypassed from authentication blocking.
+  - **Native Android Web Share Target**: Integrates directly into Android's native "Share" sheet to receive DDL links, magnets, or `.torrent` files from any app (full MyJDownloader mobile replacement).
+  - **Magnet Protocol Handler**: Tapping `magnet:` links opens DebridFlow automatically.
+  - **Home Screen App Shortcuts**: Quick launcher actions on Android.
+- **Bidirectional Telegram Bot Controller**:
+  - Background listener allowing remote download submissions directly via Telegram chat.
+  - Send or share magnets, DDL links, or `.torrent` files to your private bot from anywhere (works on 4G/5G without VPN or port forwarding); DebridFlow queues the download and replies with confirmation.
 
 ---
 

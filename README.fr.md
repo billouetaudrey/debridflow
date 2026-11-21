@@ -233,6 +233,9 @@ Mesurez les performances de votre connexion directement depuis le serveur hôte 
 
 DebridFlow propose une compatibilité complète Progressive Web App (PWA) :
 * **Mode Autonome (Plein Écran)** : Fonctionne sans barre d'adresse ni boutons du navigateur sur Android, iOS, Windows, macOS et Linux.
+* **Menu Natif « Partager » Android (Remplacement complet de MyJDownloader)** : DebridFlow s'enregistre dans la feuille de partage native d'Android. Depuis n'importe quelle application (Chrome, Reddit, Twitter, etc.), partagez un lien DDL (1fichier, Rapidgator...), un magnet ou un fichier `.torrent` en 1 seul appui !
+* **Gestionnaire de Protocole Magnet** : Un simple appui sur un lien `magnet:` ouvre directement DebridFlow et ajoute le torrent.
+* **Raccourcis d'Écran d'Accueil** : Appui long sur l'icône de l'application pour accéder aux actions rapides (*« Ajouter un téléchargement »*, *« Recherche DDL »*).
 * **Mise en cache Service Worker** : Lancement instantané de l'interface avec stratégie de cache réseau prioritaire (Network-First).
 * **Guide d'installation** :
   * **Android** : Ouvrez DebridFlow en HTTPS (ou `localhost`) dans Chrome, appuyez sur le menu `⋮` puis **« Installer l'application »** ou **« Ajouter à l'écran d'accueil »**.
@@ -260,13 +263,11 @@ Envoyez directement vos téléchargements vers votre serveur DebridFlow depuis n
 
 ---
 
-## 🔔 Notifications Telegram
+## 🔔 Notifications & Contrôleur Telegram Bidirectionnel
 
-Configurez un bot Telegram dans **Paramètres > Notifications** pour être alerté en direct :
-* Fin de téléchargement avec vitesse moyenne et taille.
-* Rapport d'analyse du scanner de médiathèque.
-* Détection de liens morts nécessitant votre attention.
-* Alertes d'erreurs critiques d'API de débridage.
+Configurez un bot Telegram dans **Paramètres > Notifications** pour piloter votre serveur à distance :
+* **Réception et ajout automatique de téléchargements** : Envoyez ou partagez n'importe quel lien magnet, DDL ou fichier `.torrent` directement à votre bot Telegram depuis votre smartphone, où que vous soyez dans le monde (fonctionne en 4G/5G sans VPN ni ouverture de port). DebridFlow attrape le téléchargement et vous confirme l'ajout immédiatement en réponse !
+* **Alertes automatiques** : Fin de téléchargement avec vitesse moyenne et taille, rapport d'analyse du scanner de médiathèque, détection de liens orphelins et alertes d'erreurs critiques d'API de débridage.
 
 ---
 
