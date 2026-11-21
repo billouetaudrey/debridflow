@@ -271,6 +271,12 @@ DebridFlow a été **100% conçu, architecturé et développé avec Google Gemin
 
 ---
 
+## 🙏 Remerciements & Inspirations
+
+* **[rdt-client](https://github.com/rogerfar/rdt-client)** — Inspiration pour l'émulation de l'API Web qBittorrent reliant les débrideurs à la suite \*arr.
+* **[JDownloader](https://jdownloader.org/)** — Inspiration pour la gestion des téléchargements directs (DDL) et la récupération de liens.
+
+---
 ## ⚖️ Avertissement Légal & Licence
 
 **DebridFlow** est un outil logiciel indépendant développé à des fins de gestion technique et d'automatisation de flux multimédia personnels. Les auteurs ne cautionnent ni n'encouragent le téléchargement de contenus non autorisés. Vous êtes responsable du respect des lois en vigueur dans votre juridiction.
