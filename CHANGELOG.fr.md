@@ -12,6 +12,17 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.7.0] — 2026-11-21
 
 ### Ajouté
+- **Intégrations Navigateurs (Clic-droit &amp; 1-Clic)** :
+  - **Extension Google Chrome / Chromium (Manifest V3)** :
+    - Intégration directe au menu contextuel natif au clic-droit sur les liens et le texte sélectionné.
+    - Actions rapides pour les modes Défaut, Symlink (instantané) et Téléchargement réel (local).
+    - Fenêtre popup avec diagnostic en direct de connexion, sélection de la catégorie et raccourci vers DebridFlow.
+    - Notifications de bureau natives lors de l'ajout réussi ou en cas d'erreur.
+    - Téléchargement du package `.zip` prêt à l'emploi depuis les paramètres.
+  - **Script Tampermonkey / Violentmonkey** :
+    - Menu contextuel flottant sur les magnets, fichiers torrents et liens DDL (1fichier, Rapidgator, etc.).
+    - Injection automatique de badges `⚡` 1-clic à côté des liens magnets sur les sites de torrents.
+    - Raccourci `Alt + Clic gauche` pour envoyer instantanément n'importe quel lien en arrière-plan.
 - **Support complet Progressive Web App (PWA)** :
   - Manifeste d'application web (`manifest.json`) permettant l'installation directe en tant qu'application autonome (standalone) sur Android, iOS, Windows, macOS et Linux.
   - Icônes haute résolution DebridFlow (PNG 192x192 et 512x512, incluant les variantes adaptatives `maskable` pour les lanceurs Android).

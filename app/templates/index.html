@@ -692,6 +692,44 @@
                 <input type="checkbox" id="del_prov" name="delete_on_provider" __CHECKED_DEL__>
                 <label for="del_prov" data-i18n="lbl_del_prov">Supprimer aussi automatiquement le magnet sur AllDebrid lors de la purge après import (y compris pour les Symlinks)</label>
               </div>
+
+              <!-- Intégration Navigateur : Extension Chrome & Userscript -->
+              <div style="margin-top:24px;border-top:1px solid var(--border-muted);padding-top:16px;">
+                <h4 style="font-size:13px;margin:0 0 4px 0;color:var(--text-bright);display:flex;align-items:center;gap:6px;">
+                  <span>🧩</span> <span>Intégration Navigateur (Clic-droit &amp; 1-Clic)</span>
+                </h4>
+                <small class="hint" style="display:block;margin-bottom:14px;">
+                  Ajoutez instantanément des torrents, magnets ou liens DDL (1fichier, Rapidgator, etc.) à DebridFlow d'un simple clic-droit depuis n'importe quel site web :
+                </small>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;flex-direction:column;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:600;font-size:13px;color:#58a6ff;display:flex;align-items:center;gap:6px;">
+                        <span>🌐</span> <span>Extension Chrome / Brave / Edge</span>
+                      </div>
+                      <small class="hint" style="margin-top:4px;display:block;">Menu contextuel natif Chrome au clic-droit sur liens et textes sélectionnés, popup de statut et notifications.</small>
+                    </div>
+                    <div>
+                      <a href="/static/debridflow-chrome-extension.zip" download class="btn-main" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12px;padding:6px 14px;border-radius:6px;width:fit-content;">
+                        <span>⬇️</span> <span>Télécharger l'Extension (.zip)</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;flex-direction:column;justify-content:space-between;gap:10px;">
+                    <div>
+                      <div style="font-weight:600;font-size:13px;color:#3fb950;display:flex;align-items:center;gap:6px;">
+                        <span>🐒</span> <span>Script Tampermonkey / Violentmonkey</span>
+                      </div>
+                      <small class="hint" style="margin-top:4px;display:block;">Installation directe avec badges ⚡ automatiques sur les sites de torrents et raccourci Alt+Clic.</small>
+                    </div>
+                    <div>
+                      <a href="/static/debridflow.user.js" target="_blank" class="btn-sec" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12px;padding:6px 14px;border-radius:6px;width:fit-content;">
+                        <span>⚡</span> <span>Installer le Userscript</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

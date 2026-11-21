@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.7.0] — 2026-11-21
 
 ### Added
+- **Browser Integrations (1-Click & Right-Click)**:
+  - **Google Chrome / Chromium Extension (Manifest V3)**:
+    - Native browser right-click context menu integration for links and selected text.
+    - Quick actions for Default, Symlink (Instant), and Download (Local) modes.
+    - Status popup with live server ping, category selection, and instant web app launcher.
+    - Native desktop notifications on successful uploads or errors.
+    - Direct `.zip` download package available from settings.
+  - **Tampermonkey / Violentmonkey Userscript**:
+    - Right-click context popup on magnets, torrents, and direct download links (1fichier, Rapidgator, etc.).
+    - Automatic `⚡` quick-download badges injected next to magnet links.
+    - `Alt + Left Click` instant-send shortcut.
 - **Full Progressive Web App (PWA) Support**:
   - Web App Manifest (`manifest.json`) enabling installability as a standalone application on Android, iOS, Windows, macOS, and Linux.
   - Dedicated high-resolution application icons (192x192 and 512x512 PNG, including adaptive `maskable` variants for Android launchers).
