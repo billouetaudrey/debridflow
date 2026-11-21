@@ -1,11 +1,13 @@
 import hashlib
 import html
+import re
 import time
+import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
-from fastapi import APIRouter, File, Form, Response, UploadFile
+from fastapi import APIRouter, File, Form, Request, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from app.alldebrid import (
@@ -378,6 +380,161 @@ async def api_upload_ddl(
             "message": f"{len(added_items)} lien(s) DDL ajouté(s) avec succès !",
         }
     )
+
+
+@router.api_route("/share-target", methods=["GET", "POST", "HEAD"])
+async def pwa_share_target(
+    request: Request,
+    title: Optional[str] = Form(None),
+    text: Optional[str] = Form(None),
+    url: Optional[str] = Form(None),
+    torrent_file: Optional[UploadFile] = File(None),
+):
+    """Réception native des partages Android (menu Partager) et Protocol Handlers magnet."""
+    raw_text = f"{url or ''} {text or ''} {title or ''}".strip()
+    if request.method == "GET" or not raw_text:
+        q = dict(request.query_params)
+        raw_text += f" {q.get('url', '')} {q.get('text', '')} {q.get('magnet', '')}".strip()
+
+    cat = "torrent-direct"
+    cfg_mode, configured_dir = resolve_service(cat)
+    save_dir = configured_dir
+    save_dir.mkdir(parents=True, exist_ok=True)
+    added_name = ""
+
+    # 1. Fichier .torrent partagé
+    if torrent_file and torrent_file.filename:
+        try:
+            raw_bytes = await torrent_file.read()
+            if raw_bytes:
+                info_hash, parsed_name = parse_torrent_bytes(raw_bytes)
+                filename = torrent_file.filename or f"{info_hash}.torrent"
+                async with httpx.AsyncClient() as client:
+                    ad_data = await alldebrid_upload_file(client, filename, raw_bytes)
+                ad_id = ad_data.get("id")
+                if str(ad_id).isdigit():
+                    ad_id = int(ad_id)
+                ad_name = ad_data.get("name") or parsed_name
+                real_hash = str(ad_data.get("hash") or "").strip().lower()
+                if real_hash:
+                    info_hash = real_hash
+                async with state_lock:
+                    torrents_db[info_hash] = {
+                        "hash": info_hash,
+                        "ad_id": ad_id,
+                        "name": ad_name,
+                        "magnet_uri": "",
+                        "category": cat,
+                        "transfer_mode": cfg_mode,
+                        "save_path": str(save_dir),
+                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "linked_paths": [],
+                        "size": int(ad_data.get("size") or 0),
+                        "progress": 0.0,
+                        "state": "downloading",
+                        "added_on": int(time.time()),
+                        "completion_on": -1,
+                        "deleted_on_ad": False,
+                        "error_msg": "",
+                        "is_debrided": bool(ad_data.get("ready", False)),
+                        "debrid_cached": bool(ad_data.get("ready", False)),
+                        "seeders": 0,
+                        "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                    }
+                    save_state()
+                added_name = ad_name
+                logger.info(f"[PWA Share] Fichier .torrent ajouté : {ad_name}")
+        except Exception as exc:
+            logger.error(f"[PWA Share] Erreur upload .torrent : {exc}")
+
+    # 2. Magnets extraits du texte
+    if not added_name:
+        magnets = re.findall(r"(magnet:\?[^\s\"'<>]+)", raw_text, re.IGNORECASE)
+        if magnets:
+            for mag in magnets:
+                try:
+                    info_hash, parsed_name = parse_magnet_uri(mag)
+                    async with httpx.AsyncClient() as client:
+                        ad_data = await alldebrid_upload_magnet(client, mag)
+                    ad_id = ad_data.get("id")
+                    if str(ad_id).isdigit():
+                        ad_id = int(ad_id)
+                    ad_name = ad_data.get("name") or parsed_name
+                    real_hash = str(ad_data.get("hash") or "").strip().lower()
+                    if real_hash:
+                        info_hash = real_hash
+                    async with state_lock:
+                        torrents_db[info_hash] = {
+                            "hash": info_hash,
+                            "ad_id": ad_id,
+                            "name": ad_name,
+                            "magnet_uri": mag,
+                            "category": cat,
+                            "transfer_mode": cfg_mode,
+                            "save_path": str(save_dir),
+                            "content_path": str(save_dir / sanitize_filename(ad_name)),
+                            "linked_paths": [],
+                            "size": int(ad_data.get("size") or 0),
+                            "progress": 0.0,
+                            "state": "downloading",
+                            "added_on": int(time.time()),
+                            "completion_on": -1,
+                            "deleted_on_ad": False,
+                            "error_msg": "",
+                            "is_debrided": bool(ad_data.get("ready", False)),
+                            "debrid_cached": bool(ad_data.get("ready", False)),
+                            "seeders": 0,
+                            "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                        }
+                        save_state()
+                    added_name = ad_name
+                    logger.info(f"[PWA Share] Magnet ajouté : {ad_name}")
+                except Exception as exc:
+                    logger.error(f"[PWA Share] Erreur upload magnet : {exc}")
+
+    # 3. Liens HTTP DDL extraits du texte
+    if not added_name:
+        urls = re.findall(r"(https?://[^\s\"'<>]+)", raw_text, re.IGNORECASE)
+        if urls:
+            custom_ddl_dir = settings_db.get("ddl_download_dir")
+            ddl_save_dir = Path(custom_ddl_dir) if custom_ddl_dir else save_dir
+            ddl_save_dir.mkdir(parents=True, exist_ok=True)
+            now_ts = int(time.time())
+            for u in urls:
+                info_hash = hashlib.sha1(u.encode("utf-8")).hexdigest()
+                raw_fname = Path(u.split("?")[0]).name or "fichier_ddl"
+                async with state_lock:
+                    torrents_db[info_hash] = {
+                        "hash": info_hash,
+                        "ad_id": "DDL",
+                        "name": sanitize_filename(raw_fname) or "fichier_ddl",
+                        "category": cat,
+                        "transfer_mode": "download",
+                        "save_path": str(ddl_save_dir),
+                        "content_path": str(ddl_save_dir / sanitize_filename(raw_fname)),
+                        "linked_paths": [],
+                        "size": 0,
+                        "progress": 0.0,
+                        "state": "resolving",
+                        "added_on": now_ts,
+                        "completion_on": -1,
+                        "deleted_on_ad": False,
+                        "missing_count": 0,
+                        "is_ddl": True,
+                        "original_url": u,
+                        "password": "",
+                        "download_url": "",
+                        "error_msg": "",
+                    }
+                    save_state()
+                added_name = raw_fname
+                logger.info(f"[PWA Share] Lien DDL ajouté : {raw_fname}")
+
+    redirect_url = "/"
+    if added_name:
+        redirect_url = f"/?shared=1&name={urllib.parse.quote(added_name)}"
+
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @router.post("/api/test")

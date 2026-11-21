@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
+from app.notifications import run_telegram_listener
 from app.routers import finder, qbittorrent, scanner, speedtest, web
 from app.state import load_state, settings_db
 from app.worker import background_worker
@@ -18,8 +19,10 @@ from app.worker import background_worker
 async def lifespan(app_instance: FastAPI):
     load_state()
     task = asyncio.create_task(background_worker())
+    tg_task = asyncio.create_task(run_telegram_listener())
     yield
     task.cancel()
+    tg_task.cancel()
 
 
 app = FastAPI(title="DebridFlow - Fast Multi-Debrid Symlink & Download Client", lifespan=lifespan)
@@ -41,6 +44,7 @@ async def auth_middleware(request: Request, call_next):
         "/manifest.json",
         "/sw.js",
         "/favicon.ico",
+        "/share-target",
     ):
         return await call_next(request)
 

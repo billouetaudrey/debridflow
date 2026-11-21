@@ -1,8 +1,17 @@
+import asyncio
+import hashlib
 import html
 import logging
+import re
+import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 import httpx
-from app.state import settings_db
+
+from app.alldebrid import alldebrid_upload_file, alldebrid_upload_magnet
+from app.bencode import parse_magnet_uri, parse_torrent_bytes, sanitize_filename
+from app.state import resolve_service, save_state, settings_db, state_lock, torrents_db
 
 logger = logging.getLogger("DebridFlow.Notifications")
 
@@ -218,3 +227,174 @@ class TelegramNotifier:
 
 
 notifier = TelegramNotifier()
+
+
+async def run_telegram_listener() -> None:
+    """Écoute en tâche de fond les messages Telegram entrants pour ajouter automatiquement les liens partagés."""
+    last_update_id = 0
+    logger.info("Module d'écoute Telegram en tâche de fond actif.")
+
+    while True:
+        try:
+            enabled = settings_db.get("telegram_enabled", False)
+            bot_token = str(settings_db.get("telegram_bot_token", "")).strip()
+            chat_id = str(settings_db.get("telegram_chat_id", "")).strip()
+
+            if not enabled or not bot_token or not chat_id:
+                await asyncio.sleep(8)
+                continue
+
+            url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+            params = {"offset": last_update_id + 1, "timeout": 15}
+
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for upd in data.get("result", []):
+                        last_update_id = max(last_update_id, upd.get("update_id", 0))
+                        msg = upd.get("message") or upd.get("channel_post")
+                        if not msg:
+                            continue
+
+                        # Sécurité stricte : ignorer les messages qui ne viennent pas du chat_id autorisé
+                        sender_chat_id = str(msg.get("chat", {}).get("id", ""))
+                        if sender_chat_id != chat_id:
+                            continue
+
+                        text = str(msg.get("text") or msg.get("caption") or "").strip()
+                        doc = msg.get("document")
+
+                        cat = "torrent-direct"
+                        cfg_mode, configured_dir = resolve_service(cat)
+                        configured_dir.mkdir(parents=True, exist_ok=True)
+
+                        # Cas 1 : Fichier .torrent envoyé sur Telegram
+                        if doc and doc.get("file_name", "").lower().endswith(".torrent"):
+                            file_id = doc.get("file_id")
+                            f_info_resp = await client.get(f"https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}")
+                            if f_info_resp.status_code == 200:
+                                file_path = f_info_resp.json().get("result", {}).get("file_path")
+                                dl_resp = await client.get(f"https://api.telegram.org/file/bot{bot_token}/{file_path}")
+                                if dl_resp.status_code == 200:
+                                    raw_bytes = dl_resp.content
+                                    info_hash, parsed_name = parse_torrent_bytes(raw_bytes)
+                                    ad_data = await alldebrid_upload_file(client, doc.get("file_name"), raw_bytes)
+                                    ad_id = ad_data.get("id")
+                                    if str(ad_id).isdigit():
+                                        ad_id = int(ad_id)
+                                    ad_name = ad_data.get("name") or parsed_name
+                                    real_hash = str(ad_data.get("hash") or "").strip().lower()
+                                    if real_hash:
+                                        info_hash = real_hash
+                                    async with state_lock:
+                                        torrents_db[info_hash] = {
+                                            "hash": info_hash,
+                                            "ad_id": ad_id,
+                                            "name": ad_name,
+                                            "magnet_uri": "",
+                                            "category": cat,
+                                            "transfer_mode": cfg_mode,
+                                            "save_path": str(configured_dir),
+                                            "content_path": str(configured_dir / sanitize_filename(ad_name)),
+                                            "linked_paths": [],
+                                            "size": int(ad_data.get("size") or 0),
+                                            "progress": 0.0,
+                                            "state": "downloading",
+                                            "added_on": int(time.time()),
+                                            "completion_on": -1,
+                                            "deleted_on_ad": False,
+                                            "error_msg": "",
+                                            "is_debrided": bool(ad_data.get("ready", False)),
+                                            "debrid_cached": bool(ad_data.get("ready", False)),
+                                            "seeders": 0,
+                                            "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                                        }
+                                        save_state()
+                                    await notifier.send_message(f"⚡ <b>Fichier .torrent reçu via Telegram !</b>\n\n• <b>Nom</b> : <code>{html.escape(ad_name)}</code>\n• <b>Mode</b> : {cfg_mode}")
+
+                        # Cas 2 : Magnet ou Lien URL dans le texte
+                        if text:
+                            magnets = re.findall(r"(magnet:\?[^\s\"'<>]+)", text, re.IGNORECASE)
+                            for mag in magnets:
+                                try:
+                                    info_hash, parsed_name = parse_magnet_uri(mag)
+                                    ad_data = await alldebrid_upload_magnet(client, mag)
+                                    ad_id = ad_data.get("id")
+                                    if str(ad_id).isdigit():
+                                        ad_id = int(ad_id)
+                                    ad_name = ad_data.get("name") or parsed_name
+                                    real_hash = str(ad_data.get("hash") or "").strip().lower()
+                                    if real_hash:
+                                        info_hash = real_hash
+                                    async with state_lock:
+                                        torrents_db[info_hash] = {
+                                            "hash": info_hash,
+                                            "ad_id": ad_id,
+                                            "name": ad_name,
+                                            "magnet_uri": mag,
+                                            "category": cat,
+                                            "transfer_mode": cfg_mode,
+                                            "save_path": str(configured_dir),
+                                            "content_path": str(configured_dir / sanitize_filename(ad_name)),
+                                            "linked_paths": [],
+                                            "size": int(ad_data.get("size") or 0),
+                                            "progress": 0.0,
+                                            "state": "downloading",
+                                            "added_on": int(time.time()),
+                                            "completion_on": -1,
+                                            "deleted_on_ad": False,
+                                            "error_msg": "",
+                                            "is_debrided": bool(ad_data.get("ready", False)),
+                                            "debrid_cached": bool(ad_data.get("ready", False)),
+                                            "seeders": 0,
+                                            "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                                        }
+                                        save_state()
+                                    await notifier.send_message(f"⚡ <b>Magnet reçu via Telegram !</b>\n\n• <b>Nom</b> : <code>{html.escape(ad_name)}</code>\n• <b>Statut</b> : En cours de débridage ({cfg_mode})")
+                                except Exception as exc:
+                                    await notifier.send_message(f"❌ <b>Erreur ajout magnet :</b> <code>{html.escape(str(exc))}</code>")
+
+                            urls = [u for u in re.findall(r"(https?://[^\s\"'<>]+)", text, re.IGNORECASE) if not u.lower().endswith(".torrent")]
+                            for u in urls:
+                                try:
+                                    custom_ddl_dir = settings_db.get("ddl_download_dir")
+                                    ddl_save_dir = Path(custom_ddl_dir) if custom_ddl_dir else configured_dir
+                                    ddl_save_dir.mkdir(parents=True, exist_ok=True)
+                                    info_hash = hashlib.sha1(u.encode("utf-8")).hexdigest()
+                                    raw_fname = Path(u.split("?")[0]).name or "fichier_ddl"
+                                    async with state_lock:
+                                        torrents_db[info_hash] = {
+                                            "hash": info_hash,
+                                            "ad_id": "DDL",
+                                            "name": sanitize_filename(raw_fname) or "fichier_ddl",
+                                            "category": cat,
+                                            "transfer_mode": "download",
+                                            "save_path": str(ddl_save_dir),
+                                            "content_path": str(ddl_save_dir / sanitize_filename(raw_fname)),
+                                            "linked_paths": [],
+                                            "size": 0,
+                                            "progress": 0.0,
+                                            "state": "resolving",
+                                            "added_on": int(time.time()),
+                                            "completion_on": -1,
+                                            "deleted_on_ad": False,
+                                            "missing_count": 0,
+                                            "is_ddl": True,
+                                            "original_url": u,
+                                            "password": "",
+                                            "download_url": "",
+                                            "error_msg": "",
+                                        }
+                                        save_state()
+                                    await notifier.send_message(f"⚡ <b>Lien DDL reçu via Telegram !</b>\n\n• <b>Fichier</b> : <code>{html.escape(raw_fname)}</code>\n• <b>Statut</b> : Résolution lancée")
+                                except Exception as exc:
+                                    await notifier.send_message(f"❌ <b>Erreur ajout DDL :</b> <code>{html.escape(str(exc))}</code>")
+                else:
+                    await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            logger.info("Arrêt de l'écouteur Telegram.")
+            break
+        except Exception as e:
+            logger.debug(f"Erreur getUpdates Telegram: {e}")
+            await asyncio.sleep(6)

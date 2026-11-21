@@ -12,6 +12,57 @@
     "utilities",
     "productivity"
   ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "torrent_file",
+          "accept": [
+            "application/x-bittorrent",
+            ".torrent"
+          ]
+        }
+      ]
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "magnet",
+      "url": "/?magnet=%s"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ajouter un téléchargement",
+      "short_name": "Ajouter",
+      "description": "Ouvrir l'ajout de lien ou torrent",
+      "url": "/?action=add",
+      "icons": [
+        {
+          "src": "/static/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Recherche DDL",
+      "short_name": "Recherche",
+      "description": "Rechercher des liens",
+      "url": "/?tab=finder",
+      "icons": [
+        {
+          "src": "/static/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/static/icons/icon-192.png",
