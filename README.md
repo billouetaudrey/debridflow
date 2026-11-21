@@ -282,6 +282,13 @@ DebridFlow was **100% conceived, architected, and coded with Google Gemini**. Fr
 
 ---
 
+## 🙏 Acknowledgments & Inspirations
+
+* **[rdt-client](https://github.com/rogerfar/rdt-client)** — Inspiration for the qBittorrent WebAPI emulation workflow bridging debrid providers with the \*arr stack.
+* **[JDownloader](https://jdownloader.org/)** — Inspiration for the DDL direct-download management and link-grabbing approach.
+
+---
+
 ## ⚖️ Legal Disclaimer & License
 
 **DebridFlow** is an open-source tool created for educational and personal media organization purposes. The authors do not endorse or encourage the downloading of unauthorized or copyrighted content. Users are responsible for complying with all applicable laws in their jurisdiction.
