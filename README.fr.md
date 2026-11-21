@@ -12,7 +12,7 @@
 >
 > ✨ *Projet 100% conçu, architecturé et développé avec **Google Gemini**.*
 
-🎬 **[Voir la démonstration vidéo (MP4)](debridflow_demo_fr.mp4)**
+🎬 **[Voir la démonstration vidéo (webm)](debridflow_demo_fr.webm)**
 ---
 
 ## 📑 Sommaire
