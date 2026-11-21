@@ -3,11 +3,13 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![PWA Ready](https://img.shields.io/badge/PWA-Installable-5A0FC8.svg?logo=pwa&logoColor=white)](https://developer.mozilla.org/fr/docs/Web/Progressive_web_apps)
+[![Extension Chrome](https://img.shields.io/badge/Extension%20Chrome-Manifest%20V3-4285F4.svg?logo=googlechrome&logoColor=white)](extension/)
 [![Coded with Gemini](https://img.shields.io/badge/Coded%20with-Google%20Gemini-8E75C2?logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
-[![Changelog](https://img.shields.io/badge/Changelog-v2.6.0-orange.svg)](CHANGELOG.fr.md)
+[![Changelog](https://img.shields.io/badge/Changelog-v2.7.0-orange.svg)](CHANGELOG.fr.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🌐 **Langue** : [English 🇬🇧](README.md) | **Français 🇫🇷** • 📋 [Journal des modifications](CHANGELOG.fr.md)
+🌐 **Langue** : [English 🇬🇧](README.md) | **Français 🇫🇷** • 📋 [Journal des modifications](CHANGELOG.fr.md) • 🔒 [Politique de Confidentialité](PRIVACY.md)
 
 > **DebridFlow** est un client de téléchargement et d'émulation qBittorrent WebAPI moderne, ultra-rapide et modulaire. Conçu pour connecter les applications de la suite \*arr (**Sonarr**, **Radarr**, **Whisparr**, **Lidarr**, **Prowlarr**) à vos services de débridage favoris, avec gestion automatique de médiathèque, recherche DDL intégrée et détection des liens orphelins.
 >
@@ -28,6 +30,8 @@ https://github.com/user-attachments/assets/20a5bdf9-b7cb-40cd-9de1-2d2a5c2cdcc0
 - [🔍 Scanner de Médiathèque & Liens Morts](#-scanner-de-médiathèque--liens-morts)
 - [🔎 Finder Multi-Moteurs DDL](#-finder-multi-moteurs-ddl)
 - [📊 Speedtest Réseau & Datacenters](#-speedtest-réseau--datacenters)
+- [📱 Application Progressive Web App (PWA)](#-application-progressive-web-app-pwa)
+- [🧩 Extension Navigateur & Userscript](#-extension-navigateur--userscript)
 - [🔔 Notifications Telegram](#-notifications-telegram)
 - [📐 Structure du Projet](#-structure-du-projet)
 - [🤖 Conçu avec Google Gemini](#-conçu-avec-google-gemini)
@@ -50,6 +54,8 @@ https://github.com/user-attachments/assets/20a5bdf9-b7cb-40cd-9de1-2d2a5c2cdcc0
   * Nettoyage sélectif ou en masse des orphelins et magnets cloud obsolètes.
 * 🔎 **Moteur de Recherche Multi-Sources** : Recherche intégrée sur DuckDuckGo, Brave, Google, Bing, Yandex et Mojeek avec injection directe en file de débridage en 1 clic.
 * 📊 **Test de Débit & Latence Intégré** : Mesure de ping vers l'infrastructure Debrid et serveurs mondiaux, avec calcul de débit montant/descendant (Mbps et Mo/s).
+* 📱 **Application Progressive Web App (PWA)** : Installable en application autonome sur Android, iOS, Windows, macOS et Linux avec affichage plein écran et cache App Shell hors-ligne.
+* 🧩 **Extension Chrome & Userscript** : Ajout en 1 clic et au clic-droit natif vers DebridFlow pour les liens magnets, torrents et hébergeurs DDL.
 * 🔔 **Système de Notifications Telegram** : Alertes modulaires (téléchargements terminés, vitesse moyenne, liens orphelins détectés, erreurs serveur).
 * 🎨 **Interface Web Moderne** : Responsive pour mobile, tablette et desktop, modes Sombre et Clair, multilingue Français 🇫🇷 / Anglais 🇬🇧, et onglets personnalisables.
 
@@ -223,6 +229,37 @@ Mesurez les performances de votre connexion directement depuis le serveur hôte 
 
 ---
 
+## 📱 Application Progressive Web App (PWA)
+
+DebridFlow propose une compatibilité complète Progressive Web App (PWA) :
+* **Mode Autonome (Plein Écran)** : Fonctionne sans barre d'adresse ni boutons du navigateur sur Android, iOS, Windows, macOS et Linux.
+* **Mise en cache Service Worker** : Lancement instantané de l'interface avec stratégie de cache réseau prioritaire (Network-First).
+* **Guide d'installation** :
+  * **Android** : Ouvrez DebridFlow en HTTPS (ou `localhost`) dans Chrome, appuyez sur le menu `⋮` puis **« Installer l'application »** ou **« Ajouter à l'écran d'accueil »**.
+  * **Ordinateur (Chrome / Edge / Brave)** : Cliquez sur l'icône **Installer** à droite de votre barre d'adresse.
+  * **iOS (Safari)** : Appuyez sur le bouton **Partager**, puis sélectionnez **« Sur l'écran d'accueil »**.
+
+---
+
+## 🧩 Extension Navigateur & Userscript
+
+Envoyez directement vos téléchargements vers votre serveur DebridFlow depuis n'importe quelle page web :
+
+### 🌐 Extension Officielle Chrome / Brave / Edge (Manifest V3)
+* **Menu contextuel natif au clic-droit** : Faites un clic droit sur n'importe quel lien ou texte sélectionné pour l'envoyer à DebridFlow (modes `Défaut`, `Symlink` ou `Téléchargement réel`).
+* **Fenêtre de contrôle (Popup)** : Cliquez sur l'icône de l'extension pour vérifier la connexion en direct à votre serveur, changer la catégorie et lancer l'interface web.
+* **Installation en 30 secondes** :
+  1. Téléchargez l'extension au format ZIP depuis votre tableau de bord (*Paramètres > 4. Automatisation > Intégration Navigateur*) ou utilisez le dossier [extension/](extension/).
+  2. Rendez-vous sur `chrome://extensions/`, activez le **Mode développeur**, et cliquez sur **« Charger l'extension non empaquetée »**.
+  3. Indiquez l'URL de votre serveur DebridFlow dans le popup et cliquez sur **Enregistrer**.
+
+### 🐒 Script Tampermonkey / Violentmonkey
+* **Badges 1-clic** : Injecte un bouton discret `⚡` à côté des liens magnets sur les annuaires de torrents.
+* **Raccourci `Alt + Clic gauche`** : Envoie instantanément n'importe quel lien en arrière-plan sans ouvrir de menu.
+* **Installation en 1 clic** : Cliquez sur [debridflow.user.js](app/static/debridflow.user.js) pour l'installer directement dans Tampermonkey.
+
+---
+
 ## 🔔 Notifications Telegram
 
 Configurez un bot Telegram dans **Paramètres > Notifications** pour être alerté en direct :
@@ -241,9 +278,15 @@ debridflow/
 ├── install.sh                  # Script d'installation automatique Linux
 ├── start.sh                    # Script de lancement direct
 ├── requirements.txt            # Dépendances du projet (FastAPI, HTTPX, etc.)
+├── PRIVACY.md                  # Politique de confidentialité pour extension & apps
+├── extension/                  # Extension officielle Chrome / Chromium (Manifest V3)
+│   ├── manifest.json
+│   ├── background.js
+│   ├── popup.html / popup.js
+│   └── icons/
 ├── data/                       # Stockage persistant (état, caches, configuration)
 └── app/
-    ├── main.py                 # Application FastAPI et cycle de vie
+    ├── main.py                 # Application FastAPI, cycle de vie et routes PWA
     ├── config.py               # Paramètres globaux et journalisation
     ├── state.py                # Persistance de l'état JSON et verrous
     ├── storage.py              # Gestion des montages rclone et symlinks
@@ -258,10 +301,22 @@ debridflow/
     │   ├── speedtest.py        # Endpoints du test de vitesse
     │   └── web.py              # Tableau de bord et endpoints de configuration
     ├── templates/
-    │   └── index.html          # Interface utilisateur web responsive
+    │   └── index.html          # Interface utilisateur web responsive & manifests PWA
     └── static/
+        ├── manifest.json       # Manifeste PWA
+        ├── sw.js               # Service Worker PWA
+        ├── debridflow.user.js  # Script Tampermonkey
+        ├── icons/              # Icônes PWA haute définition (192px, 512px, adaptatives)
         ├── css/style.css       # Thèmes clair/sombre et styles adaptatifs
-        └── js/app.js           # Moteur frontend, traductions et requêtes temps réel
+        └── js/                 # Architecture frontend modulaire
+            ├── app.js          # Cycle de vie et point d'entrée
+            ├── i18n.js         # Dictionnaires multilingues (FR/EN) et thèmes
+            ├── queue.js        # File d'attente et actions par lot
+            ├── settings.js     # Paramètres et diagnostics API
+            ├── onboarding.js   # Assistant interactif de bienvenue
+            ├── scanner.js      # Scanner de médiathèque et gestionnaire magnets
+            ├── finder.js       # Recherche multi-sources et injection
+            └── speedtest.js    # Mesures de latence et débits réels
 ```
 
 ---
