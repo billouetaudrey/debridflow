@@ -88,3 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 4000);
 });
 
+// Enregistrement du Service Worker PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('[DebridFlow PWA] Service Worker actif (scope:', reg.scope, ')');
+      })
+      .catch((err) => {
+        console.warn('[DebridFlow PWA] Échec enregistrement Service Worker:', err);
+      });
+  });
+}
+

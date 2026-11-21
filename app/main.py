@@ -5,7 +5,9 @@ import secrets
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.routers import finder, qbittorrent, scanner, speedtest, web
 from app.state import load_state, settings_db
@@ -34,8 +36,12 @@ async def auth_middleware(request: Request, call_next):
     if request.url.path == "/api/v2/auth/login":
         return await call_next(request)
 
-    # Autoriser les ressources statiques même si non authentifié pour afficher la page de login proprement
-    if request.url.path.startswith("/static/"):
+    # Autoriser les ressources statiques et PWA même si non authentifié pour afficher l'UI et permettre l'installation PWA
+    if request.url.path.startswith("/static/") or request.url.path in (
+        "/manifest.json",
+        "/sw.js",
+        "/favicon.ico",
+    ):
         return await call_next(request)
 
     if request.cookies.get("SID") == hashlib.sha256(f"{req_user}:{req_pass}".encode()).hexdigest()[:32]:
@@ -67,8 +73,24 @@ app.include_router(scanner.router)
 app.include_router(finder.router)
 app.include_router(speedtest.router)
 
-from pathlib import Path
-from fastapi.staticfiles import StaticFiles
-
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.api_route("/manifest.json", methods=["GET", "HEAD"], include_in_schema=False)
+async def pwa_manifest():
+    return FileResponse(STATIC_DIR / "manifest.json", media_type="application/manifest+json")
+
+
+@app.api_route("/sw.js", methods=["GET", "HEAD"], include_in_schema=False)
+async def pwa_service_worker():
+    return FileResponse(
+        STATIC_DIR / "sw.js",
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
+
+
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
+async def pwa_favicon():
+    return FileResponse(STATIC_DIR / "icons" / "icon-192.png", media_type="image/png")

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.0] — 2026-11-21
+
+### Added
+- **Full Progressive Web App (PWA) Support**:
+  - Web App Manifest (`manifest.json`) enabling installability as a standalone application on Android, iOS, Windows, macOS, and Linux.
+  - Dedicated high-resolution application icons (192x192 and 512x512 PNG, including adaptive `maskable` variants for Android launchers).
+  - Lightweight and resilient Service Worker (`sw.js`) with Network-First strategy and App Shell offline caching.
+  - Root endpoints `/manifest.json`, `/sw.js`, and `/favicon.ico` mounted with `Service-Worker-Allowed: /` header and bypassed from authentication blocking.
+
+---
+
 ## [2.6.0] — 2026-11-21
 
 ### Added

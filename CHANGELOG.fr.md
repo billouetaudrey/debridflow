@@ -9,6 +9,17 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.7.0] — 2026-11-21
+
+### Ajouté
+- **Support complet Progressive Web App (PWA)** :
+  - Manifeste d'application web (`manifest.json`) permettant l'installation directe en tant qu'application autonome (standalone) sur Android, iOS, Windows, macOS et Linux.
+  - Icônes haute résolution DebridFlow (PNG 192x192 et 512x512, incluant les variantes adaptatives `maskable` pour les lanceurs Android).
+  - Service Worker léger et performant (`sw.js`) avec stratégie Réseau d'abord (Network-First) et pré-mise en cache de l'App Shell hors-ligne.
+  - Routes racine `/manifest.json`, `/sw.js` et `/favicon.ico` avec en-tête `Service-Worker-Allowed: /` et exclusion de l'authentification pour garantir l'installation PWA.
+
+---
+
 ## [2.6.0] — 2026-11-21
 
 ### Ajouté
