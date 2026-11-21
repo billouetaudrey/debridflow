@@ -11,6 +11,10 @@
 > **DebridFlow** is a modern, lightweight, and high-performance qBittorrent WebAPI emulation client and media manager. Designed to connect your \*arr media suite (**Sonarr**, **Radarr**, **Whisparr**, **Lidarr**, **Prowlarr**) to your favorite debrid providers, featuring instant zero-space symlinking, real downloads, built-in DDL direct downloads, an ultra-fast media library scanner with broken link recovery, and multi-engine searching.
 >
 > ✨ *This project was 100% architected and developed with **Google Gemini**.*
+>
+> <p align="center">
+  <img src="docs/debridflow_demo_en.gif" alt="DebridFlow UI & Features Demo" width="420">
+</p>
 
 ---
 
