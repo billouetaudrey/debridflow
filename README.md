@@ -13,9 +13,7 @@
 > ✨ *This project was 100% architected and developed with **Google Gemini**.*
 >
 
-<p align="center">
-  <video src="debridflow_demo_en.mp4" controls autoplay loop muted playsinline width="360"></video>
-</p>
+🎬 **[Watch Demo Video (MP4)](debridflow_demo_en.mp4)**
 
 ---
 
