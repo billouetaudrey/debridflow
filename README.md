@@ -14,7 +14,7 @@
 >
 
 <p align="center">
-  <img src="docs/debridflow_demo_en.gif" alt="DebridFlow UI & Features Demo" width="420">
+  <video src="debridflow_demo_en.mp4" controls autoplay loop muted playsinline width="360"></video>
 </p>
 
 ---
