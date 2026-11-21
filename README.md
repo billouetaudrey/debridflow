@@ -4,9 +4,10 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Coded with Gemini](https://img.shields.io/badge/Coded%20with-Google%20Gemini-8E75C2?logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Changelog](https://img.shields.io/badge/Changelog-v2.6.0-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🌐 **Language**: **English 🇬🇧** | [Français 🇫🇷](README.fr.md)
+🌐 **Language**: **English 🇬🇧** | [Français 🇫🇷](README.fr.md) • 📋 [Changelog](CHANGELOG.md)
 
 > **DebridFlow** is a modern, lightweight, and high-performance qBittorrent WebAPI emulation client and media manager. Designed to connect your \*arr media suite (**Sonarr**, **Radarr**, **Whisparr**, **Lidarr**, **Prowlarr**) to your favorite debrid providers, featuring instant zero-space symlinking, real downloads, built-in DDL direct downloads, an ultra-fast media library scanner with broken link recovery, and multi-engine searching.
 >
