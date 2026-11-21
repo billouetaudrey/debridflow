@@ -34,22 +34,6 @@ STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 
 
-@router.get("/static/css/style.css")
-async def get_css():
-    css_file = STATIC_DIR / "css" / "style.css"
-    if css_file.exists():
-        return Response(content=css_file.read_text(encoding="utf-8"), media_type="text/css")
-    return Response(content="", status_code=404)
-
-
-@router.get("/static/js/app.js")
-async def get_js():
-    js_file = STATIC_DIR / "js" / "app.js"
-    if js_file.exists():
-        return Response(content=js_file.read_text(encoding="utf-8"), media_type="application/javascript")
-    return Response(content="", status_code=404)
-
-
 @router.get("/api/ui/queue")
 async def ui_queue_feed():
     async with state_lock:

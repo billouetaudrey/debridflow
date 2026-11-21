@@ -66,3 +66,9 @@ app.include_router(web.router)
 app.include_router(scanner.router)
 app.include_router(finder.router)
 app.include_router(speedtest.router)
+
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

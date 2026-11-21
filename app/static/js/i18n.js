@@ -1,0 +1,977 @@
+// DebridFlow Frontend Logic & Multilingual Engine
+const TRANSLATIONS = {
+  fr: {
+    // Brand & Header
+    brand_title: "DebridFlow — Client Multi-Debrid Symlink & DL",
+    tab_queue: "File d'attente",
+    tab_settings: "Paramètres",
+    api_test_ok: "Test API OK",
+    api_test_err: "Échec Test API",
+    api_testing: "Vérification API...",
+    status_dl: "DL en cours ({n})",
+    status_sym: "Symlink en cours ({n})",
+    status_unreachable: "Serveur DebridFlow injoignable",
+
+    // Toolbar
+    btn_add_torrent: "Ajouter un torrent / magnet",
+    btn_add_ddl: "Ajouter liens DDL",
+    btn_download: "Télécharger",
+    tip_download_local: "Basculer en téléchargement réel sur le serveur",
+    modal_upload_title: "Ajouter un Téléchargement",
+    tab_magnet: "Lien Magnet",
+    tab_torrent_file: "Fichier .torrent",
+    tab_ddl: "Liens DDL (Direct)",
+    tab_ddl_nav: "Liens DDL",
+    lbl_magnet_input: "Lien(s) Magnet ou URL(s) :",
+    ph_magnet_input: "magnet:?xt=urn:btih:...",
+    hint_magnet_multiple: "Vous pouvez coller un ou plusieurs liens (un par ligne).",
+    lbl_torrent_file: "Sélectionner ou glisser un fichier .torrent :",
+    dropzone_prompt: "Glissez vos fichiers .torrent ici ou cliquez pour parcourir",
+    dropzone_files_selected: "{n} fichier(s) sélectionné(s) :",
+    lbl_ddl_input: "Lien(s) direct(s) (Rapidgator, 1fichier, Turbobit, etc.) :",
+    ph_ddl_input: "https://rapidgator.net/file/...&#10;https://1fichier.com/?...",
+    lbl_ddl_password: "Mot de passe éventuel (optionnel) :",
+    ph_ddl_password: "Mot de passe des archives / liens si nécessaire",
+    hint_ddl_multiple: "Collez vos liens directs hébergeurs (un par ligne). Débridage automatique via AllDebrid.",
+    ddl_card_title: "Téléchargements Directs Hébergeurs (DDL)",
+    ddl_card_desc: "Débridez vos liens Rapidgator, 1fichier, Turbobit, Nitroflare... directement via AllDebrid et téléchargez-les sur votre serveur.",
+    btn_ddl_submit: "Débrider & Télécharger en DDL",
+    title_ddl_queue: "Téléchargements DDL en cours & terminés",
+    lbl_max_concurrent_dl: "Nombre de téléchargements simultanés en DDL :",
+    hint_max_concurrent_dl: "Nombre de téléchargements simultanés (torrents/magnets en mode copie et liens directs DDL). Par défaut : 3.",
+    st_in_progress: "Débridage en cours...",
+    st_resolving: "Débridage AllDebrid...",
+    st_queued: "En attente (slot DL)",
+    tag_ddl: "DDL Direct",
+    title_tabs_visibility: "Gestion des onglets de navigation",
+    desc_tabs_visibility: "Activez ou masquez individuellement les onglets de la barre de navigation selon vos besoins :",
+    lbl_enable_queue_tab: "Onglet File d'attente",
+    hint_enable_queue_tab: "File globale des torrents, magnets et téléchargements.",
+    lbl_enable_ddl_tab: "Onglet Liens DDL",
+    hint_enable_ddl_tab: "Espace dédié aux téléchargements directs hébergeurs (JDownloader).",
+    lbl_enable_finder_tab: "Onglet Recherche",
+    hint_enable_finder_tab: "Moteur de recherche unifié (Torrents, Magnets & DDL).",
+    lbl_enable_scanner_tab: "Onglet Médiathèque & Liens",
+    hint_enable_scanner_tab: "Exploration et surveillance des liens et fichiers médias.",
+    lbl_ddl_download_dir: "Dossier de destination complet pour les liens DDL",
+    hint_ddl_download_dir: "Chemin complet où sont enregistrés les téléchargements directs hébergeurs (Rapidgator, 1fichier, etc.). Modifiable à tout moment ici ou directement lors de chaque ajout.",
+    lbl_ddl_dest_path: "Dossier de destination complet :",
+    lbl_remember_ddl_dest: "Retenir ce dossier par défaut pour les prochains téléchargements DDL",
+    // Multi-Engine Finder
+    tab_finder_nav: "Recherche",
+    finder_title: "Recherche Multi-Moteurs (Torrents, Magnets & DDL)",
+    finder_subtitle: "Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans DebridFlow.",
+    opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
+    opt_finder_mode_hoster: "🔗 Liens DDL (site:)",
+    opt_finder_mode_both: "⚡ Tout (Torrent + DDL)",
+    ph_finder_query: "Ex: Dune Part Two 2024 MULTI 1080p...",
+    btn_finder_search: "Rechercher",
+    finder_adv_settings: "⚙️ Paramètres avancés (moteurs actifs, filtres, similarité)",
+    finder_lbl_engines: "Moteurs de recherche actifs :",
+    finder_site_filter: "Domaine hébergeur (mode site:)",
+    finder_region: "Région",
+    finder_safesearch: "Filtre parental",
+    finder_max_results: "Résultats max / moteur",
+    finder_max_scrape: "Pages max à analyser (Torrent)",
+    finder_min_sim: "Similarité minimum (%)",
+    finder_timeout: "Timeout réseau (sec)",
+    finder_chk_verify: "Vérifier validité des liens",
+    btn_save_finder_default: "💾 Enregistrer comme défaut",
+    finder_searching_title: "Recherche sur les moteurs et scan des liens...",
+    finder_searching_desc: "Interrogation des moteurs configurés, extraction des trackers et test de validité des liens.",
+    btn_sel_all: "Tout cocher",
+    btn_sel_none: "Tout décocher",
+    btn_sel_magnets: "Magnets seuls",
+    btn_sel_ddl: "DDL seuls",
+    btn_copy_selected: "📋 Copier sélectionnés",
+    btn_dl_selected_pyrdt: "Télécharger la sélection dans DebridFlow",
+    btn_dl_item: "Télécharger dans DebridFlow",
+    title_rejected_items: "⚠️ Liens écartés / non retenus",
+    lbl_dest_service: "Service / Catégorie :",
+    lbl_transfer_mode: "Mode de transfert :",
+    opt_mode_auto: "Auto (selon le service)",
+    btn_send_debrid: "Envoyer vers le débrideur",
+    upload_sending: "Envoi en cours...",
+    upload_success: "{n} élément(s) envoyé(s) avec succès !",
+    err_no_input: "Veuillez fournir un lien magnet ou sélectionner un fichier .torrent.",
+    err_upload_failed: "Échec de l'envoi vers le débrideur.",
+    lbl_destination: "Destination :",
+    sel_count: "{n} sélectionné(s)",
+    btn_retry: "Relancer",
+    btn_pause: "Pause",
+    btn_resume: "Reprendre",
+    btn_delete: "Supprimer",
+    btn_purge_completed: "Purger terminés",
+    select_all: "Tout sélectionner",
+
+    // Queue Table Headers
+    th_id: "ID (AD / Hash)",
+    th_name: "Nom",
+    th_service: "Service / Mode",
+    th_status: "Statut",
+    th_actions: "Actions",
+    no_torrents: "Aucun torrent en file d'attente",
+    tag_dl: "DL réel",
+    tag_sym: "Symlink",
+    tag_debrided_cache: "Déjà débridé (Cache)",
+    tag_debrided_ready: "Débridé",
+    tag_debrided_pending: "Non débridé",
+    tip_debrided_cache: "Fichier déjà présent sur les serveurs Debrid (Instantané)",
+    tip_debrided_ready: "Fichier débridé et disponible sur le cloud",
+    tip_debrided_pending: "Fichier en cours de téléchargement chez le fournisseur (non débridé)",
+    st_cloud_dl: "Débridage cloud",
+
+    // Statuses
+    st_completed: "Terminé",
+    st_paused: "En pause",
+    st_error: "Erreur",
+    st_rclone_wait: "Attente rclone",
+    st_copying: "Copie locale",
+    st_downloading: "Téléchargement",
+
+    // Delete Modal
+    modal_title: "Options de suppression",
+    modal_desc: "Retirer {n} élément(s) de la liste DebridFlow :",
+    opt_del_files: "Supprimer aussi les fichiers / liens symboliques locaux",
+    opt_del_ad: "Supprimer aussi le magnet chez le fournisseur",
+    btn_cancel: "Annuler",
+    btn_confirm_delete: "Confirmer la suppression",
+
+    // Settings Sub-categories
+    nav_provider: "Fournisseur & API",
+    nav_storage: "Dossiers & Stockage",
+    nav_services: "Services (*arr)",
+    nav_scanner: "Médiathèque & Liens",
+    nav_automation: "Automatisation",
+    nav_security: "Sécurité",
+    nav_appearance: "Styles & Affichage",
+    nav_notifications: "Notifications",
+    nav_system: "Performances & Système",
+
+    // Settings Section Titles
+    sec_provider: "1. Fournisseur & API Debrid",
+    sec_storage: "2. Dossiers & Stockage",
+    sec_services: "3. Services, Catégories *arr & Destinations",
+    sec_scanner_settings: "4. Médiathèque & Surveillance des Liens",
+    sec_automation: "5. Automatisation & Nettoyage",
+    sec_security: "6. Sécurité & Authentification",
+    sec_appearance: "7. Styles & Affichage",
+    sec_notifications: "8. Notifications Telegram",
+    sec_system: "9. Performances & Système",
+
+    // Fields & Labels
+    lbl_provider: "Fournisseur de Débridage (Provider)",
+    hint_provider: "Choisissez parmi AllDebrid, Real-Debrid, Premiumize, Debrid-Link, TorBox ou High-Way.",
+    lbl_api_key: "Clé / Token API",
+    hint_api_key: "Clé ou Token secret généré chez votre fournisseur.",
+    lbl_agent: "Nom de l'agent / User-Agent",
+    hint_agent: "Identifiant envoyé aux API (ex: DebridFlow-Billou).",
+    lbl_api_base: "URL de l'API",
+    hint_api_base: "Pré-remplie automatiquement selon le service sélectionné.",
+    btn_test_api: "Tester la connexion API",
+    testing_api: "Test en cours...",
+
+    lbl_rclone_mount: "Chemin de montage Rclone (source magnets)",
+    hint_rclone_mount: "Dossier monté par rclone (ex: /mnt/alldebrid/magnets).",
+    lbl_dl_dir: "Dossier racine des téléchargements (DL)",
+    hint_dl_dir: "Chaque service écrit dans son sous-dossier ici.",
+    lbl_allowed_exts: "Extensions autorisées (séparées par virgules)",
+    hint_allowed_exts: "Fichiers vidéos, audios ou sous-titres acceptés.",
+    lbl_mount_timeout: "Timeout montage Rclone (secondes)",
+    hint_mount_timeout: "Temps max d'attente d'apparition du fichier avant erreur.",
+
+    hint_services: "Par défaut, chaque service écrit dans <Dossier racine DL>/<sous-dossier>/ (vous pouvez aussi indiquer un chemin absolu commençant par /).",
+    btn_add_service: "+ Ajouter un service",
+    th_svc_cat: "Catégorie *arr",
+    th_svc_mode: "Mode de récupération",
+    th_svc_subpath: "Sous-dossier dans DL (ou chemin /)",
+    opt_mode_symlink: "Symlink (instantané)",
+    opt_mode_download: "Téléchargement réel (copie locale)",
+    btn_remove: "Retirer",
+
+    lbl_del_dl_done: "Supprimer automatiquement le magnet chez le fournisseur dès que le Téléchargement réel est terminé (n'affecte pas les Symlinks)",
+    lbl_auto_clean: "Purger automatiquement la liste des téléchargements et les fichiers/symlinks locaux temporaires après import *arr",
+    lbl_del_prov: "Supprimer aussi automatiquement le magnet chez le fournisseur lors de la purge après import (y compris pour les Symlinks)",
+
+    lbl_username: "Nom d'utilisateur (Web & Apps *arr — optionnel)",
+    hint_username: "Si renseigné, doit correspondre aux identifiants qBittorrent dans Sonarr/Radarr.",
+    lbl_password: "Mot de passe (Web & Apps *arr — optionnel)",
+    hint_password: "Protège l'accès Web et l'API qBittorrent.",
+
+    lbl_poll_interval: "Intervalle de vérification API (secondes)",
+    hint_poll_interval: "Fréquence d'interrogation du fournisseur (défaut : 3.0s).",
+    title_speedtests: "Tests de Débit & Performance Réseau",
+    desc_speedtests: "Mesurez la bande passante réelle de votre serveur et testez les serveurs AllDebrid sans quitter l'interface :",
+    title_integrated_speedtest: "Test de Débit Serveur Direct",
+    hint_integrated_speedtest: "Mesure le ping AllDebrid, la latence globale et le débit descendant/montant réel de votre machine.",
+    btn_run_speedtest: "Lancer le Test Direct",
+    lbl_st_ad_ping: "Ping AllDebrid",
+    lbl_st_global_ping: "Ping Global",
+    lbl_st_dl_speed: "Débit Descendant",
+    lbl_st_ul_speed: "Débit Montant",
+    lbl_speedtest_ad_inapp: "Speedtest Officiel AllDebrid (Multi-Serveurs In-App)",
+    hint_speedtest_ad_inapp: "Teste les nœuds de datacenters AllDebrid (Paris, Francfort, Amsterdam...) directement dans DebridFlow.",
+    btn_show_ad_speedtest_inapp: "Afficher le test intégré",
+    btn_hide_ad_speedtest_inapp: "Masquer le test intégré",
+    btn_fullscreen: "Plein écran",
+    lbl_speedtest_ad: "Speedtest AllDebrid (Direct CDN)",
+    hint_speedtest_ad: "Teste la vitesse de téléchargement directe et la latence entre votre connexion et les serveurs de débridage AllDebrid.",
+    btn_launch_speedtest_ad: "Lancer le Speedtest AllDebrid ↗",
+    lbl_speedtest_general: "Speedtest Ookla (Général)",
+    hint_speedtest_general: "Mesure votre débit descendant (Download), montant (Upload) et ping général via les serveurs Ookla / Speedtest.net.",
+    btn_launch_speedtest_general: "Ouvrir Speedtest.net ↗",
+    lbl_theme_choice: "Thème de l'interface",
+    hint_theme_choice: "Bascule entre le mode sombre et le mode clair.",
+    lbl_language: "Langue de l'interface",
+    hint_language: "Choisissez le français ou l'anglais pour l'affichage.",
+    title_display_options: "Options d'affichage & Confidentialité :",
+
+    btn_save_settings: "Enregistrer les paramètres",
+    alert_saved: "Paramètres enregistrés et appliqués immédiatement.",
+    tip_switch_light: "Passer en mode clair",
+    tip_switch_dark: "Passer en mode sombre",
+    home_tip: "Accueil (File d'attente)",
+
+    // Scanner & Liens Morts
+    tab_scanner: "Médiathèque & Liens",
+    sc_title: "🧲 Gestionnaire AllDebrid & Liens Morts Médiathèque",
+    sc_last_scan_unknown: "Dernier scan : Inconnu",
+    btn_scan_now: "🔄 Scanner (Rapide)",
+    btn_scan_force: "⚡ Scan complet",
+    sc_stat_dead: "⚠️ Liens Morts Locaux",
+    sc_stat_magnets: "🧲 Total Magnets AD",
+    sc_stat_duplicates: "📑 Doublons AD",
+    sc_stat_unlinked: "❓ Non Symlinkés",
+    sc_stat_links: "🔗 Fichiers Détectés",
+    sc_dead_head: "⚠️ Liens Morts dans votre Médiathèque",
+    btn_research_all: "⚡ Relancer dans Radarr / Sonarr & Purger",
+    btn_clean_all_dead: "🗑️ Supprimer tous les liens morts",
+    msg_no_dead_links: "Aucun lien mort détecté dans la médiathèque. Lancez un scan pour vérifier.",
+    th_sc_media: "Média Radarr / Sonarr",
+    th_sc_deadpath: "Lien symbolique mort",
+    th_sc_target: "Cible manquante (Rclone / AD)",
+    th_sc_actions: "Actions",
+    sc_magnets_head: "🧲 Magnets AllDebrid & Doublons",
+    btn_filter_all: "Tous",
+    btn_filter_duplicates: "Doublons uniquement",
+    btn_filter_dead: "Morts API",
+    btn_filter_unlinked: "Non symlinkés",
+    ph_search_magnets: "🔍 Filtrer les magnets par titre...",
+    btn_expand_all: "↕️ Déplier tout",
+    btn_select_visible: "☑ Cocher visibles",
+    btn_clean_duplicates: "🧹 Nettoyer doublons",
+    btn_delete_checked: "🗑️ Supprimer cochés",
+    msg_loading_magnets: "Chargement des magnets...",
+    btn_scan_stop: "Interrompre",
+    hint_enable_scanner_tab: "Active ou désactive l'accès à l'onglet et au tableau de bord Médiathèque.",
+    hint_webhook_info: "À renseigner dans Sonarr/Radarr (Settings > Connect > Webhook, déclencheur : On Download / On Import) pour analyser automatiquement après un téléchargement.",
+    sec_arr_integration: "🔗 Intégration Radarr & Sonarr (Relance automatique des liens morts)",
+    lbl_enable_scanner_tab: "Afficher l'onglet Médiathèque & Liens dans la barre de navigation",
+    lbl_radarr_url: "URL Radarr",
+    lbl_radarr_key: "Clé API Radarr",
+    lbl_sonarr_url: "URL Sonarr",
+    lbl_sonarr_key: "Clé API Sonarr",
+    lbl_scan_paths: "Dossiers Médiathèque à analyser",
+    btn_add_scan_path: "+ Ajouter un dossier",
+    ph_scan_path_single: "Ex: /mnt/virtual/Medias/Films",
+    hint_scan_paths: "Dossiers scannés pour détecter les symlinks brisés / cibles inexistantes.",
+    lbl_speed_limit: "Limite de vitesse de téléchargement (Mo/s)",
+    hint_speed_limit: "Limite le débit de copie/téléchargement physique (0 = illimité).",
+    lbl_hide_last_dl_name: "Masquer par défaut le nom du dernier téléchargement",
+    hint_hide_last_dl_name: "Conserve toujours la vitesse affichée, mais masque le titre du média jusqu'à ce que vous appuyiez dessus.",
+    lbl_last_download: "Dernier téléchargement :",
+    lbl_avg_speed: "Vitesse moyenne :",
+    lbl_show_last_dl: "Afficher le nom",
+    lbl_hide_last_dl: "Masquer",
+
+    // Notifications Telegram
+    lbl_tg_enable: "Activer les notifications Telegram",
+    hint_tg_enable: "Envoie des alertes en temps réel sur votre bot Telegram lors des scans, liens morts, téléchargements et erreurs.",
+    lbl_tg_bot_token: "Token du Bot Telegram",
+    hint_tg_bot_token: "Token secret obtenu auprès de @BotFather.",
+    lbl_tg_chat_id: "Chat ID / Channel ID",
+    hint_tg_chat_id: "Votre ID de discussion Telegram (obtenu via @userinfobot ou @GetMyChatID_Bot).",
+    btn_test_tg: "📲 Envoyer un message de test",
+    testing_tg: "Envoi du message de test...",
+    title_tg_events: "Événements à notifier :",
+    lbl_tg_scan_start: "Scan de médiathèque démarré",
+    lbl_tg_scan_complete: "Scan de médiathèque terminé (résumé complet)",
+    lbl_tg_dead_link: "Alerte : Liens morts détectés dans la médiathèque",
+    lbl_tg_dl_complete: "Téléchargement réel ou Symlink terminé (avec taille et vitesse)",
+    lbl_tg_clean_dead: "Suppression / Purge de liens morts effectuée",
+    lbl_tg_error: "Erreurs critiques (débridage, timeout rclone, copie)",
+    tg_test_ok: "Notification de test reçue avec succès !",
+    tg_test_err: "Échec de l'envoi vers Telegram.",
+
+    // Onboarding
+    ob_title: "Bienvenue sur DebridFlow 🚀",
+    ob_subtitle: "Assistant de première configuration pas à pas",
+    ob_tab_styles: "1. Styles",
+    ob_tab_provider: "2. Fournisseur",
+    ob_tab_storage: "3. Stockage",
+    ob_tab_services: "4. Services",
+    ob_tab_automation: "5. Automatisation",
+    ob_tab_notifications: "6. Notifications",
+    ob_tab_bondl: "7. Bon DL",
+    ob_btn_prev: "← Précédent",
+    ob_btn_next: "Suivant →",
+    ob_btn_skip: "Passer la configuration",
+    ob_btn_finish: "🚀 Enregistrer & Terminer (Bon DL !)",
+    ob_relaunch_title: "Assistant de configuration initiale (Onboarding)",
+    ob_relaunch_btn: "🚀 Relancer l'assistant",
+    ob_relaunch_hint: "Relance le guide pas à pas pour revoir ou modifier l'ensemble de vos paramètres.",
+    ob_summary_title: "🎉 Tout est prêt ! Bon DL",
+    ob_summary_desc: "Votre configuration DebridFlow est prête. Cliquez ci-dessous pour appliquer vos réglages et démarrer vos téléchargements.",
+    ob_hint_step1: "Personnalisez l'apparence et le confort visuel de DebridFlow. Vous pouvez changer le thème ou la langue à tout moment.",
+    ob_hint_step2: "Connectez votre compte Debrid pour débrider et récupérer vos fichiers à vitesse maximale.",
+    ob_hint_step3: "Configurez les chemins où Rclone monte le disque distant et où DebridFlow stocke les téléchargements et liens symboliques.",
+    ob_hint_step4: "Configurez les catégories correspondant à Sonarr, Radarr, etc. Choisissez le mode Symlink (instantané) ou Téléchargement réel (copie sur disque).",
+    ob_hint_step5: "Ajustez le comportement de nettoyage automatique et protégez l'accès à DebridFlow.",
+    ob_hint_step6: "Activez la surveillance des liens morts dans votre médiathèque et recevez des alertes en temps réel sur Telegram.",
+    sec_reset: "Zone de Réinitialisation & Assistant",
+    title_reset_settings: "Supprimer tous les paramètres & Réafficher l'Onboarding",
+    btn_reset_settings: "🗑️ Supprimer & Relancer l'onboarding",
+    hint_reset_settings: "Réinitialise tous les paramètres de DebridFlow à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.",
+    confirm_reset_settings: "Êtes-vous sûr de vouloir supprimer tous les paramètres, restaurer les valeurs par défaut et relancer l'assistant de configuration initiale ?",
+    opt_theme_dark: "🌙 Sombre (Dark Mode)",
+    opt_theme_light: "☀️ Clair (Light Mode)",
+    opt_lang_fr: "🇫🇷 Français",
+    opt_lang_en: "🇬🇧 English",
+    title_clean_options: "Options de nettoyage :",
+    title_auth_options: "Authentification (Optionnelle) :",
+    title_medialib_surveillance: "Surveillance Médiathèque & Radarr / Sonarr :",
+    title_webhook_info: "ℹ️ URL Webhook Sonarr / Radarr :",
+    recap_provider_title: "🔑 Fournisseur Debrid :",
+    recap_dl_dir_title: "📁 Dossier Téléchargements :",
+    recap_services_title: "🎬 Services *arr configurés :",
+    recap_tg_title: "🔔 Notifications Telegram :",
+    ob_btn_finish_alt: "Bon DL ! Lancer DebridFlow 🚀",
+    ob_active: "Activées",
+    ob_disabled: "Désactivées",
+    ob_services_count: "{n} service(s)",
+    ph_auth_empty: "Laisser vide = pas d'auth",
+    ph_api_key: "Clé ou Token API",
+    ph_speed_unlimited: "0 = illimité",
+    ph_scan_paths: "/mnt/virtual/Medias/Films,/mnt/virtual/Medias/Series,...",
+    tip_toggle_name: "Cliquer pour afficher / masquer le nom",
+    tip_scan_fast: "Scan incrémental rapide utilisant le cache",
+    tip_scan_force: "Forcer une réindexation complète de tous les dossiers",
+    tip_close: "Fermer / Passer",
+    scan_starting: "Démarrage du scan...",
+    missing_target: "Cible inexistante",
+    btn_purge: "🗑️ Purger",
+    btn_retrigger_radarr: "🔍 Relancer Radarr",
+    btn_retrigger_sonarr: "🔍 Relancer Sonarr",
+    media_unknown: "❓ Non identifié",
+    tag_symlinked: "🔗 Symlinké",
+    tag_not_symlinked: "Non symlinké",
+    tag_dead_api: "⚠️ Mort API",
+    tag_kept_default: "(Conservé par défaut)",
+    meta_size: "Taille :",
+    meta_status: "Statut :",
+    msg_no_magnets: "Aucun magnet trouvé. Lancez un scan pour actualiser.",
+    no_dead_to_delete: "Aucun lien mort à supprimer.",
+    no_dead_arr: "Aucun lien mort associé à Radarr ou Sonarr.",
+    confirm_delete_magnet: "Supprimer ce magnet sur le fournisseur et purger ses liens locaux associés ?\n\n{name}",
+    confirm_delete_checked_mags: "Supprimer définitivement {n} magnet(s) sélectionné(s) sur le fournisseur et leurs symlinks locaux ?",
+    confirm_clean_duplicates: "Supprimer {n} doublons inutiles sur le fournisseur ?\n\nLe meilleur fichier de chaque groupe sera conservé intact.",
+    confirm_clean_all_dead: "Supprimer l'intégralité des {n} liens morts détectés sur le disque ?",
+    confirm_delete_from_arr: "{n} des liens morts sont associés à Radarr ou Sonarr.\n\nVoulez-vous ÉGALEMENT supprimer ces médias de votre bibliothèque Radarr / Sonarr ?",
+    confirm_research_dead: "Relancer une recherche dans {mediaType} et purger le lien mort local ?",
+    confirm_research_all_dead: "Voulez-vous relancer la recherche dans Radarr / Sonarr pour les {n} médias détectés et purger les liens morts ?",
+    tip_brand_home: "Accueil (File d'attente)",
+    tip_theme_toggle: "Basculer le thème (Clair / Sombre)",
+    ph_api_key_secret: "Votre clé secrète API...",
+    confirm_clean_single_dead: "Supprimer définitivement ce lien symbolique mort sur le disque ?",
+    confirm_delete_media_arr: "Ce média est associé à {mediaType}{mediaTitle}.\n\nVoulez-vous ÉGALEMENT supprimer ce titre de votre bibliothèque {mediaType} ?",
+    no_mags_selected: "Aucun magnet sélectionné.",
+    no_dup_mags: "Aucun doublon fournisseur détecté à nettoyer.",
+    last_scan_prefix: "Dernier scan : ",
+    btn_collapse_all: "↕️ Plier tout",
+    btn_expand_all: "↕️ Déplier tout",
+    btn_check_visible: "☑ Cocher visibles",
+    btn_uncheck_all: "☐ Décocher tout",
+    scan_finished_success: "Scan terminé avec succès !",
+    scan_interrupted_user: "Scan interrompu par l'utilisateur.",
+    ph_chat_id: "Ex: 123456789 ou -100123456789",
+  },
+  en: {
+    // Brand & Header
+    brand_title: "DebridFlow — Multi-Debrid Symlink & DL Client",
+    tab_queue: "Queue",
+    tab_settings: "Settings",
+    api_test_ok: "API Test OK",
+    api_test_err: "API Test Failed",
+    api_testing: "Checking API...",
+    status_dl: "Downloading ({n})",
+    status_sym: "Symlinking ({n})",
+    status_unreachable: "DebridFlow server unreachable",
+
+    // Toolbar
+    btn_add_torrent: "Add torrent / magnet",
+    btn_add_ddl: "Add DDL links",
+    btn_download: "Download",
+    tip_download_local: "Switch to local real download on server",
+    modal_upload_title: "Add Download",
+    tab_magnet: "Magnet Link",
+    tab_torrent_file: ".torrent File",
+    tab_ddl: "DDL Links (Direct)",
+    tab_ddl_nav: "DDL Links",
+    lbl_magnet_input: "Magnet link(s) or URL(s):",
+    ph_magnet_input: "magnet:?xt=urn:btih:...",
+    hint_magnet_multiple: "You can paste one or multiple links (one per line).",
+    lbl_torrent_file: "Select or drop a .torrent file:",
+    dropzone_prompt: "Drag and drop your .torrent files here or click to browse",
+    dropzone_files_selected: "{n} file(s) selected:",
+    lbl_ddl_input: "Direct link(s) (Rapidgator, 1fichier, Turbobit, etc.):",
+    ph_ddl_input: "https://rapidgator.net/file/...&#10;https://1fichier.com/?...",
+    lbl_ddl_password: "Password (optional):",
+    ph_ddl_password: "Password for archives / links if needed",
+    hint_ddl_multiple: "Paste hoster direct links (one per line). Automatic debriding via AllDebrid.",
+    ddl_card_title: "Hosters Direct Downloads (DDL)",
+    ddl_card_desc: "Debrid your Rapidgator, 1fichier, Turbobit, Nitroflare... links directly through AllDebrid and download them to your server.",
+    btn_ddl_submit: "Debrid & Download DDL",
+    title_ddl_queue: "Active & completed DDL downloads",
+    lbl_max_concurrent_dl: "Simultaneous DDL downloads limit:",
+    hint_max_concurrent_dl: "Simultaneous downloads limit (torrents/magnets in copy mode and direct DDL links). Default: 3.",
+    st_in_progress: "Debriding in progress...",
+    st_resolving: "Debriding...",
+    st_queued: "Queued (DL slot)",
+    tag_ddl: "Direct DDL",
+    title_tabs_visibility: "Navigation Tabs Management",
+    desc_tabs_visibility: "Individually enable or hide tabs in the top navigation bar according to your needs:",
+    lbl_enable_queue_tab: "Queue Tab",
+    hint_enable_queue_tab: "Global queue for torrents, magnets and downloads.",
+    lbl_enable_ddl_tab: "Direct Links (DDL) Tab",
+    hint_enable_ddl_tab: "Dedicated section for hosters direct downloads (JDownloader-like).",
+    lbl_enable_finder_tab: "Search Tab",
+    hint_enable_finder_tab: "Unified multi-engine search tool (Torrents, Magnets & DDL).",
+    lbl_enable_scanner_tab: "Library & Links Tab",
+    hint_enable_scanner_tab: "Media library explorer and symlink health checker.",
+    lbl_ddl_download_dir: "Default complete destination folder for DDL",
+    hint_ddl_download_dir: "Complete path where direct downloads (Rapidgator, etc.) are saved. Can be modified on each add.",
+    lbl_ddl_dest_path: "Complete destination folder:",
+    lbl_remember_ddl_dest: "Remember this folder as default for upcoming DDL downloads",
+    // Multi-Engine Finder
+    tab_finder_nav: "Search",
+    finder_title: "Multi-Engine Finder (Torrents, Magnets & DDL)",
+    finder_subtitle: "Simultaneously queries DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... to extract verified links directly downloadable in DebridFlow.",
+    opt_finder_mode_torrent: "🧲 Magnets & Torrents (Deep)",
+    opt_finder_mode_hoster: "🔗 DDL Links (site:)",
+    opt_finder_mode_both: "⚡ All (Torrent + DDL)",
+    ph_finder_query: "Ex: Dune Part Two 2024 MULTI 1080p...",
+    btn_finder_search: "Search",
+    finder_adv_settings: "⚙️ Advanced settings (active engines, filters, similarity)",
+    finder_lbl_engines: "Active search engines:",
+    finder_site_filter: "Hoster domain (site: mode)",
+    finder_region: "Region",
+    finder_safesearch: "SafeSearch",
+    finder_max_results: "Max results / engine",
+    finder_max_scrape: "Max pages to scrape (Torrent)",
+    finder_min_sim: "Min similarity (%)",
+    finder_timeout: "Network timeout (sec)",
+    finder_chk_verify: "Verify links validity",
+    btn_save_finder_default: "💾 Save as default",
+    finder_searching_title: "Searching engines and scanning links...",
+    finder_searching_desc: "Querying configured engines, extracting trackers and testing link validity.",
+    btn_sel_all: "Select all",
+    btn_sel_none: "Deselect all",
+    btn_sel_magnets: "Magnets only",
+    btn_sel_ddl: "DDL only",
+    btn_copy_selected: "📋 Copy selected",
+    btn_dl_selected_pyrdt: "Download selection in DebridFlow",
+    btn_dl_item: "Download to DebridFlow",
+    title_rejected_items: "⚠️ Discarded / rejected links",
+    lbl_dest_service: "Service / Category:",
+    lbl_transfer_mode: "Transfer mode:",
+    opt_mode_auto: "Auto (from service)",
+    btn_send_debrid: "Send to Debrid Provider",
+    upload_sending: "Sending...",
+    upload_success: "{n} item(s) sent successfully!",
+    err_no_input: "Please provide a magnet link or select a .torrent file.",
+    err_upload_failed: "Failed to send to debrid provider.",
+    lbl_destination: "Destination:",
+    sel_count: "{n} selected",
+    btn_retry: "Retry",
+    btn_pause: "Pause",
+    btn_resume: "Resume",
+    btn_delete: "Delete",
+    btn_purge_completed: "Purge completed",
+    select_all: "Select all",
+
+    // Queue Table Headers
+    th_id: "ID (AD / Hash)",
+    th_name: "Name",
+    th_service: "Service / Mode",
+    th_status: "Status",
+    th_actions: "Actions",
+    no_torrents: "No torrents in queue",
+    tag_dl: "Real DL",
+    tag_sym: "Symlink",
+    tag_debrided_cache: "Cached (Instant)",
+    tag_debrided_ready: "Debrided",
+    tag_debrided_pending: "Not Cached",
+    tip_debrided_cache: "File already cached on Debrid servers (Instant)",
+    tip_debrided_ready: "File debrided and ready on cloud",
+    tip_debrided_pending: "File downloading on provider (not yet cached)",
+    st_cloud_dl: "Cloud debriding",
+
+    // Statuses
+    st_completed: "Completed",
+    st_paused: "Paused",
+    st_error: "Error",
+    st_rclone_wait: "Waiting for rclone",
+    st_copying: "Local copying",
+    st_downloading: "Downloading",
+
+    // Delete Modal
+    modal_title: "Deletion Options",
+    modal_desc: "Remove {n} item(s) from DebridFlow list:",
+    opt_del_files: "Also delete local files / symbolic links",
+    opt_del_ad: "Also delete magnet on provider",
+    btn_cancel: "Cancel",
+    btn_confirm_delete: "Confirm deletion",
+
+    // Settings Sub-categories
+    nav_provider: "Provider & API",
+    nav_storage: "Storage & Folders",
+    nav_services: "Services (*arr)",
+    nav_scanner: "Media Library & Links",
+    nav_automation: "Automation",
+    nav_security: "Security",
+    nav_appearance: "Styles & Display",
+    nav_notifications: "Notifications",
+    nav_system: "Performance & System",
+
+    // Settings Section Titles
+    sec_provider: "1. Debrid Provider & API",
+    sec_storage: "2. Folders & Storage",
+    sec_services: "3. Services, *arr Categories & Destinations",
+    sec_scanner_settings: "4. Media Library & Links Monitor",
+    sec_automation: "5. Automation & Cleanup",
+    sec_security: "6. Security & Authentication",
+    sec_appearance: "7. Styles & Display",
+    sec_notifications: "8. Telegram Notifications",
+    sec_system: "9. Performance & System",
+
+    // Fields & Labels
+    lbl_provider: "Debrid Provider",
+    hint_provider: "Choose your debrid service: AllDebrid, Real-Debrid, Premiumize, Debrid-Link, TorBox, or High-Way.",
+    lbl_api_key: "API Key / Token",
+    hint_api_key: "API Key or secret token generated with your provider.",
+    lbl_agent: "Agent Name / User-Agent",
+    hint_agent: "Identifier sent to APIs (e.g. DebridFlow-Billou).",
+    lbl_api_base: "API Base URL",
+    hint_api_base: "Automatically filled according to selected provider.",
+    btn_test_api: "Test API Connection",
+    testing_api: "Testing...",
+
+    lbl_rclone_mount: "Rclone Mount Path (magnets source)",
+    hint_rclone_mount: "Folder mounted by rclone (e.g. /mnt/alldebrid/magnets).",
+    lbl_dl_dir: "Root Download Folder (DL)",
+    hint_dl_dir: "Each service writes to its own subfolder here.",
+    lbl_allowed_exts: "Allowed Extensions (comma-separated)",
+    hint_allowed_exts: "Allowed video, audio or subtitle extensions.",
+    lbl_mount_timeout: "Rclone Mount Timeout (seconds)",
+    hint_mount_timeout: "Max wait time for file appearance before error.",
+
+    hint_services: "By default, each service writes to <Root DL folder>/<subfolder>/ (you can also provide an absolute path starting with /).",
+    btn_add_service: "+ Add a service",
+    th_svc_cat: "*arr Category",
+    th_svc_mode: "Retrieval Mode",
+    th_svc_subpath: "Subfolder in DL (or / path)",
+    opt_mode_symlink: "Symlink (instant)",
+    opt_mode_download: "Real download (local copy)",
+    btn_remove: "Remove",
+
+    lbl_del_dl_done: "Automatically delete magnet on provider as soon as Real Download completes (does not affect Symlinks)",
+    lbl_auto_clean: "Automatically purge downloads list and temporary local files/symlinks after *arr import",
+    lbl_del_prov: "Also delete magnet on provider upon post-import purge (including for Symlinks)",
+
+    lbl_username: "Username (Web & *arr Apps — optional)",
+    hint_username: "If set, must match qBittorrent credentials in Sonarr/Radarr.",
+    lbl_password: "Password (Web & *arr Apps — optional)",
+    hint_password: "Protects Web UI access and qBittorrent API.",
+
+    lbl_poll_interval: "API Polling Interval (seconds)",
+    hint_poll_interval: "Provider query frequency (default: 3.0s).",
+    title_speedtests: "Speed Tests & Network Performance",
+    desc_speedtests: "Measure your actual server bandwidth and test AllDebrid servers directly inside the UI:",
+    title_integrated_speedtest: "Direct Server Speed Test",
+    hint_integrated_speedtest: "Measures AllDebrid ping, global latency and actual download/upload bandwidth of your machine.",
+    btn_run_speedtest: "Run Direct Speed Test",
+    lbl_st_ad_ping: "AllDebrid Ping",
+    lbl_st_global_ping: "Global Ping",
+    lbl_st_dl_speed: "Download Speed",
+    lbl_st_ul_speed: "Upload Speed",
+    lbl_speedtest_ad_inapp: "Official AllDebrid Speedtest (Multi-Servers In-App)",
+    hint_speedtest_ad_inapp: "Tests AllDebrid datacenter nodes (Paris, Frankfurt, Amsterdam...) directly inside DebridFlow.",
+    btn_show_ad_speedtest_inapp: "Show In-App Test",
+    btn_hide_ad_speedtest_inapp: "Hide In-App Test",
+    btn_fullscreen: "Fullscreen",
+    lbl_speedtest_ad: "AllDebrid Speedtest (Direct CDN)",
+    hint_speedtest_ad: "Tests download speed and latency directly between your connection and AllDebrid debriding servers.",
+    btn_launch_speedtest_ad: "Launch AllDebrid Speedtest ↗",
+    lbl_speedtest_general: "Ookla Speedtest (General)",
+    hint_speedtest_general: "Measures your download, upload and ping via Ookla / Speedtest.net servers.",
+    btn_launch_speedtest_general: "Open Speedtest.net ↗",
+    lbl_theme_choice: "Interface Theme",
+    hint_theme_choice: "Toggle between dark mode and light mode.",
+    lbl_language: "Interface Language",
+    hint_language: "Choose French or English for display.",
+    title_display_options: "Display & Privacy Options:",
+
+    btn_save_settings: "Save settings",
+    alert_saved: "Settings saved and applied immediately.",
+    tip_switch_light: "Switch to light mode",
+    tip_switch_dark: "Switch to dark mode",
+    home_tip: "Home (Queue)",
+
+    // Scanner & Dead Links
+    tab_scanner: "Library & Links",
+    sc_title: "🧲 AllDebrid & Dead Links Manager",
+    sc_last_scan_unknown: "Last scan: Unknown",
+    btn_scan_now: "🔄 Scan (Fast)",
+    btn_scan_force: "⚡ Full scan",
+    sc_stat_dead: "⚠️ Local Dead Links",
+    sc_stat_magnets: "🧲 Total AD Magnets",
+    sc_stat_duplicates: "📑 AD Duplicates",
+    sc_stat_unlinked: "❓ Not Symlinked",
+    sc_stat_links: "🔗 Detected Files",
+    sc_dead_head: "⚠️ Dead Links in Media Library",
+    btn_research_all: "⚡ Trigger Search in Radarr / Sonarr & Purge",
+    btn_clean_all_dead: "🗑️ Delete all dead links",
+    msg_no_dead_links: "No dead links detected in your media library. Run a scan to check.",
+    th_sc_media: "Radarr / Sonarr Media",
+    th_sc_deadpath: "Dead Symbolic Link",
+    th_sc_target: "Missing Target (Rclone / AD)",
+    th_sc_actions: "Actions",
+    sc_magnets_head: "🧲 AllDebrid Magnets & Duplicates",
+    btn_filter_all: "All",
+    btn_filter_duplicates: "Duplicates only",
+    btn_filter_dead: "API Dead Links",
+    btn_filter_unlinked: "Not symlinked",
+    ph_search_magnets: "🔍 Filter magnets by title...",
+    btn_expand_all: "↕️ Expand all",
+    btn_select_visible: "☑ Check visible",
+    btn_clean_duplicates: "🧹 Clean duplicates",
+    btn_delete_checked: "🗑️ Delete checked",
+    msg_loading_magnets: "Loading magnets...",
+    btn_scan_stop: "Stop Scan",
+    hint_enable_scanner_tab: "Enable or disable access to the Media Library tab and dashboard.",
+    hint_webhook_info: "Configure in Sonarr/Radarr (Settings > Connect > Webhook, trigger: On Download / On Import) to automatically scan after a download.",
+    sec_arr_integration: "🔗 Radarr & Sonarr Integration (Auto-trigger search on dead links)",
+    lbl_enable_scanner_tab: "Show Media Library & Links tab in navigation bar",
+    lbl_radarr_url: "Radarr URL",
+    lbl_radarr_key: "Radarr API Key",
+    lbl_sonarr_url: "Sonarr URL",
+    lbl_sonarr_key: "Sonarr API Key",
+    lbl_scan_paths: "Media Library folders to scan",
+    btn_add_scan_path: "+ Add folder",
+    ph_scan_path_single: "Ex: /mnt/virtual/Medias/Movies",
+    hint_scan_paths: "Folders scanned to detect broken symlinks / missing targets.",
+    lbl_speed_limit: "Download Speed Limit (MB/s)",
+    hint_speed_limit: "Limits physical download rate (0 = unlimited).",
+    lbl_hide_last_dl_name: "Hide last download name by default",
+    hint_hide_last_dl_name: "Keeps speed visible, but hides media title until clicked.",
+    lbl_last_download: "Last download:",
+    lbl_avg_speed: "Average speed:",
+    lbl_show_last_dl: "Show name",
+    lbl_hide_last_dl: "Hide",
+
+    // Telegram Notifications
+    lbl_tg_enable: "Enable Telegram Notifications",
+    hint_tg_enable: "Sends real-time alerts to your Telegram bot upon scans, dead links, downloads, and errors.",
+    lbl_tg_bot_token: "Telegram Bot Token",
+    hint_tg_bot_token: "Secret token obtained from @BotFather.",
+    lbl_tg_chat_id: "Chat ID / Channel ID",
+    hint_tg_chat_id: "Your Telegram Chat ID (obtained via @userinfobot or @GetMyChatID_Bot).",
+    btn_test_tg: "📲 Send Test Message",
+    testing_tg: "Sending test message...",
+    title_tg_events: "Events to notify:",
+    lbl_tg_scan_start: "Media library scan started",
+    lbl_tg_scan_complete: "Media library scan completed (full summary)",
+    lbl_tg_dead_link: "Alert: Dead links detected in media library",
+    lbl_tg_dl_complete: "Real Download or Symlink completed (with size and speed)",
+    lbl_tg_clean_dead: "Dead links deletion / purge performed",
+    lbl_tg_error: "Critical errors (debrid, rclone timeout, copy failure)",
+    tg_test_ok: "Test notification received successfully!",
+    tg_test_err: "Telegram sending failed.",
+
+    // Onboarding
+    ob_title: "Welcome to DebridFlow 🚀",
+    ob_subtitle: "Step-by-step first-time setup wizard",
+    ob_tab_styles: "1. Styles",
+    ob_tab_provider: "2. Provider",
+    ob_tab_storage: "3. Storage",
+    ob_tab_services: "4. Services",
+    ob_tab_automation: "5. Automation",
+    ob_tab_notifications: "6. Notifications",
+    ob_tab_bondl: "7. Happy DL",
+    ob_btn_prev: "← Previous",
+    ob_btn_next: "Next →",
+    ob_btn_skip: "Skip setup",
+    ob_btn_finish: "🚀 Save & Finish (Happy DL!)",
+    ob_relaunch_title: "Initial setup wizard (Onboarding)",
+    ob_relaunch_btn: "🚀 Relaunch wizard",
+    ob_relaunch_hint: "Relaunches the step-by-step guide to review or edit all your settings.",
+    ob_summary_title: "🎉 All set! Happy Downloading",
+    ob_summary_desc: "Your DebridFlow configuration is ready. Click below to apply your settings and start downloading.",
+    ob_hint_step1: "Customize the appearance and visual comfort of DebridFlow. You can change theme and language at any time.",
+    ob_hint_step2: "Connect your Debrid account to debrid and download files at maximum speed.",
+    ob_hint_step3: "Configure the paths where Rclone mounts the cloud drive and where DebridFlow stores downloads and symlinks.",
+    ob_hint_step4: "Configure categories for Sonarr, Radarr, etc. Choose Symlink mode (instant) or Real Download mode (disk copy).",
+    ob_hint_step5: "Adjust automatic cleanup behavior and secure access to DebridFlow.",
+    ob_hint_step6: "Enable dead links monitoring in your media library and receive real-time Telegram alerts.",
+    sec_reset: "Reset & Wizard Zone",
+    title_reset_settings: "Delete all settings & Redisplay Onboarding",
+    btn_reset_settings: "🗑️ Delete & Relaunch Onboarding",
+    hint_reset_settings: "Resets all DebridFlow settings back to factory defaults and redisplays the initial setup wizard.",
+    confirm_reset_settings: "Are you sure you want to delete all settings, restore defaults, and restart the onboarding wizard?",
+    opt_theme_dark: "🌙 Dark Mode",
+    opt_theme_light: "☀️ Light Mode",
+    opt_lang_fr: "🇫🇷 Français (French)",
+    opt_lang_en: "🇬🇧 English",
+    title_clean_options: "Cleanup Options:",
+    title_auth_options: "Authentication (Optional):",
+    title_medialib_surveillance: "Media Library & Radarr / Sonarr Monitoring:",
+    title_webhook_info: "ℹ️ Sonarr / Radarr Webhook URL:",
+    recap_provider_title: "🔑 Debrid Provider:",
+    recap_dl_dir_title: "📁 Downloads Folder:",
+    recap_services_title: "🎬 Configured *arr Services:",
+    recap_tg_title: "🔔 Telegram Notifications:",
+    ob_btn_finish_alt: "Happy DL! Launch DebridFlow 🚀",
+    ob_active: "Active",
+    ob_disabled: "Disabled",
+    ob_services_count: "{n} service(s)",
+    ph_auth_empty: "Leave empty = no auth",
+    ph_api_key: "API Key or Token",
+    ph_speed_unlimited: "0 = unlimited",
+    ph_scan_paths: "/mnt/virtual/Medias/Movies,/mnt/virtual/Medias/Series,...",
+    tip_toggle_name: "Click to show / hide name",
+    tip_scan_fast: "Fast incremental scan using cache",
+    tip_scan_force: "Force complete reindexing of all folders",
+    tip_close: "Close / Skip",
+    scan_starting: "Starting scan...",
+    missing_target: "Missing target",
+    btn_purge: "🗑️ Purge",
+    btn_retrigger_radarr: "🔍 Retrigger Radarr",
+    btn_retrigger_sonarr: "🔍 Retrigger Sonarr",
+    media_unknown: "❓ Unidentified",
+    tag_symlinked: "🔗 Symlinked",
+    tag_not_symlinked: "Not symlinked",
+    tag_dead_api: "⚠️ Dead API",
+    tag_kept_default: "(Kept by default)",
+    meta_size: "Size:",
+    meta_status: "Status:",
+    msg_no_magnets: "No magnets found. Run a scan to refresh.",
+    no_dead_to_delete: "No dead links to delete.",
+    no_dead_arr: "No dead links associated with Radarr or Sonarr.",
+    confirm_delete_magnet: "Delete this magnet on provider and purge its associated local links?\n\n{name}",
+    confirm_delete_checked_mags: "Permanently delete {n} selected magnet(s) on provider and their local symlinks?",
+    confirm_clean_duplicates: "Delete {n} unnecessary duplicates on provider?\n\nThe best file in each group will be kept intact.",
+    confirm_clean_all_dead: "Delete all {n} dead links detected on disk?",
+    confirm_delete_from_arr: "{n} of the dead links are associated with Radarr or Sonarr.\n\nDo you ALSO want to delete these media from your Radarr / Sonarr library?",
+    confirm_research_dead: "Retrigger a search in {mediaType} and purge the local dead link?",
+    confirm_research_all_dead: "Do you want to retrigger search in Radarr / Sonarr for the {n} detected media and purge dead links?",
+    tip_brand_home: "Home (Queue)",
+    tip_theme_toggle: "Toggle theme (Light / Dark)",
+    ph_api_key_secret: "Your secret API key...",
+    confirm_clean_single_dead: "Permanently delete this dead symbolic link on disk?",
+    confirm_delete_media_arr: "This media is associated with {mediaType}{mediaTitle}.\n\nDo you ALSO want to delete this title from your {mediaType} library?",
+    no_mags_selected: "No magnet selected.",
+    no_dup_mags: "No provider duplicates detected to clean.",
+    last_scan_prefix: "Last scan: ",
+    btn_collapse_all: "↕️ Collapse all",
+    btn_expand_all: "↕️ Expand all",
+    btn_check_visible: "☑ Check visible",
+    btn_uncheck_all: "☐ Uncheck all",
+    scan_finished_success: "Scan completed successfully!",
+    scan_interrupted_user: "Scan interrupted by user.",
+    ph_chat_id: "Ex: 123456789 or -100123456789",
+  }
+};
+
+const PROVIDER_METAS = {
+  alldebrid: {
+    name: "AllDebrid",
+    api_base: "https://api.alldebrid.com/v4",
+    key_label_fr: "Clé API AllDebrid",
+    key_label_en: "AllDebrid API Key",
+    key_hint_fr: "Clé générée sur AllDebrid > Apikeys",
+    key_hint_en: "Key generated on AllDebrid > Apikeys",
+  },
+  realdebrid: {
+    name: "Real-Debrid",
+    api_base: "https://api.real-debrid.com/rest/1.0",
+    key_label_fr: "Token API Real-Debrid",
+    key_label_en: "Real-Debrid API Token",
+    key_hint_fr: "Token secret disponible sur https://real-debrid.com/apitoken",
+    key_hint_en: "Secret token available on https://real-debrid.com/apitoken",
+  },
+  premiumize: {
+    name: "Premiumize.me",
+    api_base: "https://www.premiumize.me/api",
+    key_label_fr: "Clé API Premiumize",
+    key_label_en: "Premiumize API Key",
+    key_hint_fr: "Clé API disponible sur https://www.premiumize.me/account",
+    key_hint_en: "API key available on https://www.premiumize.me/account",
+  },
+  debridlink: {
+    name: "Debrid-Link",
+    api_base: "https://debrid-link.com/api/v2",
+    key_label_fr: "Clé API Debrid-Link",
+    key_label_en: "Debrid-Link API Key",
+    key_hint_fr: "Clé API disponible sur https://debrid-link.com/webapp/account",
+    key_hint_en: "API key available on https://debrid-link.com/webapp/account",
+  },
+  torbox: {
+    name: "TorBox",
+    api_base: "https://api.torbox.app/v1/api",
+    key_label_fr: "Clé API TorBox",
+    key_label_en: "TorBox API Key",
+    key_hint_fr: "Clé API disponible sur https://torbox.app/settings",
+    key_hint_en: "API key available on https://torbox.app/settings",
+  },
+  highway: {
+    name: "High-Way.me",
+    api_base: "https://cloud.high-way.me/center-api",
+    key_label_fr: "API Token High-Way",
+    key_label_en: "High-Way API Token",
+    key_hint_fr: "Token disponible dans votre espace Download Center > Sitzungen",
+    key_hint_en: "Token available in your Download Center > Sitzungen",
+  },
+};
+
+function onProviderChange(provId) {
+  const meta = PROVIDER_METAS[provId] || PROVIDER_METAS['alldebrid'];
+  const baseInput = document.getElementById('api_base_input');
+  if (baseInput) {
+    baseInput.value = meta.api_base;
+  }
+  const lblKey = document.getElementById('lbl-api-key');
+  if (lblKey) {
+    lblKey.textContent = currentLang === 'en' ? meta.key_label_en : meta.key_label_fr;
+  }
+  const hintKey = document.getElementById('hint-api-key');
+  if (hintKey) {
+    hintKey.textContent = currentLang === 'en' ? meta.key_hint_en : meta.key_hint_fr;
+  }
+  const testBtn = document.getElementById('btn-test-api');
+  if (testBtn) {
+    testBtn.textContent = (currentLang === 'en' ? 'Test API ' : "Tester l'API ") + meta.name;
+  }
+}
+
+let currentTab = 'queue';
+let currentLang = localStorage.getItem('pyrdt_lang') || 'fr';
+let pendingDeleteHashes = [];
+let modalOpen = false;
+let isFetching = false;
+
+function t(key, params = {}) {
+  const dict = TRANSLATIONS[currentLang] || TRANSLATIONS['fr'];
+  let text = dict[key] || TRANSLATIONS['fr'][key] || key;
+  for (const [k, v] of Object.entries(params)) {
+    text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+  }
+  return text;
+}
+
+function setLanguage(lang) {
+  if (lang !== 'fr' && lang !== 'en') lang = 'fr';
+  currentLang = lang;
+  localStorage.setItem('pyrdt_lang', lang);
+  document.documentElement.lang = lang;
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  const hiddenLangInput = document.getElementById('ui_language');
+  if (hiddenLangInput) hiddenLangInput.value = lang;
+  const langSelect = document.getElementById('lang-select');
+  if (langSelect) langSelect.value = lang;
+  const obLangSelect = document.getElementById('ob_lang');
+  if (obLangSelect) obLangSelect.value = lang;
+
+  // Mise à jour de tous les éléments balisés avec data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    el.textContent = t(key);
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    el.placeholder = t(key);
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    el.title = t(key);
+  });
+
+  // Mettre à jour le texte du data-attribute pour le responsive
+  const thFirst = document.querySelector('thead th:first-child');
+  if (thFirst) thFirst.setAttribute('data-text-all', t('select_all'));
+
+  const provSelect = document.getElementById('provider-select');
+  if (provSelect) {
+    onProviderChange(provSelect.value);
+  }
+
+  const themeBtn = document.getElementById('theme-btn');
+  if (themeBtn) {
+    themeBtn.title = currentTheme === 'light' ? t('tip_switch_dark') : t('tip_switch_light');
+  }
+
+  const brandEl = document.querySelector('.brand');
+  if (brandEl) {
+    brandEl.title = t('home_tip');
+  }
+
+  if (typeof scannerData !== 'undefined' && scannerData) {
+    renderScannerView();
+  }
+  if (typeof updateObRecap === 'function') {
+    updateObRecap();
+  }
+
+  updateSelection();
+  updateLastDlDisplay();
+  refreshQueue();
+}
+
+let currentTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('pyrdt_theme') || 'dark';
+
+function applyTheme(theme) {
+  currentTheme = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  try {
+    localStorage.setItem('pyrdt_theme', currentTheme);
+  } catch (e) {}
+  const icon = document.getElementById('theme-icon');
+  const btn = document.getElementById('theme-btn');
+  if (icon) {
+    icon.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+  }
+  if (btn) {
+    btn.title = currentTheme === 'light' ? t('tip_switch_dark') : t('tip_switch_light');
+  }
+  const sel = document.getElementById('theme-select');
+  if (sel) {
+    sel.value = currentTheme;
+  }
+  const obSel = document.getElementById('ob_theme');
+  if (obSel) {
+    obSel.value = currentTheme;
+  }
+  const hiddenInput = document.getElementById('ui_theme');
+  if (hiddenInput) {
+    hiddenInput.value = currentTheme;
+  }
+}
+
+function toggleTheme() {
+  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+}
