@@ -13,9 +13,7 @@
 > ✨ *This project was 100% architected and developed with **Google Gemini**.*
 >
 
-🎬 **[Watch Demo Video (MP4)](debridflow_demo_en.mp4)**
-
----
+https://github.com/user-attachments/assets/4fd94d19-1ca0-4d84-9bb5-a221abcba0c0
 
 ## 📑 Table of Contents
 
