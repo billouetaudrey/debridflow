@@ -151,8 +151,6 @@ function saveCollapsedGroups() {
 
 function isGroupCollapsed(groupId) {
   if (!groupId) return false;
-  // Ne jamais replier si l'utilisateur filtre spécifiquement sur un statut
-  if (currentQueueFilter && currentQueueFilter !== 'all') return false;
   return collapsedGroupsSet.has(groupId);
 }
 
@@ -229,6 +227,10 @@ function setQueueFilter(filter) {
   try { localStorage.setItem('omnisym_queue_filter', filter); } catch (e) {}
   const sel = document.getElementById('queue-filter-select');
   if (sel && sel.value !== filter) sel.value = filter;
+  if (filter !== 'all') {
+    collapsedGroupsSet.delete(filter);
+    saveCollapsedGroups();
+  }
   if (window.currentQueueItems) {
     renderQueue(window.currentQueueItems);
   }
@@ -246,18 +248,24 @@ function setQueueGrouping(grouping) {
 }
 
 function toggleQueueGroup(groupId) {
-  const header = document.querySelector(`.queue-group-row[data-group-id="${groupId}"]`);
-  const isCurrentlyOpen = header && header.classList.contains('open');
-  if (isCurrentlyOpen) {
-    if (header) header.classList.remove('open');
-    document.querySelectorAll(`.group-row-${groupId}`).forEach(el => el.classList.add('group-collapsed'));
-    collapsedGroupsSet.add(groupId);
-  } else {
-    if (header) header.classList.add('open');
-    document.querySelectorAll(`.group-row-${groupId}`).forEach(el => el.classList.remove('group-collapsed'));
+  if (!groupId) return;
+  const isCollapsed = collapsedGroupsSet.has(groupId);
+  if (isCollapsed) {
+    // Si actuellement replié, on déplie
     collapsedGroupsSet.delete(groupId);
+  } else {
+    // Si actuellement déplié, on replie
+    collapsedGroupsSet.add(groupId);
   }
   saveCollapsedGroups();
+
+  const header = document.querySelector(`.queue-group-row[data-group-id="${groupId}"]`);
+  if (header) {
+    header.classList.toggle('open', isCollapsed);
+  }
+  document.querySelectorAll(`.group-row-${groupId}`).forEach(el => {
+    el.classList.toggle('group-collapsed', !isCollapsed);
+  });
   updateSelection();
 }
 
