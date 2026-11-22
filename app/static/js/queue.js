@@ -156,56 +156,71 @@ function isGroupCollapsed(groupId) {
   return collapsedGroupsSet.has(groupId);
 }
 
+function isItemDebrided(item) {
+  const state = item.state || 'downloading';
+  if (state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || state === 'completed') {
+    return true;
+  }
+  if (item.is_ddl) {
+    return Boolean(item.download_url) && state !== 'resolving';
+  }
+  return Boolean(item.is_debrided);
+}
+
 function matchesQueueFilter(item, filter) {
   if (!filter || filter === 'all') return true;
   const state = item.state || 'downloading';
-  const isDdl = Boolean(item.is_ddl);
-  const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
+  const isCompleted = state === 'pausedUP' || state === 'stalledUP' || state === 'completed' || (Number(item.progress) >= 1.0 && state !== 'error');
+  const isError = state === 'error' || Boolean(item.error_msg && !isCompleted);
+  const isPaused = state === 'pausedDL';
 
   if (filter === 'failed') {
-    return state === 'error' || Boolean(item.error_msg && state !== 'pausedUP' && state !== 'stalledUP' && state !== 'completed');
+    return isError;
   }
   if (filter === 'paused') {
-    return state === 'pausedDL';
+    return isPaused;
   }
   if (filter === 'completed') {
-    return state === 'pausedUP' || state === 'stalledUP' || state === 'completed' || (Number(item.progress) >= 1.0 && state !== 'error');
+    return isCompleted;
   }
+
+  const isDebrided = isItemDebrided(item);
+
   if (filter === 'debriding') {
-    return (!isDebrided || state === 'resolving') && state !== 'error' && state !== 'pausedDL' && state !== 'pausedUP' && state !== 'stalledUP';
+    // Débridage en cours : pas terminé, pas erreur, pas pause, et PAS ENCORE DÉBRIDÉ
+    return !isCompleted && !isError && !isPaused && !isDebrided;
   }
   if (filter === 'downloading') {
-    return (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued' || (isDdl && state === 'resolving')) && state !== 'error' && state !== 'pausedDL';
+    // DL en cours : OBLIGATOIREMENT DÉJÀ DÉBRIDÉ, pas terminé, pas erreur, pas pause
+    return !isCompleted && !isError && !isPaused && isDebrided;
   }
   return true;
 }
 
 function getItemTypeGroup(item) {
   const state = item.state || 'downloading';
-  const isDdl = Boolean(item.is_ddl);
-  const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
-
-  if (state === 'error') {
-    return 'failed';
-  }
-  if (state === 'pausedDL') {
-    return 'paused';
-  }
-  if (state === 'pausedUP' || state === 'stalledUP' || (Number(item.progress) >= 1.0 && (state === 'completed' || state === 'uploading'))) {
+  const isCompleted = state === 'pausedUP' || state === 'stalledUP' || state === 'completed' || (Number(item.progress) >= 1.0 && state !== 'error');
+  if (isCompleted) {
     return 'completed';
   }
-  if (currentQueueFilter === 'downloading' || item.transfer_mode === 'download' || isDebrided) {
-    if (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued') {
-      return 'downloading';
-    }
+  const isError = state === 'error' || Boolean(item.error_msg);
+  if (isError) {
+    return 'failed';
   }
-  if (!isDebrided || state === 'resolving') {
+  const isPaused = state === 'pausedDL';
+  if (isPaused) {
+    return 'paused';
+  }
+
+  const isDebrided = isItemDebrided(item);
+
+  // Si pas encore débridé => Débridage cloud en cours
+  if (!isDebrided) {
     return 'debriding';
   }
-  if (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued') {
-    return 'downloading';
-  }
-  return 'other';
+
+  // Si déjà débridé => Téléchargements / Transferts en cours
+  return 'downloading';
 }
 
 function setQueueFilter(filter) {
@@ -305,7 +320,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
       ? `<span class="tag dl">${esc(t('tag_dl'))}</span>`
       : `<span class="tag sym">${esc(t('tag_sym'))}</span>`);
 
-  const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
+  const isDebrided = isItemDebrided(item);
   const isCached = Boolean(item.debrid_cached);
   let debridBadge = '';
   if (isDebrided) {
@@ -333,7 +348,13 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
   } else if (state === 'resolving') {
     badgeCls = 'run';
-    stateTxt = `${esc(t('st_in_progress'))}`;
+    stateTxt = `⏳ ${esc(t('st_debriding') || 'Débridage en cours')}`;
+  } else if (!isDebrided) {
+    badgeCls = 'run';
+    stateTxt = `${esc(t('st_cloud_dl'))} (${pct}%)`;
+    if (item.seeders && item.seeders > 0) {
+      stateTxt += ` • ${item.seeders} sources`;
+    }
   } else if (state === 'queued') {
     badgeCls = 'pause';
     stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
@@ -345,12 +366,6 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     stateTxt = `${esc(t('st_copying'))} (${pct}%)`;
     if (item.dlspeed && item.dlspeed > 0) {
       stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
-    }
-  } else if (state === 'downloading' && !isDebrided) {
-    badgeCls = 'run';
-    stateTxt = `${esc(t('st_cloud_dl'))} (${pct}%)`;
-    if (item.seeders && item.seeders > 0) {
-      stateTxt += ` • ${item.seeders} sources`;
     }
   } else if (isDl && item.dlspeed && item.dlspeed > 0) {
     stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
@@ -561,10 +576,7 @@ function renderQueue(items) {
       groupBuckets[def.id] = [];
     }
     for (const it of filteredItems) {
-      let grp = getItemTypeGroup(it);
-      if (currentQueueFilter === 'downloading' && (grp === 'downloading' || grp === 'debriding')) {
-        grp = 'downloading';
-      }
+      const grp = getItemTypeGroup(it);
       if (groupBuckets[grp]) {
         groupBuckets[grp].push(it);
       } else {
@@ -1078,5 +1090,37 @@ async function purgeCompleted() {
   fd.append('deleteProvider', 'false');
   await fetch('/api/v2/torrents/delete', { method: 'POST', body: fd });
   await refreshQueue();
+}
+
+async function forceSyncQueue() {
+  const btn = document.getElementById('btn-force-sync');
+  const icon = document.getElementById('force-sync-icon');
+  const text = document.getElementById('force-sync-text');
+  if (btn) btn.disabled = true;
+  if (icon) icon.classList.add('spinning');
+  if (text) text.textContent = t('syncing') || 'Synchronisation...';
+
+  try {
+    const res = await fetch('/api/queue/force-sync', { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      let msg = t('sync_success') || 'Synchronisé !';
+      if (data.arr_synced && data.arr_synced.length > 0) {
+        msg += ` (${data.arr_synced.join(', ')})`;
+      }
+      if (text) text.textContent = '✅ ' + msg;
+    } else {
+      if (text) text.textContent = '⚠️ Erreur';
+    }
+  } catch (e) {
+    if (text) text.textContent = '⚠️ Erreur réseau';
+  } finally {
+    await refreshQueue();
+    if (icon) icon.classList.remove('spinning');
+    setTimeout(() => {
+      if (btn) btn.disabled = false;
+      if (text) text.textContent = t('btn_force_refresh') || 'Rafraîchir (Arr / Débrideur)';
+    }, 2500);
+  }
 }
 

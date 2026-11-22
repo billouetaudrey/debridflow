@@ -328,6 +328,8 @@ async def background_worker() -> None:
                                             "size": link_info.get("size") or 0,
                                             "download_url": link_info.get("link") or "",
                                             "state": "queued",
+                                            "is_debrided": True,
+                                            "cloud_status": "Débridé",
                                             "error_msg": "",
                                         }
                                     )

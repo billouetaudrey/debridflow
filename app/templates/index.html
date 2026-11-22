@@ -131,6 +131,9 @@
       </div>
 
       <div class="queue-grouping-tools">
+        <button type="button" class="btn-sec q-btn-compact" id="btn-force-sync" onclick="forceSyncQueue()" title="Forcer le rafraîchissement immédiat (Arr &amp; Débrideur)" data-i18n-title="tip_force_refresh">
+          <span id="force-sync-icon">🔄</span> <span id="force-sync-text" data-i18n="btn_force_refresh">Rafraîchir (Arr / Débrideur)</span>
+        </button>
         <button type="button" class="btn-sec q-btn-compact" id="btn-q-expand-all" onclick="expandAllQueueGroups()" title="Tout déplier" data-i18n-title="q_expand_all">
           <span>📂</span> <span data-i18n="q_expand_all">Tout déplier</span>
         </button>
@@ -679,7 +682,7 @@
               </div>
 
               <div style="margin-top:18px;border-top:1px solid var(--border-muted);padding-top:14px;">
-                <h4 style="margin:0 0 10px 0;font-size:13px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Connexion Radarr &amp; Sonarr (Relance automatique des recherches &amp; synchronisation)</h4>
+                <h4 style="margin:0 0 10px 0;font-size:13px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Connexion Radarr, Sonarr &amp; Whisparr (Relance automatique des recherches &amp; synchronisation)</h4>
                 <div class="grid">
                   <div class="field">
                     <label data-i18n="lbl_radarr_url">URL Radarr</label>
@@ -696,6 +699,14 @@
                   <div class="field">
                     <label data-i18n="lbl_sonarr_key">Clé API Sonarr</label>
                     <input type="password" name="sonarr_api_key" value="__SONARR_API_KEY__" placeholder="Ex: 059aeb77e7ba4ca7879b1061373fdfe1">
+                  </div>
+                  <div class="field">
+                    <label data-i18n="lbl_whisparr_url">URL Whisparr</label>
+                    <input type="text" name="whisparr_url" value="__WHISPARR_URL__" placeholder="http://127.0.0.1:6969">
+                  </div>
+                  <div class="field">
+                    <label data-i18n="lbl_whisparr_key">Clé API Whisparr</label>
+                    <input type="password" name="whisparr_api_key" value="__WHISPARR_API_KEY__" placeholder="Ex: 059aeb77e7ba4ca7879b1061373fdfe1">
                   </div>
                 </div>
               </div>

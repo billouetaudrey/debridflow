@@ -11,6 +11,7 @@ from fastapi import APIRouter, File, Form, Request, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from app.alldebrid import (
+    alldebrid_get_statuses,
     alldebrid_upload_file,
     alldebrid_upload_magnet,
     check_alldebrid_api_health,
@@ -59,7 +60,7 @@ async def ui_queue_feed():
                 "is_debrided": bool(
                     item.get("is_debrided")
                     or item.get("state") in ("copying", "checkingDL", "pausedUP", "stalledUP")
-                    or item.get("is_ddl")
+                    or (item.get("is_ddl") and bool(item.get("download_url")))
                 ),
                 "debrid_cached": bool(item.get("debrid_cached", False)),
                 "seeders": int(item.get("seeders") or 0),
@@ -85,6 +86,101 @@ async def ui_queue_feed():
         },
         headers={"Cache-Control": "no-store"},
     )
+
+
+@router.post("/api/queue/force-sync")
+async def api_force_sync():
+    """Force une actualisation immédiate de tous les torrents auprès du débrideur et notifie les Arrs."""
+    results: Dict[str, Any] = {
+        "ok": True,
+        "debrid_synced": 0,
+        "arr_synced": [],
+        "errors": [],
+    }
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        # 1. Vérification santé API Débrideur
+        try:
+            await check_alldebrid_api_health(client)
+        except Exception as e:
+            results["errors"].append(f"Debrid health: {e}")
+
+        # 2. Interrogation directe AllDebrid pour tous les torrents actifs
+        if settings_db.get("api_key"):
+            try:
+                async with state_lock:
+                    active_items = [
+                        (h, dict(item))
+                        for h, item in torrents_db.items()
+                        if item.get("state") not in ("pausedUP", "stalledUP", "pausedDL", "error")
+                    ]
+                tracked_ids = [
+                    int(item["ad_id"])
+                    for _, item in active_items
+                    if item.get("ad_id") and str(item.get("ad_id")).isdigit()
+                ]
+                if tracked_ids:
+                    statuses = await alldebrid_get_statuses(client, tracked_ids)
+                    async with state_lock:
+                        for info_hash, item in active_items:
+                            ad_id = int(item.get("ad_id") or 0)
+                            if ad_id in statuses:
+                                ad_info = statuses[ad_id]
+                                status_code = int(ad_info.get("statusCode", 0))
+                                ad_filename = ad_info.get("filename") or item.get("name")
+                                ad_size = int(ad_info.get("size") or item.get("size") or 0)
+                                ad_status_str = str(ad_info.get("status") or "").strip()
+
+                                if status_code == 4:
+                                    torrents_db[info_hash]["name"] = ad_filename
+                                    torrents_db[info_hash]["size"] = ad_size
+                                    torrents_db[info_hash]["progress"] = 0.99
+                                    torrents_db[info_hash]["is_debrided"] = True
+                                    torrents_db[info_hash]["cloud_status"] = "Débridé"
+                                    if torrents_db[info_hash].get("state") not in ("copying", "pausedUP", "stalledUP"):
+                                        torrents_db[info_hash]["state"] = "checkingDL"
+                                else:
+                                    downloaded = int(ad_info.get("downloaded") or 0)
+                                    progress = (downloaded / ad_size) if ad_size > 0 else 0.1
+                                    seeders = int(ad_info.get("seeders") or 0)
+                                    cloud_speed = int(ad_info.get("downloadSpeed") or 0)
+                                    torrents_db[info_hash]["name"] = ad_filename
+                                    torrents_db[info_hash]["size"] = ad_size
+                                    torrents_db[info_hash]["progress"] = min(0.99, round(progress, 4))
+                                    torrents_db[info_hash]["is_debrided"] = False
+                                    torrents_db[info_hash]["seeders"] = seeders
+                                    torrents_db[info_hash]["cloud_speed"] = cloud_speed
+                                    torrents_db[info_hash]["cloud_status"] = ad_status_str or "Téléchargement cloud"
+                        save_state()
+                    results["debrid_synced"] = len(statuses)
+            except Exception as exc:
+                logger.warning(f"Erreur force_sync debrid: {exc}")
+                results["errors"].append(f"Debrid: {exc}")
+
+        # 3. Notification aux applications *Arr (Radarr, Sonarr, Whisparr)
+        arr_targets = [
+            ("Radarr", settings_db.get("radarr_url", "http://127.0.0.1:7878"), settings_db.get("radarr_api_key", "")),
+            ("Sonarr", settings_db.get("sonarr_url", "http://127.0.0.1:8989"), settings_db.get("sonarr_api_key", "")),
+            ("Whisparr", settings_db.get("whisparr_url", "http://127.0.0.1:6969"), settings_db.get("whisparr_api_key", "")),
+        ]
+        for arr_name, arr_url, arr_key in arr_targets:
+            if arr_key and arr_url:
+                clean_url = arr_url.rstrip("/")
+                try:
+                    r = await client.post(
+                        f"{clean_url}/api/v3/command",
+                        headers={"X-Api-Key": arr_key},
+                        json={"name": "RefreshMonitoredDownloads"},
+                        timeout=3.5,
+                    )
+                    if r.status_code in (200, 201):
+                        results["arr_synced"].append(arr_name)
+                    else:
+                        results["errors"].append(f"{arr_name}: HTTP {r.status_code}")
+                except Exception as arr_err:
+                    results["errors"].append(f"{arr_name}: {str(arr_err)}")
+
+    return JSONResponse(results)
 
 
 @router.post("/api/torrents/upload")
@@ -184,10 +280,10 @@ async def api_upload_torrent(
                     "password": (ddl_password or "").strip(),
                     "download_url": "",
                     "error_msg": "",
-                    "is_debrided": True,
-                    "debrid_cached": True,
+                    "is_debrided": False,
+                    "debrid_cached": False,
                     "seeders": 0,
-                    "cloud_status": "Lien direct débridé",
+                    "cloud_status": "En attente de débridage",
                 }
                 added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
             save_state()
@@ -618,6 +714,8 @@ async def update_settings(
     radarr_api_key: str = Form(""),
     sonarr_url: str = Form(""),
     sonarr_api_key: str = Form(""),
+    whisparr_url: str = Form(""),
+    whisparr_api_key: str = Form(""),
     telegram_enabled: Optional[str] = Form(None),
     telegram_bot_token: str = Form(""),
     telegram_chat_id: str = Form(""),
@@ -689,6 +787,8 @@ async def update_settings(
         settings_db["radarr_api_key"] = radarr_api_key.strip()
         settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
         settings_db["sonarr_api_key"] = sonarr_api_key.strip()
+        settings_db["whisparr_url"] = whisparr_url.strip() or "http://127.0.0.1:6969"
+        settings_db["whisparr_api_key"] = whisparr_api_key.strip()
         settings_db["ddl_download_dir"] = ddl_download_dir.strip() or "/mnt/virtual/Medias/DL/DDL"
         # Visibilité des onglets
         q_tab = enable_queue_tab == "on"
@@ -962,6 +1062,8 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__RADARR_API_KEY__", html.escape(s.get("radarr_api_key", "")))
         .replace("__SONARR_URL__", html.escape(s.get("sonarr_url", "http://127.0.0.1:8989")))
         .replace("__SONARR_API_KEY__", html.escape(s.get("sonarr_api_key", "")))
+        .replace("__WHISPARR_URL__", html.escape(s.get("whisparr_url", "http://127.0.0.1:6969")))
+        .replace("__WHISPARR_API_KEY__", html.escape(s.get("whisparr_api_key", "")))
         .replace("__DDL_DOWNLOAD_DIR__", html.escape(str(s.get("ddl_download_dir", "/mnt/virtual/Medias/DL/DDL"))))
         .replace("__CHECKED_QUEUE_TAB__", "checked" if s.get("enable_queue_tab", True) else "")
         .replace("__QUEUE_TAB_DISPLAY__", "" if s.get("enable_queue_tab", True) else "display:none;")
