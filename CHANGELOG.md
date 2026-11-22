@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.1] — 2026-11-22
+
+### Fixed
+- **Automatic Provider Cleanup for Blocklisted or Incomplete Torrents**:
+  - Fixed an issue where Sonarr/Radarr's "Blocklist and search" action or deletion of incomplete/un-cached torrents left dead magnets active on the provider account (AllDebrid, RealDebrid, etc.).
+  - `/api/v2/torrents/delete` now automatically distinguishes between completed & imported media (preserved to keep active rclone symlinks valid) and incomplete, stalled, errored, or un-imported torrents (immediately deleted on the provider to free up cloud download slots).
+
+---
+
 ## [2.7.0] — 2026-11-21
 
 ### Added

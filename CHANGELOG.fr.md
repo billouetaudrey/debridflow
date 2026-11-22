@@ -9,6 +9,15 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.7.1] — 2026-11-22
+
+### Corrigé
+- **Nettoyage automatique sur le débrideur lors d'un "Blocklist and search" ou torrent incomplet** :
+  - Correction du comportement où l'action "Blocklist and search" ou la suppression d'un torrent incomplet/non-caché depuis Sonarr ou Radarr ne supprimait pas le magnet sur le compte débrideur (AllDebrid, RealDebrid, etc.).
+  - La route `/api/v2/torrents/delete` distingue désormais automatiquement les médias complétés et importés (fichiers distants préservés pour ne pas casser les symlinks rclone) des torrents incomplets, bloqués, en échec ou rejetés avant import (immédiatement supprimés sur le débrideur pour garder le compte propre et libérer les slots cloud).
+
+---
+
 ## [2.7.0] — 2026-11-21
 
 ### Ajouté
