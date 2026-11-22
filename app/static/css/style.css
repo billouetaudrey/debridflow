@@ -286,6 +286,11 @@ body {
 .q-select:hover, .q-select:focus {
   border-color: var(--border-main);
 }
+.q-select option {
+  background: var(--bg-card);
+  color: var(--text-bright);
+  padding: 4px 8px;
+}
 .queue-grouping-tools {
   display: flex;
   align-items: center;

@@ -116,19 +116,68 @@ let currentQueueFilter = 'all';
 let currentQueueGrouping = 'status';
 let collapsedGroupsSet = new Set();
 
+const VALID_FILTERS = new Set(['all', 'downloading', 'debriding', 'failed', 'completed', 'paused']);
+const VALID_GROUPINGS = new Set(['status', 'category', 'mode', 'none']);
+
 try {
-  const sf = localStorage.getItem('omnisym_queue_filter');
-  if (sf) currentQueueFilter = sf;
+  let sf = localStorage.getItem('omnisym_queue_filter');
+  if (sf === 'download') sf = 'downloading';
+  if (sf === 'error') sf = 'failed';
+  if (sf && VALID_FILTERS.has(sf)) {
+    currentQueueFilter = sf;
+  } else {
+    currentQueueFilter = 'all';
+  }
+
   const sg = localStorage.getItem('omnisym_queue_grouping');
-  if (sg) currentQueueGrouping = sg;
+  if (sg && VALID_GROUPINGS.has(sg)) {
+    currentQueueGrouping = sg;
+  } else {
+    currentQueueGrouping = 'status';
+  }
+
   const sc = localStorage.getItem('omnisym_collapsed_groups');
   if (sc) collapsedGroupsSet = new Set(JSON.parse(sc));
-} catch (e) {}
+} catch (e) {
+  currentQueueFilter = 'all';
+  currentQueueGrouping = 'status';
+}
 
 function saveCollapsedGroups() {
   try {
     localStorage.setItem('omnisym_collapsed_groups', JSON.stringify(Array.from(collapsedGroupsSet)));
   } catch (e) {}
+}
+
+function isGroupCollapsed(groupId) {
+  if (!groupId) return false;
+  // Ne jamais replier si l'utilisateur filtre spécifiquement sur un statut
+  if (currentQueueFilter && currentQueueFilter !== 'all') return false;
+  return collapsedGroupsSet.has(groupId);
+}
+
+function matchesQueueFilter(item, filter) {
+  if (!filter || filter === 'all') return true;
+  const state = item.state || 'downloading';
+  const isDdl = Boolean(item.is_ddl);
+  const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
+
+  if (filter === 'failed') {
+    return state === 'error' || Boolean(item.error_msg && state !== 'pausedUP' && state !== 'stalledUP' && state !== 'completed');
+  }
+  if (filter === 'paused') {
+    return state === 'pausedDL';
+  }
+  if (filter === 'completed') {
+    return state === 'pausedUP' || state === 'stalledUP' || state === 'completed' || (Number(item.progress) >= 1.0 && state !== 'error');
+  }
+  if (filter === 'debriding') {
+    return (!isDebrided || state === 'resolving') && state !== 'error' && state !== 'pausedDL' && state !== 'pausedUP' && state !== 'stalledUP';
+  }
+  if (filter === 'downloading') {
+    return (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued' || (isDdl && state === 'resolving')) && state !== 'error' && state !== 'pausedDL';
+  }
+  return true;
 }
 
 function getItemTypeGroup(item) {
@@ -145,11 +194,14 @@ function getItemTypeGroup(item) {
   if (state === 'pausedUP' || state === 'stalledUP' || (Number(item.progress) >= 1.0 && (state === 'completed' || state === 'uploading'))) {
     return 'completed';
   }
-  // Débridage cloud (non débridé, recherche de pairs torrent sur le cloud AllDebrid, resolving)
-  if (!isDebrided || state === 'resolving' || (state === 'downloading' && !isDebrided)) {
+  if (currentQueueFilter === 'downloading' || item.transfer_mode === 'download' || isDebrided) {
+    if (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued') {
+      return 'downloading';
+    }
+  }
+  if (!isDebrided || state === 'resolving') {
     return 'debriding';
   }
-  // Téléchargement actif ou copie locale / attente rclone
   if (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued') {
     return 'downloading';
   }
@@ -157,6 +209,7 @@ function getItemTypeGroup(item) {
 }
 
 function setQueueFilter(filter) {
+  if (!VALID_FILTERS.has(filter)) filter = 'all';
   currentQueueFilter = filter;
   try { localStorage.setItem('omnisym_queue_filter', filter); } catch (e) {}
   const sel = document.getElementById('queue-filter-select');
@@ -167,6 +220,7 @@ function setQueueFilter(filter) {
 }
 
 function setQueueGrouping(grouping) {
+  if (!VALID_GROUPINGS.has(grouping)) grouping = 'status';
   currentQueueGrouping = grouping;
   try { localStorage.setItem('omnisym_queue_grouping', grouping); } catch (e) {}
   const sel = document.getElementById('queue-group-select');
@@ -219,7 +273,7 @@ function collapseAllQueueGroups() {
 }
 
 function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass = 'tag') {
-  const isCollapsed = collapsedGroupsSet.has(groupId);
+  const isCollapsed = isGroupCollapsed(groupId);
   const openClass = isCollapsed ? '' : 'open';
   return `<tr class="queue-group-row ${openClass}" onclick="toggleQueueGroup('${groupId}')" data-group-id="${groupId}">
     <td colspan="6" class="queue-group-cell">
@@ -315,7 +369,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
 
   const groupClass = groupId ? `group-row-${groupId}` : '';
-  const isCollapsed = groupId && collapsedGroupsSet.has(groupId);
+  const isCollapsed = isGroupCollapsed(groupId);
   const collapsedClass = isCollapsed ? 'group-collapsed' : '';
 
   return `<tr class="queue-item-row ${groupClass} ${collapsedClass}" data-hash="${fullId}" data-group-id="${groupId}">
@@ -398,48 +452,44 @@ function toggleLastDlName() {
   updateLastDlDisplay();
 }
 
+function updateOptionText(id, text) {
+  const el = document.getElementById(id);
+  if (el && el.textContent !== text) {
+    el.textContent = text;
+  }
+}
+
 function renderQueue(items) {
   const tbody = document.getElementById('queue-tbody');
   const checkedSet = new Set(getSelectedHashes());
 
   const filterSelect = document.getElementById('queue-filter-select');
-  if (filterSelect && filterSelect.value !== currentQueueFilter) {
+  if (filterSelect && document.activeElement !== filterSelect && filterSelect.value !== currentQueueFilter) {
     filterSelect.value = currentQueueFilter;
   }
   const groupSelect = document.getElementById('queue-group-select');
-  if (groupSelect && groupSelect.value !== currentQueueGrouping) {
+  if (groupSelect && document.activeElement !== groupSelect && groupSelect.value !== currentQueueGrouping) {
     groupSelect.value = currentQueueGrouping;
   }
 
-  // Calcul dynamique des compteurs de chaque statut
+  // Calcul dynamique des compteurs de chaque filtre
+  const allItems = items || [];
   const counts = {
-    all: (items || []).length,
-    downloading: 0,
-    debriding: 0,
-    failed: 0,
-    completed: 0,
-    paused: 0,
+    all: allItems.length,
+    downloading: allItems.filter(it => matchesQueueFilter(it, 'downloading')).length,
+    debriding: allItems.filter(it => matchesQueueFilter(it, 'debriding')).length,
+    failed: allItems.filter(it => matchesQueueFilter(it, 'failed')).length,
+    completed: allItems.filter(it => matchesQueueFilter(it, 'completed')).length,
+    paused: allItems.filter(it => matchesQueueFilter(it, 'paused')).length,
   };
-  if (items && items.length > 0) {
-    for (const it of items) {
-      const grp = getItemTypeGroup(it);
-      if (counts[grp] !== undefined) counts[grp]++;
-    }
-  }
 
   // Mise à jour des options du menu déroulant avec les compteurs
-  const optAll = document.getElementById('opt-filter-all');
-  if (optAll) optAll.textContent = `${t('q_filter_all') || 'Tous'} (${counts.all})`;
-  const optDl = document.getElementById('opt-filter-downloading');
-  if (optDl) optDl.textContent = `📥 ${t('q_filter_downloading') || 'DL en cours'} (${counts.downloading})`;
-  const optDeb = document.getElementById('opt-filter-debriding');
-  if (optDeb) optDeb.textContent = `☁️ ${t('q_filter_debriding') || 'Débridage cloud'} (${counts.debriding})`;
-  const optFail = document.getElementById('opt-filter-failed');
-  if (optFail) optFail.textContent = `❌ ${t('q_filter_failed') || 'En échec'} (${counts.failed})`;
-  const optComp = document.getElementById('opt-filter-completed');
-  if (optComp) optComp.textContent = `✅ ${t('q_filter_completed') || 'Terminés'} (${counts.completed})`;
-  const optPause = document.getElementById('opt-filter-paused');
-  if (optPause) optPause.textContent = `⏸️ ${t('q_filter_paused') || 'En pause'} (${counts.paused})`;
+  updateOptionText('opt-filter-all', `${t('q_filter_all') || 'Tous'} (${counts.all})`);
+  updateOptionText('opt-filter-downloading', `📥 ${t('q_filter_downloading') || 'DL en cours'} (${counts.downloading})`);
+  updateOptionText('opt-filter-debriding', `☁️ ${t('q_filter_debriding') || 'Débridage cloud'} (${counts.debriding})`);
+  updateOptionText('opt-filter-failed', `❌ ${t('q_filter_failed') || 'En échec'} (${counts.failed})`);
+  updateOptionText('opt-filter-completed', `✅ ${t('q_filter_completed') || 'Terminés'} (${counts.completed})`);
+  updateOptionText('opt-filter-paused', `⏸️ ${t('q_filter_paused') || 'En pause'} (${counts.paused})`);
 
   if (!items || items.length === 0) {
     tbody.innerHTML = `<tr><td colspan='6' style='color:#8b949e;text-align:center'>${esc(t('no_torrents'))}</td></tr>`;
@@ -450,7 +500,7 @@ function renderQueue(items) {
   // Filtrage selon le filtre actif
   let filteredItems = items;
   if (currentQueueFilter && currentQueueFilter !== 'all') {
-    filteredItems = items.filter(it => getItemTypeGroup(it) === currentQueueFilter);
+    filteredItems = items.filter(it => matchesQueueFilter(it, currentQueueFilter));
   }
 
   if (filteredItems.length === 0) {
@@ -498,8 +548,8 @@ function renderQueue(items) {
   } else {
     // Mode par défaut : Par Statut / Type
     const statusGroupsDef = [
-      { id: 'debriding', icon: '☁️', labelKey: 'q_grp_debriding', badgeCls: 'run', defaultLabel: 'Débridage cloud en cours' },
       { id: 'downloading', icon: '📥', labelKey: 'q_grp_downloading', badgeCls: 'run', defaultLabel: 'Téléchargements / Transferts en cours' },
+      { id: 'debriding', icon: '☁️', labelKey: 'q_grp_debriding', badgeCls: 'run', defaultLabel: 'Débridage cloud en cours' },
       { id: 'failed', icon: '❌', labelKey: 'q_grp_failed', badgeCls: 'err', defaultLabel: 'En échec / Erreurs' },
       { id: 'paused', icon: '⏸️', labelKey: 'q_grp_paused', badgeCls: 'pause', defaultLabel: 'En pause / En attente' },
       { id: 'completed', icon: '✅', labelKey: 'q_grp_completed', badgeCls: 'ok', defaultLabel: 'Terminés' },
@@ -511,7 +561,10 @@ function renderQueue(items) {
       groupBuckets[def.id] = [];
     }
     for (const it of filteredItems) {
-      const grp = getItemTypeGroup(it);
+      let grp = getItemTypeGroup(it);
+      if (currentQueueFilter === 'downloading' && (grp === 'downloading' || grp === 'debriding')) {
+        grp = 'downloading';
+      }
       if (groupBuckets[grp]) {
         groupBuckets[grp].push(it);
       } else {

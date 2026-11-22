@@ -109,19 +109,19 @@
       <div class="queue-selects-group">
         <div class="q-control-item">
           <label for="queue-filter-select" data-i18n="q_filter_label">Filtrer :</label>
-          <select id="queue-filter-select" onchange="setQueueFilter(this.value)" class="q-select">
-            <option value="all" id="opt-filter-all" data-i18n="q_filter_all">Tous (0)</option>
-            <option value="downloading" id="opt-filter-downloading" data-i18n="q_filter_downloading">📥 DL en cours (0)</option>
-            <option value="debriding" id="opt-filter-debriding" data-i18n="q_filter_debriding">☁️ Débridage cloud (0)</option>
-            <option value="failed" id="opt-filter-failed" data-i18n="q_filter_failed">❌ En échec (0)</option>
-            <option value="completed" id="opt-filter-completed" data-i18n="q_filter_completed">✅ Terminés (0)</option>
-            <option value="paused" id="opt-filter-paused" data-i18n="q_filter_paused">⏸️ En pause (0)</option>
+          <select id="queue-filter-select" onchange="setQueueFilter(this.value)" oninput="setQueueFilter(this.value)" class="q-select">
+            <option value="all" id="opt-filter-all">Tous (0)</option>
+            <option value="downloading" id="opt-filter-downloading">📥 DL en cours (0)</option>
+            <option value="debriding" id="opt-filter-debriding">☁️ Débridage cloud (0)</option>
+            <option value="failed" id="opt-filter-failed">❌ En échec (0)</option>
+            <option value="completed" id="opt-filter-completed">✅ Terminés (0)</option>
+            <option value="paused" id="opt-filter-paused">⏸️ En pause (0)</option>
           </select>
         </div>
 
         <div class="q-control-item">
           <label for="queue-group-select" data-i18n="q_group_by">Grouper :</label>
-          <select id="queue-group-select" onchange="setQueueGrouping(this.value)" class="q-select">
+          <select id="queue-group-select" onchange="setQueueGrouping(this.value)" oninput="setQueueGrouping(this.value)" class="q-select">
             <option value="status" data-i18n="q_group_status" selected>Par Statut / Type</option>
             <option value="category" data-i18n="q_group_category">Par Catégorie</option>
             <option value="mode" data-i18n="q_group_mode">Par Mode</option>
