@@ -242,6 +242,133 @@ body {
 .bulk-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .paths-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 
+/* Queue Controls Bar: Filters & Grouping */
+.queue-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--bg-subpanel);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+}
+.queue-filters-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.q-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.q-filter-btn:hover {
+  background: var(--btn-sec-hover);
+  border-color: var(--border-main);
+}
+.q-filter-btn.active {
+  background: var(--active-nav-text, #238636);
+  color: #ffffff !important;
+  border-color: var(--active-nav-text, #238636);
+  font-weight: 600;
+}
+.q-filter-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  font-weight: 700;
+}
+.q-filter-btn:not(.active) .q-filter-count {
+  background: var(--btn-sec-bg);
+  color: var(--text-muted);
+}
+.queue-grouping-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.q-select {
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-card);
+  color: var(--text-bright);
+  cursor: pointer;
+}
+.q-btn-compact {
+  padding: 5px 9px !important;
+  font-size: 11px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Queue Group Header Rows */
+.queue-group-row {
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg-subpanel) !important;
+  border-top: 1px solid var(--border-main);
+  border-bottom: 1px solid var(--border-main);
+  transition: background 0.15s ease;
+}
+.queue-group-row:hover {
+  background: var(--btn-sec-hover) !important;
+}
+.queue-group-cell {
+  padding: 10px 14px !important;
+}
+.queue-group-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.queue-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-bright);
+}
+.queue-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.queue-group-row.open .queue-chevron {
+  transform: rotate(90deg);
+}
+.queue-item-row.group-collapsed {
+  display: none !important;
+}
+.q-grp-sel-btn {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  border-radius: 4px !important;
+  background: var(--bg-card) !important;
+}
+
 /* Tables */
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 12px 10px; border-bottom: 1px solid var(--border-muted); text-align: left; font-size: 14px; }
@@ -592,6 +719,40 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   .paths-bar { flex-direction: column; align-items: stretch; }
   .paths-bar button { width: 100%; }
   .pbar { max-width: 100%; }
+
+  /* Queue Controls Mobile */
+  .queue-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .queue-filters-group {
+    width: 100%;
+  }
+  .q-filter-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 7px 8px;
+  }
+  .queue-grouping-tools {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .queue-group-row {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 14px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-main);
+    box-sizing: border-box;
+  }
+  .queue-group-cell {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    padding: 10px 12px !important;
+  }
 
   /* Queue Table Mobile Cards */
   #queue-table, #queue-table thead, #queue-table tbody, #queue-table th, #queue-table td, #queue-table tr {

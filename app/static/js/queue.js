@@ -112,22 +112,255 @@ function updateHeaderStatus(items, apiHealth) {
   }
 }
 
+let currentQueueFilter = 'all';
+let currentQueueGrouping = 'status';
+let collapsedGroupsSet = new Set();
+
+try {
+  const sf = localStorage.getItem('omnisym_queue_filter');
+  if (sf) currentQueueFilter = sf;
+  const sg = localStorage.getItem('omnisym_queue_grouping');
+  if (sg) currentQueueGrouping = sg;
+  const sc = localStorage.getItem('omnisym_collapsed_groups');
+  if (sc) collapsedGroupsSet = new Set(JSON.parse(sc));
+} catch (e) {}
+
+function saveCollapsedGroups() {
+  try {
+    localStorage.setItem('omnisym_collapsed_groups', JSON.stringify(Array.from(collapsedGroupsSet)));
+  } catch (e) {}
+}
+
+function getItemTypeGroup(item) {
+  const state = item.state || 'downloading';
+  const isDdl = Boolean(item.is_ddl);
+  const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
+
+  if (state === 'error') {
+    return 'failed';
+  }
+  if (state === 'pausedDL') {
+    return 'paused';
+  }
+  if (state === 'pausedUP' || state === 'stalledUP' || (Number(item.progress) >= 1.0 && (state === 'completed' || state === 'uploading'))) {
+    return 'completed';
+  }
+  // Débridage cloud (non débridé, recherche de pairs torrent sur le cloud AllDebrid, resolving)
+  if (!isDebrided || state === 'resolving' || (state === 'downloading' && !isDebrided)) {
+    return 'debriding';
+  }
+  // Téléchargement actif ou copie locale / attente rclone
+  if (state === 'downloading' || state === 'copying' || state === 'checkingDL' || state === 'queued') {
+    return 'downloading';
+  }
+  return 'other';
+}
+
+function setQueueFilter(filter) {
+  currentQueueFilter = filter;
+  try { localStorage.setItem('omnisym_queue_filter', filter); } catch (e) {}
+  document.querySelectorAll('.q-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  if (window.currentQueueItems) {
+    renderQueue(window.currentQueueItems);
+  }
+}
+
+function setQueueGrouping(grouping) {
+  currentQueueGrouping = grouping;
+  try { localStorage.setItem('omnisym_queue_grouping', grouping); } catch (e) {}
+  const sel = document.getElementById('queue-group-select');
+  if (sel && sel.value !== grouping) sel.value = grouping;
+  if (window.currentQueueItems) {
+    renderQueue(window.currentQueueItems);
+  }
+}
+
+function toggleQueueGroup(groupId) {
+  const header = document.querySelector(`.queue-group-row[data-group-id="${groupId}"]`);
+  const isCurrentlyOpen = header && header.classList.contains('open');
+  if (isCurrentlyOpen) {
+    if (header) header.classList.remove('open');
+    document.querySelectorAll(`.group-row-${groupId}`).forEach(el => el.classList.add('group-collapsed'));
+    collapsedGroupsSet.add(groupId);
+  } else {
+    if (header) header.classList.add('open');
+    document.querySelectorAll(`.group-row-${groupId}`).forEach(el => el.classList.remove('group-collapsed'));
+    collapsedGroupsSet.delete(groupId);
+  }
+  saveCollapsedGroups();
+  updateSelection();
+}
+
+function toggleSelectGroup(groupId) {
+  const rows = document.querySelectorAll(`.group-row-${groupId} .row-chk`);
+  if (!rows.length) return;
+  const anyUnchecked = Array.from(rows).some(r => !r.checked);
+  rows.forEach(r => r.checked = anyUnchecked);
+  updateSelection();
+}
+
+function expandAllQueueGroups() {
+  collapsedGroupsSet.clear();
+  saveCollapsedGroups();
+  document.querySelectorAll('.queue-group-row').forEach(el => el.classList.add('open'));
+  document.querySelectorAll('.queue-item-row').forEach(el => el.classList.remove('group-collapsed'));
+}
+
+function collapseAllQueueGroups() {
+  const groupRows = document.querySelectorAll('.queue-group-row');
+  groupRows.forEach(el => {
+    el.classList.remove('open');
+    const gid = el.dataset.groupId;
+    if (gid) collapsedGroupsSet.add(gid);
+  });
+  saveCollapsedGroups();
+  document.querySelectorAll('.queue-item-row').forEach(el => el.classList.add('group-collapsed'));
+}
+
+function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass = 'tag') {
+  const isCollapsed = collapsedGroupsSet.has(groupId);
+  const openClass = isCollapsed ? '' : 'open';
+  return `<tr class="queue-group-row ${openClass}" onclick="toggleQueueGroup('${groupId}')" data-group-id="${groupId}">
+    <td colspan="6" class="queue-group-cell">
+      <div class="queue-group-header-content">
+        <div class="queue-group-title">
+          <span class="queue-chevron">▶</span>
+          <span>${groupIcon}</span>
+          <span class="queue-group-label">${esc(groupTitle)}</span>
+          <span class="badge ${badgeClass}">${count}</span>
+        </div>
+        <div class="queue-group-tools" onclick="event.stopPropagation()">
+          <button type="button" class="btn-sec q-grp-sel-btn" onclick="toggleSelectGroup('${groupId}')" title="${esc(t('select_all') || 'Sélectionner ce groupe')}">
+            ☑️
+          </button>
+        </div>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function renderQueueRow(item, checkedSet, groupId = '') {
+  const pct = Math.round((Number(item.progress) || 0) * 100);
+  const state = item.state || 'downloading';
+  const isDl = item.transfer_mode === 'download';
+  const isDdl = Boolean(item.is_ddl);
+  const modeBadge = isDdl
+    ? `<span class="tag dl" style="background:#8957e5;color:#fff;">${esc(t('tag_ddl') || 'DDL')}</span>`
+    : (isDl
+      ? `<span class="tag dl">${esc(t('tag_dl'))}</span>`
+      : `<span class="tag sym">${esc(t('tag_sym'))}</span>`);
+
+  const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
+  const isCached = Boolean(item.debrid_cached);
+  let debridBadge = '';
+  if (isDebrided) {
+    if (isCached) {
+      debridBadge = `<span class="tag debrid-cache" title="${esc(t('tip_debrided_cache'))}">⚡ ${esc(t('tag_debrided_cache'))}</span>`;
+    } else {
+      debridBadge = `<span class="tag debrid-ready" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>`;
+    }
+  } else {
+    const seedersTxt = item.seeders ? ` • ${item.seeders} src` : '';
+    debridBadge = `<span class="tag debrid-pending" title="${esc(t('tip_debrided_pending'))}">⏳ ${esc(t('tag_debrided_pending'))}${seedersTxt}</span>`;
+  }
+
+  let badgeCls = 'run';
+  let stateTxt = pct > 0 ? `${esc(t('st_downloading'))} (${pct}%)` : `${esc(t('st_in_progress'))}`;
+
+  if (state === 'pausedUP' || state === 'stalledUP') {
+    badgeCls = 'ok';
+    stateTxt = `${esc(t('st_completed'))} (${pct}%)`;
+  } else if (state === 'pausedDL') {
+    badgeCls = 'pause';
+    stateTxt = `${esc(t('st_paused'))} (${pct}%)`;
+  } else if (state === 'error') {
+    badgeCls = 'err';
+    stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
+  } else if (state === 'resolving') {
+    badgeCls = 'run';
+    stateTxt = `${esc(t('st_in_progress'))}`;
+  } else if (state === 'queued') {
+    badgeCls = 'pause';
+    stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
+  } else if (state === 'checkingDL') {
+    badgeCls = 'run';
+    stateTxt = `${esc(t('st_rclone_wait'))} (${pct}%)`;
+  } else if (state === 'copying') {
+    badgeCls = 'run';
+    stateTxt = `${esc(t('st_copying'))} (${pct}%)`;
+    if (item.dlspeed && item.dlspeed > 0) {
+      stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
+    }
+  } else if (state === 'downloading' && !isDebrided) {
+    badgeCls = 'run';
+    stateTxt = `${esc(t('st_cloud_dl'))} (${pct}%)`;
+    if (item.seeders && item.seeders > 0) {
+      stateTxt += ` • ${item.seeders} sources`;
+    }
+  } else if (isDl && item.dlspeed && item.dlspeed > 0) {
+    stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
+  }
+
+  const fullId = esc(item.hash);
+  const shortId = esc(String(item.hash).slice(0, 8));
+  const adId = isDdl ? 'DDL' : esc(item.ad_id);
+  const isChecked = checkedSet.has(item.hash) ? 'checked' : '';
+  const pauseBtn = state === 'pausedDL'
+    ? `<button class="btn-sec" onclick="batchAction('resume', ['${fullId}'])">${esc(t('btn_resume'))}</button>`
+    : `<button class="btn-warn" onclick="batchAction('pause', ['${fullId}'])">${esc(t('btn_pause'))}</button>`;
+
+  const retryBtn = state === 'error'
+    ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
+    : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
+
+  const groupClass = groupId ? `group-row-${groupId}` : '';
+  const isCollapsed = groupId && collapsedGroupsSet.has(groupId);
+  const collapsedClass = isCollapsed ? 'group-collapsed' : '';
+
+  return `<tr class="queue-item-row ${groupClass} ${collapsedClass}" data-hash="${fullId}" data-group-id="${groupId}">
+    <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
+    <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
+    <td class="col-name">${esc(item.name)}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
+    <td class="col-cat"><span class="tag">${esc(item.category)}</span> ${modeBadge}</td>
+    <td class="col-status">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+        <span class="badge ${badgeCls}">${stateTxt}</span>
+        ${debridBadge}
+      </div>
+      <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
+    </td>
+    <td class="actions col-actions">
+      ${retryBtn}
+      ${pauseBtn}
+      <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>
+    </td>
+  </tr>`;
+}
+
 function getSelectedHashes() {
   return Array.from(document.querySelectorAll('.row-chk:checked')).map(c => c.value);
 }
 
 function updateSelection() {
   const selected = getSelectedHashes();
-  const total = document.querySelectorAll('.row-chk').length;
-  document.getElementById('sel-count').textContent = t('sel_count', { n: selected.length });
-  document.getElementById('bulk-retry').disabled = selected.length === 0;
-  document.getElementById('bulk-pause').disabled = selected.length === 0;
-  document.getElementById('bulk-del').disabled = selected.length === 0;
-  document.getElementById('chk-all').checked = total > 0 && selected.length === total;
+  const visibleChks = document.querySelectorAll('.queue-item-row:not(.group-collapsed) .row-chk');
+  const total = visibleChks.length;
+  const selEl = document.getElementById('sel-count');
+  if (selEl) selEl.textContent = t('sel_count', { n: selected.length });
+  const bulkRetry = document.getElementById('bulk-retry');
+  if (bulkRetry) bulkRetry.disabled = selected.length === 0;
+  const bulkPause = document.getElementById('bulk-pause');
+  if (bulkPause) bulkPause.disabled = selected.length === 0;
+  const bulkDel = document.getElementById('bulk-del');
+  if (bulkDel) bulkDel.disabled = selected.length === 0;
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) chkAll.checked = total > 0 && Array.from(visibleChks).every(c => c.checked);
 }
 
 function toggleAll(master) {
-  document.querySelectorAll('.row-chk').forEach(c => c.checked = master.checked);
+  document.querySelectorAll('.queue-item-row:not(.group-collapsed) .row-chk').forEach(c => c.checked = master.checked);
   updateSelection();
 }
 
@@ -170,105 +403,123 @@ function renderQueue(items) {
   const tbody = document.getElementById('queue-tbody');
   const checkedSet = new Set(getSelectedHashes());
 
+  // Mise à jour de l'état actif des boutons de filtres
+  document.querySelectorAll('.q-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === currentQueueFilter);
+  });
+  const groupSelect = document.getElementById('queue-group-select');
+  if (groupSelect && groupSelect.value !== currentQueueGrouping) {
+    groupSelect.value = currentQueueGrouping;
+  }
+
+  // Calcul dynamique des compteurs de chaque statut
+  const counts = {
+    all: (items || []).length,
+    downloading: 0,
+    debriding: 0,
+    failed: 0,
+    completed: 0,
+    paused: 0,
+  };
+  if (items && items.length > 0) {
+    for (const it of items) {
+      const grp = getItemTypeGroup(it);
+      if (counts[grp] !== undefined) counts[grp]++;
+    }
+  }
+  for (const k of Object.keys(counts)) {
+    const el = document.getElementById('q-cnt-' + k);
+    if (el) el.textContent = counts[k];
+  }
+
   if (!items || items.length === 0) {
     tbody.innerHTML = `<tr><td colspan='6' style='color:#8b949e;text-align:center'>${esc(t('no_torrents'))}</td></tr>`;
     updateSelection();
     return;
   }
 
-  tbody.innerHTML = items.map(item => {
-    const pct = Math.round((Number(item.progress) || 0) * 100);
-    const state = item.state || 'downloading';
-    const isDl = item.transfer_mode === 'download';
-    const isDdl = Boolean(item.is_ddl);
-    const modeBadge = isDdl
-      ? `<span class="tag dl" style="background:#8957e5;color:#fff;">${esc(t('tag_ddl') || 'DDL')}</span>`
-      : (isDl
-        ? `<span class="tag dl">${esc(t('tag_dl'))}</span>`
-        : `<span class="tag sym">${esc(t('tag_sym'))}</span>`);
+  // Filtrage selon le filtre actif
+  let filteredItems = items;
+  if (currentQueueFilter && currentQueueFilter !== 'all') {
+    filteredItems = items.filter(it => getItemTypeGroup(it) === currentQueueFilter);
+  }
 
-    const isDebrided = Boolean(item.is_debrided || state === 'copying' || state === 'checkingDL' || state === 'pausedUP' || state === 'stalledUP' || isDdl);
-    const isCached = Boolean(item.debrid_cached);
-    let debridBadge = '';
-    if (isDebrided) {
-      if (isCached) {
-        debridBadge = `<span class="tag debrid-cache" title="${esc(t('tip_debrided_cache'))}">⚡ ${esc(t('tag_debrided_cache'))}</span>`;
+  if (filteredItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan='6' style='color:#8b949e;text-align:center'>${esc(t('q_no_filtered_torrents') || 'Aucun élément ne correspond au filtre sélectionné')}</td></tr>`;
+    updateSelection();
+    return;
+  }
+
+  // Rendu selon le mode de regroupement sélectionné
+  if (currentQueueGrouping === 'none') {
+    tbody.innerHTML = filteredItems.map(it => renderQueueRow(it, checkedSet, '')).join('');
+  } else if (currentQueueGrouping === 'category') {
+    const catMap = new Map();
+    for (const it of filteredItems) {
+      const cat = (it.category || 'default').trim();
+      if (!catMap.has(cat)) catMap.set(cat, []);
+      catMap.get(cat).push(it);
+    }
+    let html = '';
+    for (const [cat, catItems] of catMap.entries()) {
+      const gId = 'cat_' + cat.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const gTitle = `${t('q_grp_cat_prefix') || 'Catégorie :'} ${cat}`;
+      html += renderGroupHeaderRow(gId, '📁', gTitle, catItems.length, 'run');
+      html += catItems.map(it => renderQueueRow(it, checkedSet, gId)).join('');
+    }
+    tbody.innerHTML = html;
+  } else if (currentQueueGrouping === 'mode') {
+    const modeMap = {
+      symlink: { icon: '⚡', title: t('q_grp_mode_symlink') || 'Mode Symlink (Instantané)', items: [] },
+      download: { icon: '📥', title: t('q_grp_mode_download') || 'Mode Téléchargement réel (Local)', items: [] },
+      ddl: { icon: '🔗', title: t('q_grp_mode_ddl') || 'Téléchargement Direct (DDL)', items: [] },
+    };
+    for (const it of filteredItems) {
+      const m = it.is_ddl ? 'ddl' : (it.transfer_mode === 'download' ? 'download' : 'symlink');
+      if (modeMap[m]) modeMap[m].items.push(it);
+    }
+    let html = '';
+    for (const [mKey, mData] of Object.entries(modeMap)) {
+      if (mData.items.length === 0) continue;
+      const gId = 'mode_' + mKey;
+      html += renderGroupHeaderRow(gId, mData.icon, mData.title, mData.items.length, 'run');
+      html += mData.items.map(it => renderQueueRow(it, checkedSet, gId)).join('');
+    }
+    tbody.innerHTML = html;
+  } else {
+    // Mode par défaut : Par Statut / Type
+    const statusGroupsDef = [
+      { id: 'debriding', icon: '☁️', labelKey: 'q_grp_debriding', badgeCls: 'run', defaultLabel: 'Débridage cloud en cours' },
+      { id: 'downloading', icon: '📥', labelKey: 'q_grp_downloading', badgeCls: 'run', defaultLabel: 'Téléchargements / Transferts en cours' },
+      { id: 'failed', icon: '❌', labelKey: 'q_grp_failed', badgeCls: 'err', defaultLabel: 'En échec / Erreurs' },
+      { id: 'paused', icon: '⏸️', labelKey: 'q_grp_paused', badgeCls: 'pause', defaultLabel: 'En pause / En attente' },
+      { id: 'completed', icon: '✅', labelKey: 'q_grp_completed', badgeCls: 'ok', defaultLabel: 'Terminés' },
+      { id: 'other', icon: '📦', labelKey: 'q_grp_other', badgeCls: 'pause', defaultLabel: 'Autres' },
+    ];
+
+    const groupBuckets = {};
+    for (const def of statusGroupsDef) {
+      groupBuckets[def.id] = [];
+    }
+    for (const it of filteredItems) {
+      const grp = getItemTypeGroup(it);
+      if (groupBuckets[grp]) {
+        groupBuckets[grp].push(it);
       } else {
-        debridBadge = `<span class="tag debrid-ready" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>`;
+        groupBuckets.other.push(it);
       }
-    } else {
-      const seedersTxt = item.seeders ? ` • ${item.seeders} src` : '';
-      debridBadge = `<span class="tag debrid-pending" title="${esc(t('tip_debrided_pending'))}">⏳ ${esc(t('tag_debrided_pending'))}${seedersTxt}</span>`;
     }
 
-    let badgeCls = 'run';
-    let stateTxt = pct > 0 ? `${esc(t('st_downloading'))} (${pct}%)` : `${esc(t('st_in_progress'))}`;
-
-    if (state === 'pausedUP' || state === 'stalledUP') {
-      badgeCls = 'ok';
-      stateTxt = `${esc(t('st_completed'))} (${pct}%)`;
-    } else if (state === 'pausedDL') {
-      badgeCls = 'pause';
-      stateTxt = `${esc(t('st_paused'))} (${pct}%)`;
-    } else if (state === 'error') {
-      badgeCls = 'err';
-      stateTxt = `${esc(t('st_error'))} — ${esc(item.error_msg)}`;
-    } else if (state === 'resolving') {
-      badgeCls = 'run';
-      stateTxt = `${esc(t('st_in_progress'))}`;
-    } else if (state === 'queued') {
-      badgeCls = 'pause';
-      stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
-    } else if (state === 'checkingDL') {
-      badgeCls = 'run';
-      stateTxt = `${esc(t('st_rclone_wait'))} (${pct}%)`;
-    } else if (state === 'copying') {
-      badgeCls = 'run';
-      stateTxt = `${esc(t('st_copying'))} (${pct}%)`;
-      if (item.dlspeed && item.dlspeed > 0) {
-        stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
-      }
-    } else if (state === 'downloading' && !isDebrided) {
-      badgeCls = 'run';
-      stateTxt = `${esc(t('st_cloud_dl'))} (${pct}%)`;
-      if (item.seeders && item.seeders > 0) {
-        stateTxt += ` • ${item.seeders} sources`;
-      }
-    } else if (isDl && item.dlspeed && item.dlspeed > 0) {
-      stateTxt += ` • ${formatSpeed(item.dlspeed)}`;
+    let html = '';
+    for (const def of statusGroupsDef) {
+      const list = groupBuckets[def.id] || [];
+      if (list.length === 0) continue;
+      const gTitle = t(def.labelKey) || def.defaultLabel;
+      html += renderGroupHeaderRow(def.id, def.icon, gTitle, list.length, def.badgeCls);
+      html += list.map(it => renderQueueRow(it, checkedSet, def.id)).join('');
     }
-
-    const fullId = esc(item.hash);
-    const shortId = esc(String(item.hash).slice(0, 8));
-    const adId = isDdl ? 'DDL' : esc(item.ad_id);
-    const isChecked = checkedSet.has(item.hash) ? 'checked' : '';
-    const pauseBtn = state === 'pausedDL'
-      ? `<button class="btn-sec" onclick="batchAction('resume', ['${fullId}'])">${esc(t('btn_resume'))}</button>`
-      : `<button class="btn-warn" onclick="batchAction('pause', ['${fullId}'])">${esc(t('btn_pause'))}</button>`;
-
-    const retryBtn = state === 'error'
-      ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
-      : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
-
-    return `<tr>
-      <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
-      <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
-      <td class="col-name">${esc(item.name)}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
-      <td class="col-cat"><span class="tag">${esc(item.category)}</span> ${modeBadge}</td>
-      <td class="col-status">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-          <span class="badge ${badgeCls}">${stateTxt}</span>
-          ${debridBadge}
-        </div>
-        <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
-      </td>
-      <td class="actions col-actions">
-        ${retryBtn}
-        ${pauseBtn}
-        <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>
-      </td>
-    </tr>`;
-  }).join('');
+    tbody.innerHTML = html;
+  }
 
   // Rendu dans le tableau dédié DDL
   const ddlTbody = document.getElementById('ddl-queue-tbody');

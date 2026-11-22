@@ -9,6 +9,21 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.8.0] — 2026-11-22
+
+### Ajouté
+- **Filtres rapides de statut & Compteurs dynamiques dans la file d'attente** :
+  - Barre de filtres interactive au-dessus de la file d'attente permettant de filtrer en un clic : **Tous**, **DL en cours (transferts locaux)**, **Débridage en cours (cloud Debrid)**, **En échec / Erreurs**, **Terminés** et **En pause**.
+  - Badges de comptage en temps réel sur chaque bouton de filtre mis à jour lors du polling en arrière-plan.
+- **Regroupement pliable / dépliable (Accordéons)** :
+  - Sections repliables avec chevrons animés et badges de quantité, regroupant les éléments par **Statut / Type** (par défaut), **Catégorie** ou **Mode de transfert**.
+  - Boutons d'action rapide **Tout déplier** et **Tout replier**.
+  - Bouton de sélection groupée en un clic (`☑️`) pour cocher ou décocher tous les éléments d'une section spécifique.
+  - Mémorisation de l'état plié/déplié dans `localStorage` pour persister lors des actualisations et rechargements.
+  - Mise en page mobile réactive adaptée convertissant les groupes et lignes en cartes tactiles lisibles.
+
+---
+
 ## [2.7.1] — 2026-11-22
 
 ### Corrigé
