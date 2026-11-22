@@ -12,15 +12,19 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.8.0] — 2026-11-22
 
 ### Ajouté
-- **Filtres rapides de statut & Compteurs dynamiques dans la file d'attente** :
-  - Barre de filtres interactive au-dessus de la file d'attente permettant de filtrer en un clic : **Tous**, **DL en cours (transferts locaux)**, **Débridage en cours (cloud Debrid)**, **En échec / Erreurs**, **Terminés** et **En pause**.
-  - Badges de comptage en temps réel sur chaque bouton de filtre mis à jour lors du polling en arrière-plan.
+- **Filtres de statut en menu déroulant compact** :
+  - Remplacement des boutons par un élégant menu déroulant compact (**Tous**, **DL en cours**, **Débridage cloud**, **En échec**, **Terminés**, **En pause**) avec mise à jour en direct des compteurs.
 - **Regroupement pliable / dépliable (Accordéons)** :
   - Sections repliables avec chevrons animés et badges de quantité, regroupant les éléments par **Statut / Type** (par défaut), **Catégorie** ou **Mode de transfert**.
   - Boutons d'action rapide **Tout déplier** et **Tout replier**.
   - Bouton de sélection groupée en un clic (`☑️`) pour cocher ou décocher tous les éléments d'une section spécifique.
   - Mémorisation de l'état plié/déplié dans `localStorage` pour persister lors des actualisations et rechargements.
   - Mise en page mobile réactive adaptée convertissant les groupes et lignes en cartes tactiles lisibles.
+
+### Corrigé
+- **Mise à jour en mémoire du dictionnaire d'état au démarrage** :
+  - Résolution d'un bug où `torrents_db` était réassigné lors de `load_state()`, brisant les références importées dans le worker et le routeur qBittorrent, faisant disparaître la file après un redémarrage du conteneur.
+  - Récupération et synchronisation réussies de l'ensemble des 105 téléchargements actifs avec Whisparr et AllDebrid.
 
 ---
 

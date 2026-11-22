@@ -104,38 +104,23 @@
       </div>
     </div>
 
-    <!-- Barre de Filtres Rapides & Regroupement Pliable/Dépliable -->
+    <!-- Barre de Filtres & Regroupement Pliable/Dépliable -->
     <div class="queue-controls-bar">
-      <div class="queue-filters-group">
-        <button type="button" class="q-filter-btn active" data-filter="all" onclick="setQueueFilter('all')">
-          <span data-i18n="q_filter_all">Tous</span>
-          <span class="q-filter-count" id="q-cnt-all">0</span>
-        </button>
-        <button type="button" class="q-filter-btn" data-filter="downloading" onclick="setQueueFilter('downloading')">
-          <span>📥</span> <span data-i18n="q_filter_downloading">DL en cours</span>
-          <span class="q-filter-count" id="q-cnt-downloading">0</span>
-        </button>
-        <button type="button" class="q-filter-btn" data-filter="debriding" onclick="setQueueFilter('debriding')">
-          <span>☁️</span> <span data-i18n="q_filter_debriding">Débridage</span>
-          <span class="q-filter-count" id="q-cnt-debriding">0</span>
-        </button>
-        <button type="button" class="q-filter-btn" data-filter="failed" onclick="setQueueFilter('failed')">
-          <span>❌</span> <span data-i18n="q_filter_failed">En échec</span>
-          <span class="q-filter-count" id="q-cnt-failed">0</span>
-        </button>
-        <button type="button" class="q-filter-btn" data-filter="completed" onclick="setQueueFilter('completed')">
-          <span>✅</span> <span data-i18n="q_filter_completed">Terminés</span>
-          <span class="q-filter-count" id="q-cnt-completed">0</span>
-        </button>
-        <button type="button" class="q-filter-btn" data-filter="paused" onclick="setQueueFilter('paused')">
-          <span>⏸️</span> <span data-i18n="q_filter_paused">En pause</span>
-          <span class="q-filter-count" id="q-cnt-paused">0</span>
-        </button>
-      </div>
+      <div class="queue-selects-group">
+        <div class="q-control-item">
+          <label for="queue-filter-select" data-i18n="q_filter_label">Filtrer :</label>
+          <select id="queue-filter-select" onchange="setQueueFilter(this.value)" class="q-select">
+            <option value="all" id="opt-filter-all" data-i18n="q_filter_all">Tous (0)</option>
+            <option value="downloading" id="opt-filter-downloading" data-i18n="q_filter_downloading">📥 DL en cours (0)</option>
+            <option value="debriding" id="opt-filter-debriding" data-i18n="q_filter_debriding">☁️ Débridage cloud (0)</option>
+            <option value="failed" id="opt-filter-failed" data-i18n="q_filter_failed">❌ En échec (0)</option>
+            <option value="completed" id="opt-filter-completed" data-i18n="q_filter_completed">✅ Terminés (0)</option>
+            <option value="paused" id="opt-filter-paused" data-i18n="q_filter_paused">⏸️ En pause (0)</option>
+          </select>
+        </div>
 
-      <div class="queue-grouping-tools">
-        <div style="display:inline-flex;align-items:center;gap:6px;">
-          <label for="queue-group-select" style="font-size:12px;color:var(--text-muted);font-weight:600;" data-i18n="q_group_by">Grouper :</label>
+        <div class="q-control-item">
+          <label for="queue-group-select" data-i18n="q_group_by">Grouper :</label>
           <select id="queue-group-select" onchange="setQueueGrouping(this.value)" class="q-select">
             <option value="status" data-i18n="q_group_status" selected>Par Statut / Type</option>
             <option value="category" data-i18n="q_group_category">Par Catégorie</option>
@@ -143,6 +128,9 @@
             <option value="none" data-i18n="q_group_none">Liste plate</option>
           </select>
         </div>
+      </div>
+
+      <div class="queue-grouping-tools">
         <button type="button" class="btn-sec q-btn-compact" id="btn-q-expand-all" onclick="expandAllQueueGroups()" title="Tout déplier" data-i18n-title="q_expand_all">
           <span>📂</span> <span data-i18n="q_expand_all">Tout déplier</span>
         </button>

@@ -130,6 +130,7 @@ const TRANSLATIONS = {
     st_downloading: "Téléchargement",
 
     // Queue Filters & Groups
+    q_filter_label: "Filtrer :",
     q_filter_all: "Tous",
     q_filter_downloading: "DL en cours",
     q_filter_debriding: "Débridage en cours",
@@ -551,6 +552,7 @@ const TRANSLATIONS = {
     st_downloading: "Downloading",
 
     // Queue Filters & Groups
+    q_filter_label: "Filter:",
     q_filter_all: "All",
     q_filter_downloading: "Downloading",
     q_filter_debriding: "Debriding",

@@ -114,7 +114,8 @@ def load_state() -> None:
                     settings_db["max_concurrent_downloads"] = max(1, int(settings_db["max_concurrent_downloads"]))
                 except Exception:
                     settings_db["max_concurrent_downloads"] = 3
-            torrents_db = data.get("torrents", {})
+            torrents_db.clear()
+            torrents_db.update(data.get("torrents", {}))
             logger.info(f"État chargé : {len(torrents_db)} torrent(s), {len(get_services_config())} service(s) configuré(s).")
         except Exception as exc:
             logger.error(f"Impossible de lire {STATE_FILE} : {exc}")

@@ -159,9 +159,8 @@ function getItemTypeGroup(item) {
 function setQueueFilter(filter) {
   currentQueueFilter = filter;
   try { localStorage.setItem('omnisym_queue_filter', filter); } catch (e) {}
-  document.querySelectorAll('.q-filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.filter === filter);
-  });
+  const sel = document.getElementById('queue-filter-select');
+  if (sel && sel.value !== filter) sel.value = filter;
   if (window.currentQueueItems) {
     renderQueue(window.currentQueueItems);
   }
@@ -403,10 +402,10 @@ function renderQueue(items) {
   const tbody = document.getElementById('queue-tbody');
   const checkedSet = new Set(getSelectedHashes());
 
-  // Mise à jour de l'état actif des boutons de filtres
-  document.querySelectorAll('.q-filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.filter === currentQueueFilter);
-  });
+  const filterSelect = document.getElementById('queue-filter-select');
+  if (filterSelect && filterSelect.value !== currentQueueFilter) {
+    filterSelect.value = currentQueueFilter;
+  }
   const groupSelect = document.getElementById('queue-group-select');
   if (groupSelect && groupSelect.value !== currentQueueGrouping) {
     groupSelect.value = currentQueueGrouping;
@@ -427,10 +426,20 @@ function renderQueue(items) {
       if (counts[grp] !== undefined) counts[grp]++;
     }
   }
-  for (const k of Object.keys(counts)) {
-    const el = document.getElementById('q-cnt-' + k);
-    if (el) el.textContent = counts[k];
-  }
+
+  // Mise à jour des options du menu déroulant avec les compteurs
+  const optAll = document.getElementById('opt-filter-all');
+  if (optAll) optAll.textContent = `${t('q_filter_all') || 'Tous'} (${counts.all})`;
+  const optDl = document.getElementById('opt-filter-downloading');
+  if (optDl) optDl.textContent = `📥 ${t('q_filter_downloading') || 'DL en cours'} (${counts.downloading})`;
+  const optDeb = document.getElementById('opt-filter-debriding');
+  if (optDeb) optDeb.textContent = `☁️ ${t('q_filter_debriding') || 'Débridage cloud'} (${counts.debriding})`;
+  const optFail = document.getElementById('opt-filter-failed');
+  if (optFail) optFail.textContent = `❌ ${t('q_filter_failed') || 'En échec'} (${counts.failed})`;
+  const optComp = document.getElementById('opt-filter-completed');
+  if (optComp) optComp.textContent = `✅ ${t('q_filter_completed') || 'Terminés'} (${counts.completed})`;
+  const optPause = document.getElementById('opt-filter-paused');
+  if (optPause) optPause.textContent = `⏸️ ${t('q_filter_paused') || 'En pause'} (${counts.paused})`;
 
   if (!items || items.length === 0) {
     tbody.innerHTML = `<tr><td colspan='6' style='color:#8b949e;text-align:center'>${esc(t('no_torrents'))}</td></tr>`;

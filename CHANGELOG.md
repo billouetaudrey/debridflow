@@ -12,15 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.8.0] — 2026-11-22
 
 ### Added
-- **Queue Status Filters & Dynamic Counters**:
-  - Interactive filter bar above the queue table allowing instant filtering: **All**, **Downloading (Local DL / Transfer)**, **Debriding (Cloud Debrid in progress)**, **Failed & Errors**, **Completed**, and **Paused**.
-  - Dynamic count badges on each filter button updated live with background polling.
+- **Queue Status Filters in Sleek Dropdown**:
+  - Replaced bulky buttons with an elegant, compact dropdown filter menu (**All**, **Downloading**, **Debriding in progress**, **Failed & Errors**, **Completed**, and **Paused**) with real-time counter badges.
 - **Collapsible & Expandable Groups (Accordions)**:
   - Foldable sections with animated chevrons and counter badges, grouping items by **Status / Type** (default), **Category**, or **Transfer Mode**.
   - Quick action buttons to **Expand All** and **Collapse All**.
   - One-click group selection button (`☑️`) to select or deselect all items within a specific group.
   - Persistent fold/unfold states across page reloads and polling cycles stored in `localStorage`.
   - Fully responsive mobile layout transforming groups and rows into clean touch-friendly cards.
+
+### Fixed
+- **State Dictionary In-Place Mutation on Startup**:
+  - Fixed an issue where `torrents_db` was reassigned upon `load_state()`, breaking imported dictionary references in worker and router modules, causing downloads to disappear after container restart.
+  - Successfully recovered and synchronized active cloud downloads with Whisparr and AllDebrid.
 
 ---
 
