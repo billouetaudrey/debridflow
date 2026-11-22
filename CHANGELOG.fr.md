@@ -9,6 +9,33 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.9.0] — 2026-11-22
+
+### Ajouté
+- **Affichage des débits en direct (par débridage et global)** :
+  - **Débit individuel par débridage** : affichage d'un badge de débit en temps réel directement à côté de la catégorie (`☁️ X.X Mo/s` pour le débridage cloud chez AllDebrid, `📥 Y.Y Mo/s` pour le téléchargement local vers le disque).
+  - **Débit global cumulé par catégorie & groupe** : affichage du débit cumulé en temps réel dans chaque en-tête de catégorie pliable (`📁 Catégorie : tv-whisparr [41] [⚡ 75.9 Ko/s]`) et par statut.
+  - **Indicateurs globaux de bande passante** : deux compteurs dynamiques dans la barre d'outils affichant le débit global de débridage cloud AllDebrid et le débit de téléchargement local.
+  - **Transmission du débit aux applications *Arr** : transmission en direct de la vitesse instantanée dans l'API qBittorrent pour un suivi du débit dans Radarr, Sonarr et Whisparr.
+- **Bouton de synchronisation forcée (Arr / Débrideur)** :
+  - Ajout du bouton `🔄 Rafraîchir (Arr / Débrideur)` dans la barre d'outils de la file d'attente.
+  - Interrogation immédiate du fournisseur Debrid pour tous les torrents actifs sans attendre le cycle du worker.
+  - Déclenchement automatique de la commande `RefreshMonitoredDownloads` vers les API Radarr, Sonarr et Whisparr pour forcer l'analyse immédiate des téléchargements terminés.
+- **Support complet de Whisparr dans les paramètres Arr** :
+  - Champs dédiés pour l'URL et la clé API Whisparr dans la section intégration Arr.
+
+### Modifié
+- **Séparation stricte entre « DL en cours » et « Débridage en cours »** :
+  - Les éléments en cours de débridage ou en attente chez le fournisseur (`is_debrided: false`) sont désormais strictement isolés dans le statut et le filtre « Débridage cloud », même si leur mode de transfert cible est configuré sur « Téléchargement ».
+  - Le filtre « DL en cours » n'inclut dorénavant que les éléments déjà débridés en cours de téléchargement local ou de transfert actif.
+
+### Corrigé
+- **Persistance du repliage des groupes lors du rafraîchissement automatique** :
+  - Suppression de la condition qui forçait la réouverture intempestive des accordéons repliés lors du polling périodique de 2 secondes.
+  - Les groupes repliés par l'utilisateur restent désormais strictement repliés en toute circonstance.
+
+---
+
 ## [2.8.0] — 2026-11-22
 
 ### Ajouté

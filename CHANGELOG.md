@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.0] — 2026-11-22
+
+### Added
+- **Real-Time Speed Metrics (Per-Debrid Item & Global Totals)**:
+  - **Individual Debrid Speed Badge**: displays real-time speed badges directly beside the category tag (`☁️ X.X MB/s` for cloud debriding on AllDebrid, `📥 Y.Y MB/s` for local disk downloads).
+  - **Cumulative Speed per Category & Group**: displays live aggregate speed inside each collapsible category header (`📁 Category: tv-whisparr [41] [⚡ 75.9 KB/s]`) and status group.
+  - **Global Bandwidth Indicators**: dual real-time indicators in the toolbar tracking total AllDebrid cloud debrid bandwidth and total local download throughput.
+  - **Live Speed Forwarding to *Arr Suite**: real-time download speeds are now reported via the qBittorrent API router to Radarr, Sonarr, and Whisparr.
+- **Force Refresh Button (Arr / Debrid)**:
+  - Added dedicated `🔄 Refresh (Arr / Debrid)` button in the queue toolbar.
+  - Triggers immediate status queries to the Debrid provider for all active torrents without waiting for the background worker polling interval.
+  - Automatically sends `RefreshMonitoredDownloads` commands to configured Radarr, Sonarr, and Whisparr instances for immediate completed-download import scans.
+- **Full Whisparr Integration in Settings**:
+  - Added dedicated Whisparr URL and API key fields in the settings *Arr integration section.
+
+### Changed
+- **Strict Separation Between "Downloading" and "Debriding in Progress"**:
+  - Torrents still undergoing cloud debrid conversion or BitTorrent caching on provider servers (`is_debrided: false`) are strictly confined to the "Debriding" status and filter, regardless of their configured destination mode.
+  - The "Downloading" filter now exclusively contains already-debrided items undergoing active local disk download or transfer.
+
+### Fixed
+- **Persistent Group Collapsing During Automatic Polling**:
+  - Resolved an issue where collapsed accordion groups automatically re-expanded every 2 seconds during the background UI polling cycle.
+  - Group collapse state is now strictly preserved in `localStorage` and maintained across re-renders.
+
+---
+
 ## [2.8.0] — 2026-11-22
 
 ### Added
