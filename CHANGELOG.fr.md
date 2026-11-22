@@ -12,6 +12,10 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.9.0] — 2026-11-22
 
 ### Ajouté
+- **Menu déroulant de tri pour mobile & desktop** :
+  - Intégration d'un sélecteur déroulant `Trier :` dans la barre de contrôle de la file d'attente (Statut & Vitesse, Vitesse +/- rapide, Nom A-Z / Z-A, ID +/- récent, Catégorie A-Z / Z-A).
+  - Offre un contrôle de tri complet et tactile sur smartphone où les en-têtes de colonnes du tableau sont masqués au profit des cartes responsives.
+  - Synchronisation bidirectionnelle automatique et persistante entre le menu déroulant et les clics sur les colonnes en mode bureau.
 - **Tri interactif des colonnes au clic (ID, Nom, Catégorie, Vitesse, Statut)** :
   - En-têtes de tableau cliquables avec indicateurs d'ordre actifs (`▲` croissant / `▼` décroissant) et basculement en un clic.
   - Tri multi-critères : par **Statut** (avec progression), par **Vitesse / Débit** (du plus rapide au plus lent), par **Nom** (alphabétique A-Z / Z-A), par **ID** (numérique AllDebrid / hash) et par **Service / Catégorie**.
@@ -35,6 +39,8 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - Le filtre « DL en cours » n'inclut dorénavant que les éléments déjà débridés en cours de téléchargement local ou de transfert actif.
 
 ### Corrigé
+- **Alignement typographique et saut de ligne des libellés (`Filtrer :`, `Grouper :`, `Trier :`)** :
+  - Empêchement du renvoi à la ligne intempestif des deux-points (`:`) sur smartphone et petits écrans grâce à l'utilisation d'espaces insécables (`&nbsp;` / `\u00A0`) et de styles CSS stricts (`white-space: nowrap`, `flex-shrink: 0`).
 - **Persistance du repliage des groupes lors du rafraîchissement automatique** :
   - Suppression de la condition qui forçait la réouverture intempestive des accordéons repliés lors du polling périodique de 2 secondes.
   - Les groupes repliés par l'utilisateur restent désormais strictement repliés en toute circonstance.

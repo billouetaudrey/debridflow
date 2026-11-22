@@ -175,8 +175,42 @@ function setQueueSort(field) {
     localStorage.setItem('omnisym_queue_sort_order', currentQueueSortOrder);
   } catch (e) {}
   updateSortHeaderIcons();
+  updateSortSelect();
   if (window.currentQueueItems) {
     renderQueue(window.currentQueueItems);
+  }
+}
+
+function onSortSelectChange(val) {
+  if (!val) return;
+  const parts = val.split('_');
+  const field = parts[0];
+  const order = parts[1] || 'desc';
+  if (!VALID_SORT_FIELDS.has(field)) return;
+  currentQueueSortField = field;
+  currentQueueSortOrder = (order === 'asc' || order === 'desc') ? order : 'desc';
+  try {
+    localStorage.setItem('omnisym_queue_sort_field', currentQueueSortField);
+    localStorage.setItem('omnisym_queue_sort_order', currentQueueSortOrder);
+  } catch (e) {}
+  updateSortHeaderIcons();
+  updateSortSelect();
+  if (window.currentQueueItems) {
+    renderQueue(window.currentQueueItems);
+  }
+}
+
+function updateSortSelect() {
+  const sel = document.getElementById('queue-sort-select');
+  if (!sel) return;
+  let targetField = currentQueueSortField;
+  if (targetField === 'added') targetField = 'id';
+  const val = `${targetField}_${currentQueueSortOrder}`;
+  if (sel.value !== val) {
+    const opt = sel.querySelector(`option[value="${val}"]`);
+    if (opt) {
+      sel.value = val;
+    }
   }
 }
 
@@ -606,6 +640,7 @@ function renderQueue(items) {
   const checkedSet = new Set(getSelectedHashes());
 
   updateSortHeaderIcons();
+  updateSortSelect();
 
   const filterSelect = document.getElementById('queue-filter-select');
   if (filterSelect && document.activeElement !== filterSelect && filterSelect.value !== currentQueueFilter) {

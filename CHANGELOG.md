@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.9.0] — 2026-11-22
 
 ### Added
+- **Mobile & Desktop Sort Dropdown Menu**:
+  - Added dedicated `Sort:` select menu in the queue controls bar (Status & Speed, Speed fastest/slowest, Name A-Z / Z-A, ID newest/oldest, Category A-Z / Z-A).
+  - Enables full sorting capability on mobile/touch screens where table column headers are hidden in favor of responsive cards.
+  - Automatically and bidirectionally synchronized with desktop column header clicks and persisted in `localStorage`.
 - **Interactive Click-to-Sort Table Headers (ID, Name, Category, Speed, Status)**:
   - Clickable column headers with active sort direction indicators (`▲` ascending / `▼` descending) and one-click toggle.
   - Multi-criteria sorting: by **Status** (combined with progress), by **Speed / Rate** (highest throughput first), by **Name** (alphabetical A-Z / Z-A), by **ID** (AllDebrid numeric / hash), and by **Service / Category**.
@@ -35,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The "Downloading" filter now exclusively contains already-debrided items undergoing active local disk download or transfer.
 
 ### Fixed
+- **Label Typography and Colon Line-Wrapping (`Filter:`, `Group:`, `Sort:`)**:
+  - Fixed unwanted colon line-breaks on narrow mobile screens using non-breaking spaces and strict CSS rules (`white-space: nowrap`, `flex-shrink: 0`).
 - **Persistent Group Collapsing During Automatic Polling**:
   - Resolved an issue where collapsed accordion groups automatically re-expanded every 2 seconds during the background UI polling cycle.
   - Group collapse state is now strictly preserved in `localStorage` and maintained across re-renders.

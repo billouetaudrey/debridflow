@@ -265,11 +265,14 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 .q-control-item label {
   font-size: 12px;
   color: var(--text-muted);
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .q-select {
   padding: 6px 10px;
@@ -719,10 +722,25 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   .q-control-item {
     width: 100%;
     justify-content: space-between;
+    white-space: nowrap;
+  }
+  .q-control-item label {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .q-control-item .q-select {
     flex: 1;
     max-width: 65%;
+  }
+  .global-speed-indicator {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .global-speed-pill {
+    flex: 1 1 auto;
+    justify-content: center;
+    white-space: nowrap;
   }
   .queue-grouping-tools {
     width: 100%;

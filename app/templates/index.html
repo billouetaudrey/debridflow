@@ -104,11 +104,11 @@
       </div>
     </div>
 
-    <!-- Barre de Filtres & Regroupement Pliable/Dépliable -->
+    <!-- Barre de Filtres & Regroupement Pliable/Dépliable & Tri -->
     <div class="queue-controls-bar">
       <div class="queue-selects-group">
         <div class="q-control-item">
-          <label for="queue-filter-select" data-i18n="q_filter_label">Filtrer :</label>
+          <label for="queue-filter-select" data-i18n="q_filter_label">Filtrer&nbsp;:</label>
           <select id="queue-filter-select" onchange="setQueueFilter(this.value)" oninput="setQueueFilter(this.value)" class="q-select">
             <option value="all" id="opt-filter-all">Tous (0)</option>
             <option value="downloading" id="opt-filter-downloading">📥 DL en cours (0)</option>
@@ -120,7 +120,7 @@
         </div>
 
         <div class="q-control-item">
-          <label for="queue-group-select" data-i18n="q_group_by">Grouper :</label>
+          <label for="queue-group-select" data-i18n="q_group_by">Grouper&nbsp;:</label>
           <select id="queue-group-select" onchange="setQueueGrouping(this.value)" oninput="setQueueGrouping(this.value)" class="q-select">
             <option value="status" data-i18n="q_group_status" selected>Par Statut / Type</option>
             <option value="category" data-i18n="q_group_category">Par Catégorie</option>
@@ -128,14 +128,29 @@
             <option value="none" data-i18n="q_group_none">Liste plate</option>
           </select>
         </div>
+
+        <div class="q-control-item">
+          <label for="queue-sort-select" data-i18n="q_sort_label">Trier&nbsp;:</label>
+          <select id="queue-sort-select" onchange="onSortSelectChange(this.value)" oninput="onSortSelectChange(this.value)" class="q-select">
+            <option value="status_desc" data-i18n="opt_sort_status_desc">⚡ Statut &amp; Vitesse</option>
+            <option value="speed_desc" data-i18n="opt_sort_speed_desc">⚡ Vitesse (du + rapide)</option>
+            <option value="speed_asc" data-i18n="opt_sort_speed_asc">⚡ Vitesse (du + lent)</option>
+            <option value="name_asc" data-i18n="opt_sort_name_asc">🔤 Nom (A &rarr; Z)</option>
+            <option value="name_desc" data-i18n="opt_sort_name_desc">🔤 Nom (Z &rarr; A)</option>
+            <option value="id_desc" data-i18n="opt_sort_id_desc">🔢 ID (Plus récent)</option>
+            <option value="id_asc" data-i18n="opt_sort_id_asc">🔢 ID (Plus ancien)</option>
+            <option value="category_asc" data-i18n="opt_sort_cat_asc">📁 Catégorie (A &rarr; Z)</option>
+            <option value="category_desc" data-i18n="opt_sort_cat_desc">📁 Catégorie (Z &rarr; A)</option>
+          </select>
+        </div>
       </div>
 
       <div id="queue-global-speeds" class="global-speed-indicator">
         <span class="global-speed-pill cloud" id="pill-global-cloud" title="Débit global de débridage cloud AllDebrid" data-i18n-title="tip_global_cloud_speed">
-          ☁️ <span data-i18n="lbl_cloud_speed">Débridage :</span> <strong id="global-cloud-speed-val">0 Mo/s</strong>
+          ☁️ <span data-i18n="lbl_cloud_speed">Débridage&nbsp;:</span> <strong id="global-cloud-speed-val">0 Mo/s</strong>
         </span>
         <span class="global-speed-pill local" id="pill-global-local" title="Débit global de téléchargement local" data-i18n-title="tip_global_local_speed">
-          📥 <span data-i18n="lbl_local_speed">DL Local :</span> <strong id="global-local-speed-val">0 Mo/s</strong>
+          📥 <span data-i18n="lbl_local_speed">DL Local&nbsp;:</span> <strong id="global-local-speed-val">0 Mo/s</strong>
         </span>
       </div>
 
