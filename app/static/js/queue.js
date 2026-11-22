@@ -81,8 +81,12 @@ function updateHeaderStatus(items, apiHealth) {
 
   const activeStates = new Set(['downloading', 'checkingDL', 'copying']);
   const activeItems = (items || []).filter(t => activeStates.has(t.state));
-  const activeDl = activeItems.filter(t => t.transfer_mode === 'download');
-  const activeSym = activeItems.filter(t => t.transfer_mode !== 'download');
+  const activeDl = activeItems.filter(t => t.transfer_mode === 'download' && isItemDebrided(t));
+  const activeCloud = activeItems.filter(t => !isItemDebrided(t));
+  const activeSym = activeItems.filter(t => t.transfer_mode !== 'download' && isItemDebrided(t));
+
+  const totalCloudSpeed = (items || []).reduce((acc, it) => acc + (!isItemDebrided(it) && it.state !== 'error' && it.state !== 'pausedDL' ? (Number(it.cloud_speed) || 0) : 0), 0);
+  const totalLocalSpeed = (items || []).reduce((acc, it) => acc + (isItemDebrided(it) && it.state !== 'error' && it.state !== 'pausedDL' ? (Number(it.dlspeed) || 0) : 0), 0);
 
   const apiOk = Boolean(apiHealth && apiHealth.ok);
   const apiBaseLabel = (apiHealth && apiHealth.label) || (apiOk ? t('api_test_ok') : t('api_test_err'));
@@ -93,10 +97,16 @@ function updateHeaderStatus(items, apiHealth) {
   orb.title = apiDetail;
   sub.title = apiDetail;
 
-  if (activeDl.length > 0) {
+  if (activeDl.length > 0 || totalLocalSpeed > 0) {
     orb.classList.add('dl');
     sub.classList.add('dl');
-    sub.textContent = t('status_dl', { n: activeDl.length }) + ' — ' + apiBaseLabel;
+    const spdTxt = totalLocalSpeed > 0 ? ` (${formatSpeed(totalLocalSpeed)})` : '';
+    sub.textContent = t('status_dl', { n: activeDl.length }) + spdTxt + ' — ' + apiBaseLabel;
+  } else if (activeCloud.length > 0 || totalCloudSpeed > 0) {
+    orb.classList.add('sym');
+    sub.classList.add('sym');
+    const spdTxt = totalCloudSpeed > 0 ? ` (${formatSpeed(totalCloudSpeed)})` : '';
+    sub.textContent = `☁️ Débridage cloud : ${activeCloud.length}${spdTxt} — ` + apiBaseLabel;
   } else if (activeSym.length > 0) {
     orb.classList.add('sym');
     sub.classList.add('sym');
@@ -295,9 +305,12 @@ function collapseAllQueueGroups() {
   document.querySelectorAll('.queue-item-row').forEach(el => el.classList.add('group-collapsed'));
 }
 
-function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass = 'tag') {
+function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass = 'tag', groupSpeed = 0) {
   const isCollapsed = isGroupCollapsed(groupId);
   const openClass = isCollapsed ? '' : 'open';
+  const speedBadge = groupSpeed > 0
+    ? `<span class="badge-group-speed" title="${esc(t('tip_group_speed') || 'Débit cumulé de ce groupe')}">⚡ ${formatSpeed(groupSpeed)}</span>`
+    : '';
   return `<tr class="queue-group-row ${openClass}" onclick="toggleQueueGroup('${groupId}')" data-group-id="${groupId}">
     <td colspan="6" class="queue-group-cell">
       <div class="queue-group-header-content">
@@ -306,6 +319,7 @@ function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass 
           <span>${groupIcon}</span>
           <span class="queue-group-label">${esc(groupTitle)}</span>
           <span class="badge ${badgeClass}">${count}</span>
+          ${speedBadge}
         </div>
         <div class="queue-group-tools" onclick="event.stopPropagation()">
           <button type="button" class="btn-sec q-grp-sel-btn" onclick="toggleSelectGroup('${groupId}')" title="${esc(t('select_all') || 'Sélectionner ce groupe')}">
@@ -342,6 +356,16 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     debridBadge = `<span class="tag debrid-pending" title="${esc(t('tip_debrided_pending'))}">⏳ ${esc(t('tag_debrided_pending'))}${seedersTxt}</span>`;
   }
 
+  // Badge de vitesse individuelle à côté de la catégorie
+  let speedTag = '';
+  if (!isDebrided && (state === 'downloading' || state === 'queued')) {
+    const spd = Number(item.cloud_speed) || 0;
+    speedTag = `<span class="speed-tag cloud" title="${esc(t('tip_cloud_speed') || 'Débit de débridage cloud')}">☁️ ${formatSpeed(spd)}</span>`;
+  } else if (isDebrided && (state === 'copying' || (item.dlspeed && item.dlspeed > 0))) {
+    const spd = Number(item.dlspeed) || 0;
+    speedTag = `<span class="speed-tag local" title="${esc(t('tip_local_speed') || 'Débit téléchargement local')}">📥 ${formatSpeed(spd)}</span>`;
+  }
+
   let badgeCls = 'run';
   let stateTxt = pct > 0 ? `${esc(t('st_downloading'))} (${pct}%)` : `${esc(t('st_in_progress'))}`;
 
@@ -361,7 +385,10 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     badgeCls = 'run';
     stateTxt = `${esc(t('st_cloud_dl'))} (${pct}%)`;
     if (item.seeders && item.seeders > 0) {
-      stateTxt += ` • ${item.seeders} sources`;
+      stateTxt += ` • ${item.seeders} src`;
+    }
+    if (item.cloud_speed && item.cloud_speed > 0) {
+      stateTxt += ` • ${formatSpeed(item.cloud_speed)}`;
     }
   } else if (state === 'queued') {
     badgeCls = 'pause';
@@ -399,7 +426,13 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
     <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
     <td class="col-name">${esc(item.name)}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
-    <td class="col-cat"><span class="tag">${esc(item.category)}</span> ${modeBadge}</td>
+    <td class="col-cat">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span class="tag">${esc(item.category)}</span>
+        ${modeBadge}
+        ${speedTag}
+      </div>
+    </td>
     <td class="col-status">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
         <span class="badge ${badgeCls}">${stateTxt}</span>
@@ -506,6 +539,15 @@ function renderQueue(items) {
     paused: allItems.filter(it => matchesQueueFilter(it, 'paused')).length,
   };
 
+  // Calcul et mise à jour des débits globaux en temps réel
+  const totalCloudSpeed = allItems.reduce((acc, it) => acc + (!isItemDebrided(it) && it.state !== 'error' && it.state !== 'pausedDL' ? (Number(it.cloud_speed) || 0) : 0), 0);
+  const totalLocalSpeed = allItems.reduce((acc, it) => acc + (isItemDebrided(it) && it.state !== 'error' && it.state !== 'pausedDL' ? (Number(it.dlspeed) || 0) : 0), 0);
+
+  const elCloud = document.getElementById('global-cloud-speed-val');
+  if (elCloud) elCloud.textContent = formatSpeed(totalCloudSpeed);
+  const elLocal = document.getElementById('global-local-speed-val');
+  if (elLocal) elLocal.textContent = formatSpeed(totalLocalSpeed);
+
   // Mise à jour des options du menu déroulant avec les compteurs
   updateOptionText('opt-filter-all', `${t('q_filter_all') || 'Tous'} (${counts.all})`);
   updateOptionText('opt-filter-downloading', `📥 ${t('q_filter_downloading') || 'DL en cours'} (${counts.downloading})`);
@@ -546,7 +588,8 @@ function renderQueue(items) {
     for (const [cat, catItems] of catMap.entries()) {
       const gId = 'cat_' + cat.replace(/[^a-zA-Z0-9_-]/g, '_');
       const gTitle = `${t('q_grp_cat_prefix') || 'Catégorie :'} ${cat}`;
-      html += renderGroupHeaderRow(gId, '📁', gTitle, catItems.length, 'run');
+      const groupSpeed = catItems.reduce((sum, it) => sum + (isItemDebrided(it) ? (Number(it.dlspeed) || 0) : (Number(it.cloud_speed) || 0)), 0);
+      html += renderGroupHeaderRow(gId, '📁', gTitle, catItems.length, 'run', groupSpeed);
       html += catItems.map(it => renderQueueRow(it, checkedSet, gId)).join('');
     }
     tbody.innerHTML = html;
@@ -564,7 +607,8 @@ function renderQueue(items) {
     for (const [mKey, mData] of Object.entries(modeMap)) {
       if (mData.items.length === 0) continue;
       const gId = 'mode_' + mKey;
-      html += renderGroupHeaderRow(gId, mData.icon, mData.title, mData.items.length, 'run');
+      const groupSpeed = mData.items.reduce((sum, it) => sum + (isItemDebrided(it) ? (Number(it.dlspeed) || 0) : (Number(it.cloud_speed) || 0)), 0);
+      html += renderGroupHeaderRow(gId, mData.icon, mData.title, mData.items.length, 'run', groupSpeed);
       html += mData.items.map(it => renderQueueRow(it, checkedSet, gId)).join('');
     }
     tbody.innerHTML = html;
@@ -597,7 +641,8 @@ function renderQueue(items) {
       const list = groupBuckets[def.id] || [];
       if (list.length === 0) continue;
       const gTitle = t(def.labelKey) || def.defaultLabel;
-      html += renderGroupHeaderRow(def.id, def.icon, gTitle, list.length, def.badgeCls);
+      const groupSpeed = list.reduce((sum, it) => sum + (isItemDebrided(it) ? (Number(it.dlspeed) || 0) : (Number(it.cloud_speed) || 0)), 0);
+      html += renderGroupHeaderRow(def.id, def.icon, gTitle, list.length, def.badgeCls, groupSpeed);
       html += list.map(it => renderQueueRow(it, checkedSet, def.id)).join('');
     }
     tbody.innerHTML = html;

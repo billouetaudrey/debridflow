@@ -130,6 +130,15 @@
         </div>
       </div>
 
+      <div id="queue-global-speeds" class="global-speed-indicator">
+        <span class="global-speed-pill cloud" id="pill-global-cloud" title="Débit global de débridage cloud AllDebrid" data-i18n-title="tip_global_cloud_speed">
+          ☁️ <span data-i18n="lbl_cloud_speed">Débridage :</span> <strong id="global-cloud-speed-val">0 Mo/s</strong>
+        </span>
+        <span class="global-speed-pill local" id="pill-global-local" title="Débit global de téléchargement local" data-i18n-title="tip_global_local_speed">
+          📥 <span data-i18n="lbl_local_speed">DL Local :</span> <strong id="global-local-speed-val">0 Mo/s</strong>
+        </span>
+      </div>
+
       <div class="queue-grouping-tools">
         <button type="button" class="btn-sec q-btn-compact" id="btn-force-sync" onclick="forceSyncQueue()" title="Forcer le rafraîchissement immédiat (Arr &amp; Débrideur)" data-i18n-title="tip_force_refresh">
           <span id="force-sync-icon">🔄</span> <span id="force-sync-text" data-i18n="btn_force_refresh">Rafraîchir (Arr / Débrideur)</span>

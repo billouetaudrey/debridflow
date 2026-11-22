@@ -65,6 +65,7 @@ async def ui_queue_feed():
                 "debrid_cached": bool(item.get("debrid_cached", False)),
                 "seeders": int(item.get("seeders") or 0),
                 "cloud_status": str(item.get("cloud_status") or ""),
+                "cloud_speed": int(item.get("cloud_speed") or 0),
             }
             for h, item in items_sorted
         ]
@@ -74,6 +75,16 @@ async def ui_queue_feed():
             1 for it in torrents_db.values()
             if it.get("state") == "copying" or (it.get("is_ddl") and it.get("state") in ("copying", "downloading"))
         )
+        total_cloud_spd = sum(
+            int(it.get("cloud_speed") or 0)
+            for it in torrents_db.values()
+            if not it.get("is_debrided") and it.get("state") not in ("pausedUP", "stalledUP", "pausedDL", "error")
+        )
+        total_local_spd = sum(
+            int(it.get("dlspeed") or 0)
+            for it in torrents_db.values()
+            if it.get("state") in ("copying", "downloading")
+        )
     return JSONResponse(
         {
             "items": payload,
@@ -82,6 +93,8 @@ async def ui_queue_feed():
             "download_speed_limit": float(settings_db.get("download_speed_limit", 0)),
             "max_concurrent_downloads": max_concurrent,
             "active_downloads_count": active_dl_count,
+            "total_cloud_speed": total_cloud_spd,
+            "total_local_speed": total_local_spd,
             "hide_last_download_name": bool(settings_db.get("hide_last_download_name", True)),
         },
         headers={"Cache-Control": "no-store"},

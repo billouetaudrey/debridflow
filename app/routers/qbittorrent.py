@@ -196,7 +196,7 @@ async def qb_torrents_info(category: Optional[str] = None, hashes: Optional[str]
                     "name": item.get("name") or h,
                     "size": size,
                     "progress": progress,
-                    "dlspeed": 0,
+                    "dlspeed": int(item.get("dlspeed") or item.get("cloud_speed") or 0),
                     "upspeed": 0,
                     "priority": 1,
                     "num_seeds": 0 if raw_state == "error" else 1,
