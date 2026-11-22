@@ -24,7 +24,7 @@ from app.state import (
     state_lock,
     torrents_db,
 )
-from app.storage import remove_local_artifacts
+from app.storage import is_already_imported_by_arr, remove_local_artifacts
 
 router = APIRouter()
 
@@ -249,31 +249,53 @@ async def qb_torrents_delete(
     ad_ids_to_delete: List[int] = []
 
     if deleteProvider is not None:
-        should_delete_provider = deleteProvider.lower() == "true"
+        explicit_del_ad = deleteProvider.lower() == "true"
         should_delete_local = (deleteFiles or "false").lower() == "true"
     else:
-        should_delete_provider = bool(settings_db.get("delete_on_provider"))
+        explicit_del_ad = None
         should_delete_local = bool(settings_db.get("auto_clean_import")) or (
             (deleteFiles or "false").lower() == "true"
         )
+
+    global_del_provider = bool(settings_db.get("delete_on_provider"))
 
     async with state_lock:
         for h in target_hashes:
             item = torrents_db.pop(h, None)
             if item:
-                if should_delete_provider and item.get("ad_id") and not item.get("deleted_on_ad"):
-                    ad_ids_to_delete.append(int(item["ad_id"]))
+                if explicit_del_ad is not None:
+                    should_del_ad = explicit_del_ad
+                else:
+                    is_completed = (
+                        float(item.get("progress", 0.0)) >= 1.0
+                        and item.get("state") in ("completed", "uploading", "pausedUP", "stalledUP")
+                        and int(item.get("completion_on") or 0) > 0
+                    )
+                    # Supprimer sur le provider (AllDebrid / RealDebrid / etc.) si :
+                    # 1. Option globale delete_on_provider activée
+                    # 2. OU torrent non terminé (échec, bloqué, non-caché, annulé/blocklisté par *arr)
+                    # 3. OU suppression locale demandée et torrent jamais importé dans la médiathèque
+                    should_del_ad = (
+                        global_del_provider
+                        or (not is_completed)
+                        or (should_delete_local and not is_already_imported_by_arr(item))
+                    )
+
+                ad_id_raw = item.get("ad_id")
+                if should_del_ad and ad_id_raw and str(ad_id_raw).isdigit() and not item.get("deleted_on_ad"):
+                    ad_ids_to_delete.append(int(ad_id_raw))
+
                 if should_delete_local:
                     remove_local_artifacts(item)
         save_state()
 
     logger.info(
-        f"Suppression demandée pour {len(target_hashes)} torrent(s) (local={should_delete_local}, ad={should_delete_provider})."
+        f"Suppression demandée pour {len(target_hashes)} torrent(s) (local={should_delete_local}, ad_ids={ad_ids_to_delete})."
     )
 
     if ad_ids_to_delete and settings_db.get("api_key"):
         async with httpx.AsyncClient() as client:
-            for ad_id in ad_ids_to_delete:
+            for ad_id in dict.fromkeys(ad_ids_to_delete):
                 await alldebrid_delete_magnet(client, ad_id)
 
     return PlainTextResponse("Ok.")
