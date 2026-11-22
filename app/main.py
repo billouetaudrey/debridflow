@@ -25,7 +25,7 @@ async def lifespan(app_instance: FastAPI):
     tg_task.cancel()
 
 
-app = FastAPI(title="DebridFlow - Fast Multi-Debrid Symlink & Download Client", lifespan=lifespan)
+app = FastAPI(title="OmniSym - Fast Multi-Debrid Symlink & Download Client", lifespan=lifespan)
 
 
 # --- AUTHENTIFICATION OPTIONNELLE (UI + API QBITTORRENT) ---
@@ -66,7 +66,7 @@ async def auth_middleware(request: Request, call_next):
     return Response(
         content="Authentification requise",
         status_code=401,
-        headers={"WWW-Authenticate": 'Basic realm="DebridFlow"'},
+        headers={"WWW-Authenticate": 'Basic realm="OmniSym"'},
     )
 
 

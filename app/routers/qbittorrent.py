@@ -552,7 +552,7 @@ async def qb_torrents_properties(hash: str):
             "piece_size": 1024 * 1024,
             "pieces_num": max(1, size // (1024 * 1024)),
             "pieces_have": int(max(1, size // (1024 * 1024)) * progress),
-            "comment": f"DebridFlow Error: {item.get('error_msg')}" if item.get("state") == "error" else f"DebridFlow Transfer ({item.get('transfer_mode', 'symlink')})",
+            "comment": f"OmniSym Error: {item.get('error_msg')}" if item.get("state") == "error" else f"OmniSym Transfer ({item.get('transfer_mode', 'symlink')})",
             "total_wasted": 0,
             "total_uploaded": downloaded,
             "total_downloaded": downloaded,
@@ -584,7 +584,7 @@ async def qb_torrents_trackers(hash: str):
     return JSONResponse(
         [
             {
-                "url": "**DebridFlow Debrid**",
+                "url": "**OmniSym Debrid**",
                 "status": 4 if is_err else 2,
                 "tier": 0,
                 "num_peers": 0,

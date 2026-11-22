@@ -1,4 +1,4 @@
-# DebridFlow 🌊
+# OmniSym 🌊
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -11,7 +11,7 @@
 
 🌐 **Language**: **English 🇬🇧** | [Français 🇫🇷](README.fr.md) • 📋 [Changelog](CHANGELOG.md) • 🔒 [Privacy Policy](PRIVACY.md)
 
-> **DebridFlow** is a modern, lightweight, and high-performance qBittorrent WebAPI emulation client and media manager. Designed to connect your \*arr media suite (**Sonarr**, **Radarr**, **Whisparr**, **Lidarr**, **Prowlarr**) to your favorite debrid providers, featuring instant zero-space symlinking, real downloads, built-in DDL direct downloads, an ultra-fast media library scanner with broken link recovery, and multi-engine searching.
+> **OmniSym** is a modern, lightweight, and high-performance qBittorrent WebAPI emulation client and media manager. Designed to connect your \*arr media suite (**Sonarr**, **Radarr**, **Whisparr**, **Lidarr**, **Prowlarr**) to your favorite debrid providers, featuring instant zero-space symlinking, real downloads, built-in DDL direct downloads, an ultra-fast media library scanner with broken link recovery, and multi-engine searching.
 >
 > ✨ *This project was 100% architected and developed with **Google Gemini**.*
 >
@@ -57,7 +57,7 @@ https://github.com/user-attachments/assets/4fd94d19-1ca0-4d84-9bb5-a221abcba0c0
 * 🔎 **Multi-Engine Search (Finder)**: Search across DuckDuckGo, Brave, Google, Bing, Yandex, and Mojeek with one-click injection into your debrid queue.
 * 📊 **Server Speedtest & Diagnostics**: Measure server latency to debrid datacenters and test real upload/download bandwidth (Mbps & MB/s).
 * 📱 **Progressive Web App (PWA)**: Installable standalone app on Android, iOS, Windows, macOS, and Linux with full-screen experience and offline App Shell caching.
-* 🧩 **Chrome Extension & Userscript**: 1-click & native right-click download injection directly to DebridFlow for magnets, torrents, and DDL file hosters.
+* 🧩 **Chrome Extension & Userscript**: 1-click & native right-click download injection directly to OmniSym for magnets, torrents, and DDL file hosters.
 * 🔔 **Instant Telegram Alerts**: Real-time notifications for completed downloads, average transfer speeds, scan reports, and API errors.
 * 🎨 **Modern Responsive Web UI**: Mobile, tablet, and desktop friendly, Dark and Light themes, bilingual (English/French), and customizable tab visibility.
 
@@ -65,11 +65,11 @@ https://github.com/user-attachments/assets/4fd94d19-1ca0-4d84-9bb5-a221abcba0c0
 
 ## 🏗️ How It Works
 
-DebridFlow bridges your automation stack and debrid providers:
+OmniSym bridges your automation stack and debrid providers:
 
 ```text
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│ Sonarr / Radarr ├──────►│   DebridFlow    ├──────►│ Debrid Provider │
+│ Sonarr / Radarr ├──────►│   OmniSym    ├──────►│ Debrid Provider │
 │   (qB API v2)   │       │   (Port 6505)   │       │   (Cloud API)   │
 └─────────────────┘       └────────┬────────┘       └────────┬────────┘
                                    │                         │
@@ -90,9 +90,9 @@ Create a `docker-compose.yml` file:
 
 ```yaml
 services:
-  debridflow:
+  omnisym:
     image: python:3.12-slim
-    container_name: debridflow
+    container_name: omnisym
     network_mode: host
     working_dir: /app
     command: >
@@ -131,8 +131,8 @@ Compatible with Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, and Alpine:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/billouetaudrey/debridflow.git
-   cd debridflow
+   git clone https://github.com/billouetaudrey/omnisym.git
+   cd omnisym
    ```
 2. Run the automated installer:
    ```bash
@@ -140,10 +140,10 @@ Compatible with Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, and Alpine:
    ```
 3. Manage the systemd service (if enabled during install):
    ```bash
-   sudo systemctl status debridflow    # Status
-   sudo journalctl -u debridflow -f    # Live logs
-   sudo systemctl restart debridflow   # Restart
-   sudo systemctl stop debridflow      # Stop
+   sudo systemctl status omnisym    # Status
+   sudo journalctl -u omnisym -f    # Live logs
+   sudo systemctl restart omnisym   # Restart
+   sudo systemctl stop omnisym      # Stop
    ```
 
 ---
@@ -153,8 +153,8 @@ Compatible with Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, and Alpine:
 1. Install **Python 3.10+** (ensure *"Add python.exe to PATH"* is checked).
 2. Open PowerShell or Command Prompt:
    ```powershell
-   git clone https://github.com/billouetaudrey/debridflow.git
-   cd debridflow
+   git clone https://github.com/billouetaudrey/omnisym.git
+   cd omnisym
    python -m venv venv
    .\venv\Scripts\activate
    pip install -r requirements.txt
@@ -166,8 +166,8 @@ Compatible with Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, and Alpine:
 ### 4. macOS
 
 ```bash
-git clone https://github.com/billouetaudrey/debridflow.git
-cd debridflow
+git clone https://github.com/billouetaudrey/omnisym.git
+cd omnisym
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -184,22 +184,22 @@ In **Sonarr / Radarr**, go to **Settings** > **Download Clients** > **+** > **qB
 
 | Option | Recommended Value |
 | :--- | :--- |
-| **Name** | `DebridFlow` |
-| **Host** | `localhost` or your DebridFlow server IP |
+| **Name** | `OmniSym` |
+| **Host** | `localhost` or your OmniSym server IP |
 | **Port** | `6505` |
 | **Username** | *(Leave empty unless configured under Security)* |
 | **Password** | *(Leave empty unless configured under Security)* |
 | **Category** | `radarr` (for Radarr) / `tv-sonarr` (for Sonarr) / `whisparr` |
 
 > [!TIP]
-> In DebridFlow (**Settings > \*arr Services**), you can toggle whether each category uses **Symlink** (instant zero-disk) or **Real Download** (physical disk copy).
+> In OmniSym (**Settings > \*arr Services**), you can toggle whether each category uses **Symlink** (instant zero-disk) or **Real Download** (physical disk copy).
 
 ### 2. Automatic Scanner Webhook
 
 Trigger an automatic scan whenever media is imported:
 1. In **Sonarr** or **Radarr**, go to **Settings** > **Connect** > **+** > **Webhook**.
 2. Fill in:
-   * **Name**: `DebridFlow Scanner`
+   * **Name**: `OmniSym Scanner`
    * **Notification Triggers**: Check **On Download** / **On Import** (and **On Upgrade**).
    * **URL**: `http://127.0.0.1:6505/api/scanner/webhook`
    * **Method**: `POST`
@@ -242,14 +242,14 @@ Test network connectivity and throughput directly from your host server:
 
 ## 📱 Progressive Web App (PWA)
 
-DebridFlow includes full Progressive Web App (PWA) support:
+OmniSym includes full Progressive Web App (PWA) support:
 * **Standalone Display Mode**: Runs borderless in full-screen without address bars or browser controls on Android, iOS, Windows, macOS, and Linux.
-* **Android Native Share Target (MyJDownloader Replacement)**: Integrates directly into Android's native **"Share"** (Partager) sheet. Share any DDL link (1fichier, Rapidgator...), magnet URI, or `.torrent` file from any mobile browser or app directly to DebridFlow in 1 tap!
-* **Magnet Protocol Handler**: Tapping `magnet:` links on Android automatically prompts to open in DebridFlow and queues the download.
-* **Home Screen Shortcuts**: Long-press the DebridFlow app icon for quick actions (*"Add Download"*, *"DDL Finder"*).
+* **Android Native Share Target (MyJDownloader Replacement)**: Integrates directly into Android's native **"Share"** (Partager) sheet. Share any DDL link (1fichier, Rapidgator...), magnet URI, or `.torrent` file from any mobile browser or app directly to OmniSym in 1 tap!
+* **Magnet Protocol Handler**: Tapping `magnet:` links on Android automatically prompts to open in OmniSym and queues the download.
+* **Home Screen Shortcuts**: Long-press the OmniSym app icon for quick actions (*"Add Download"*, *"DDL Finder"*).
 * **Service Worker Caching**: Ultra-responsive App Shell loading with resilient Network-First caching.
 * **Installation Guide**:
-  * **Android**: Open DebridFlow over HTTPS (or `localhost`) in Chrome, tap `⋮`, then **"Install application"** or **"Add to Home screen"**.
+  * **Android**: Open OmniSym over HTTPS (or `localhost`) in Chrome, tap `⋮`, then **"Install application"** or **"Add to Home screen"**.
   * **Desktop (Chrome/Edge/Brave)**: Click the **Install** icon in the right side of your address bar.
   * **iOS (Safari)**: Tap the **Share** button, then select **"Add to Home Screen"**.
 
@@ -257,27 +257,27 @@ DebridFlow includes full Progressive Web App (PWA) support:
 
 ## 🧩 Browser Extension & Userscript
 
-Send downloads directly to your DebridFlow instance from any website:
+Send downloads directly to your OmniSym instance from any website:
 
 ### 🌐 Official Chrome / Brave / Edge Extension (Manifest V3)
-* **Native Right-Click Context Menu**: Right-click on any link or selected text to send it to DebridFlow (`Default`, `Symlink`, or `Download` modes).
+* **Native Right-Click Context Menu**: Right-click on any link or selected text to send it to OmniSym (`Default`, `Symlink`, or `Download` modes).
 * **Live Status Popup**: Click the extension icon to view real-time server connectivity, switch target categories, and jump to the web app.
 * **Installation**:
-  1. Download the extension ZIP from your DebridFlow dashboard (*Settings > 4. Automation > Browser Integration*) or grab the [extension/](extension/) folder.
+  1. Download the extension ZIP from your OmniSym dashboard (*Settings > 4. Automation > Browser Integration*) or grab the [extension/](extension/) folder.
   2. Open `chrome://extensions/`, enable **Developer mode**, and click **"Load unpacked"**.
-  3. Enter your DebridFlow server URL in the popup and click **Save**.
+  3. Enter your OmniSym server URL in the popup and click **Save**.
 
 ### 🐒 Tampermonkey / Violentmonkey Userscript
 * **1-Click Badges**: Injects a discrete `⚡` button next to magnet links on tracker pages.
 * **`Alt + Left Click` Shortcut**: Instantly sends any link in the background without opening menus.
-* **1-Click Install**: Click [debridflow.user.js](app/static/debridflow.user.js) to install directly via Tampermonkey.
+* **1-Click Install**: Click [omnisym.user.js](app/static/omnisym.user.js) to install directly via Tampermonkey.
 
 ---
 
 ## 🔔 Telegram Notifications & 2-Way Mobile Bot
 
 Configure automated alerts and 2-way bot control under **Settings > Notifications**:
-* **2-Way Remote Download Receiver**: Send or share any magnet, DDL link, or `.torrent` file directly to your private Telegram bot from anywhere in the world (works seamlessly on 4G/5G without VPN or port forwarding). DebridFlow immediately queues the download and replies with live confirmation!
+* **2-Way Remote Download Receiver**: Send or share any magnet, DDL link, or `.torrent` file directly to your private Telegram bot from anywhere in the world (works seamlessly on 4G/5G without VPN or port forwarding). OmniSym immediately queues the download and replies with live confirmation!
 * **Automated Alerts**: Real-time notifications for completed downloads (with average speed & file size), scan summaries, broken link alerts, and debrid API quota warnings.
 
 ---
@@ -285,7 +285,7 @@ Configure automated alerts and 2-way bot control under **Settings > Notification
 ## 📐 Project Architecture
 
 ```text
-debridflow/
+omnisym/
 ├── docker-compose.yml          # Containerized deployment
 ├── install.sh                  # Automated Linux installation script
 ├── start.sh                    # Simple launcher script
@@ -317,7 +317,7 @@ debridflow/
     └── static/
         ├── manifest.json       # PWA manifest
         ├── sw.js               # PWA service worker
-        ├── debridflow.user.js  # Tampermonkey userscript
+        ├── omnisym.user.js  # Tampermonkey userscript
         ├── icons/              # High-res PWA application icons (192px, 512px, maskable)
         ├── css/style.css       # Clean responsive UI styles & themes
         └── js/                 # Modular frontend architecture
@@ -335,7 +335,7 @@ debridflow/
 
 ## 🤖 Built with Google Gemini
 
-DebridFlow was **100% conceived, architected, and coded with Google Gemini**. From initial system design, modular FastAPI backend, multi-provider Debrid adapters, incremental in-memory caching algorithms, to responsive front-end engineering, every component was created with AI-driven development.
+OmniSym was **100% conceived, architected, and coded with Google Gemini**. From initial system design, modular FastAPI backend, multi-provider Debrid adapters, incremental in-memory caching algorithms, to responsive front-end engineering, every component was created with AI-driven development.
 
 ---
 
@@ -348,6 +348,6 @@ DebridFlow was **100% conceived, architected, and coded with Google Gemini**. Fr
 
 ## ⚖️ Legal Disclaimer & License
 
-**DebridFlow** is an open-source tool created for educational and personal media organization purposes. The authors do not endorse or encourage the downloading of unauthorized or copyrighted content. Users are responsible for complying with all applicable laws in their jurisdiction.
+**OmniSym** is an open-source tool created for educational and personal media organization purposes. The authors do not endorse or encourage the downloading of unauthorized or copyrighted content. Users are responsible for complying with all applicable laws in their jurisdiction.
 
 Distributed under the [MIT License](LICENSE).

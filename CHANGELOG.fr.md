@@ -1,6 +1,6 @@
 # Journal des modifications (Changelog) 📋
 
-Toutes les évolutions notables apportées au projet **DebridFlow** sont répertoriées dans ce document.
+Toutes les évolutions notables apportées au projet **OmniSym** sont répertoriées dans ce document.
 
 Ce document respecte les conventions de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et applique le versionnage sémantique [Semantic Versioning](https://semver.org/lang/fr/).
@@ -12,11 +12,12 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.7.0] — 2026-11-21
 
 ### Ajouté
+- **Rebranding officiel du projet** : Nouveau nom **OmniSym** (*Omni* = orchestrateur multimédia universel tout-en-un, *Sym* = symlinks instantanés et symbiose avec la suite *arr) pour refléter l'ensemble des fonctionnalités bien au-delà du simple débridage.
 - **Intégrations Navigateurs (Clic-droit &amp; 1-Clic)** :
   - **Extension Google Chrome / Chromium (Manifest V3)** :
     - Intégration directe au menu contextuel natif au clic-droit sur les liens et le texte sélectionné.
     - Actions rapides pour les modes Défaut, Symlink (instantané) et Téléchargement réel (local).
-    - Fenêtre popup avec diagnostic en direct de connexion, sélection de la catégorie et raccourci vers DebridFlow.
+    - Fenêtre popup avec diagnostic en direct de connexion, sélection de la catégorie et raccourci vers OmniSym.
     - Notifications de bureau natives lors de l'ajout réussi ou en cas d'erreur.
     - Téléchargement du package `.zip` prêt à l'emploi depuis les paramètres.
   - **Script Tampermonkey / Violentmonkey** :
@@ -25,15 +26,15 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
     - Raccourci `Alt + Clic gauche` pour envoyer instantanément n'importe quel lien en arrière-plan.
 - **Support complet Progressive Web App (PWA)** :
   - Manifeste d'application web (`manifest.json`) permettant l'installation directe en tant qu'application autonome (standalone) sur Android, iOS, Windows, macOS et Linux.
-  - Icônes haute résolution DebridFlow (PNG 192x192 et 512x512, incluant les variantes adaptatives `maskable` pour les lanceurs Android).
+  - Icônes haute résolution OmniSym (PNG 192x192 et 512x512, incluant les variantes adaptatives `maskable` pour les lanceurs Android).
   - Service Worker léger et performant (`sw.js`) avec stratégie Réseau d'abord (Network-First) et pré-mise en cache de l'App Shell hors-ligne.
   - Routes racine `/manifest.json`, `/sw.js` et `/favicon.ico` avec en-tête `Service-Worker-Allowed: /` et exclusion de l'authentification pour garantir l'installation PWA.
   - **Intégration Native Android Web Share Target** : S'intègre directement dans le menu natif « Partager » d'Android pour recevoir des liens DDL, magnets ou fichiers `.torrent` depuis n'importe quelle application (remplacement complet de MyJDownloader).
-  - **Gestionnaire de Protocole Magnet** : L'appui sur un lien `magnet:` ouvre directement DebridFlow.
+  - **Gestionnaire de Protocole Magnet** : L'appui sur un lien `magnet:` ouvre directement OmniSym.
   - **Raccourcis d'Écran d'Accueil** : Actions rapides sur appui long sur l'icône de l'application.
 - **Contrôleur Telegram Bidirectionnel** :
   - Écouteur en tâche de fond permettant l'ajout de téléchargements à distance directement via Telegram.
-  - Envoyez ou partagez des magnets, liens DDL ou fichiers `.torrent` à votre bot privé depuis n'importe où (fonctionne en 4G/5G sans VPN ni ouverture de port) ; DebridFlow les ajoute immédiatement à la file et répond avec le statut.
+  - Envoyez ou partagez des magnets, liens DDL ou fichiers `.torrent` à votre bot privé depuis n'importe où (fonctionne en 4G/5G sans VPN ni ouverture de port) ; OmniSym les ajoute immédiatement à la file et répond avec le statut.
 
 ---
 
@@ -77,7 +78,7 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 - **Licence Officielle MIT** : Création du fichier `LICENSE`.
 
 ### Modifié
-- **Changement de nom (Rebranding)** : Renommage intégral du projet de `PyRDT` vers **DebridFlow** à travers l'ensemble des fichiers, services et conteneurs Docker.
+- **Changement de nom (Rebranding)** : Renommage intégral du projet de `PyRDT` vers **OmniSym** à travers l'ensemble des fichiers, services et conteneurs Docker.
 - Amélioration de la relance des torrents : suppression automatique des identifiants obsolètes/échoués et ré-upload propre du magnet.
 
 ---

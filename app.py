@@ -1,4 +1,4 @@
-"""DebridFlow - Multi-Debrid Symlink & Download Client.
+"""OmniSym - Multi-Debrid Symlink & Download Client.
 
 Point d'entrée principal pour compatibilité avec Uvicorn et Docker Compose.
 Architecture modulaire organisée dans le package `app/`.

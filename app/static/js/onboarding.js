@@ -36,7 +36,7 @@ function openOnboarding(force = false) {
   const obApiKey = document.getElementById('ob_api_key');
   if (obApiKey) obApiKey.value = getVal('api_key');
   const obAgent = document.getElementById('ob_agent');
-  if (obAgent) obAgent.value = getVal('agent', 'DebridFlow-Billou');
+  if (obAgent) obAgent.value = getVal('agent', 'OmniSym-Billou');
   const obApiBase = document.getElementById('ob_api_base');
   if (obApiBase) obApiBase.value = getVal('api_base');
 

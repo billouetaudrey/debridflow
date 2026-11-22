@@ -1,6 +1,6 @@
 # Changelog 📋
 
-All notable changes to **DebridFlow** will be documented in this file.
+All notable changes to **OmniSym** will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.7.0] — 2026-11-21
 
 ### Added
+- **Project Rebranding**: Officially renamed to **OmniSym** (*Omni* = universal all-in-one media orchestrator, *Sym* = instant symlinks & storage symbiosis) to accurately reflect its capabilities beyond mere debriding.
 - **Browser Integrations (1-Click & Right-Click)**:
   - **Google Chrome / Chromium Extension (Manifest V3)**:
     - Native browser right-click context menu integration for links and selected text.
@@ -29,11 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Lightweight and resilient Service Worker (`sw.js`) with Network-First strategy and App Shell offline caching.
   - Root endpoints `/manifest.json`, `/sw.js`, and `/favicon.ico` mounted with `Service-Worker-Allowed: /` header and bypassed from authentication blocking.
   - **Native Android Web Share Target**: Integrates directly into Android's native "Share" sheet to receive DDL links, magnets, or `.torrent` files from any app (full MyJDownloader mobile replacement).
-  - **Magnet Protocol Handler**: Tapping `magnet:` links opens DebridFlow automatically.
+  - **Magnet Protocol Handler**: Tapping `magnet:` links opens OmniSym automatically.
   - **Home Screen App Shortcuts**: Quick launcher actions on Android.
 - **Bidirectional Telegram Bot Controller**:
   - Background listener allowing remote download submissions directly via Telegram chat.
-  - Send or share magnets, DDL links, or `.torrent` files to your private bot from anywhere (works on 4G/5G without VPN or port forwarding); DebridFlow queues the download and replies with confirmation.
+  - Send or share magnets, DDL links, or `.torrent` files to your private bot from anywhere (works on 4G/5G without VPN or port forwarding); OmniSym queues the download and replies with confirmation.
 
 ---
 
@@ -77,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Official MIT License**: Created `LICENSE` file.
 
 ### Changed
-- **Rebranding**: Renamed project across all files and docker services from `PyRDT` to **DebridFlow**.
+- **Rebranding**: Renamed project across all files and docker services from `PyRDT` to **OmniSym**.
 - Improved torrent retry flow: automatically removes stale/failed IDs and re-uploads magnets cleanly to restart resolution.
 
 ---

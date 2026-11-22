@@ -390,7 +390,7 @@ async function downloadFinderSelected() {
   const origText = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> ' + (currentLang === 'en' ? 'Adding to DebridFlow...' : 'Ajout en cours...');
+    btn.innerHTML = '<span>⏳</span> ' + (currentLang === 'en' ? 'Adding to OmniSym...' : 'Ajout en cours...');
   }
 
   try {
@@ -404,7 +404,7 @@ async function downloadFinderSelected() {
     });
     const data = await res.json();
     if (res.ok && data.status === 'ok') {
-      alert(data.message || (currentLang === 'en' ? 'Downloads added to DebridFlow!' : 'Téléchargements ajoutés à DebridFlow !'));
+      alert(data.message || (currentLang === 'en' ? 'Downloads added to OmniSym!' : 'Téléchargements ajoutés à OmniSym !'));
       refreshQueue();
     } else {
       alert((currentLang === 'en' ? 'Error: ' : 'Erreur : ') + (data.message || data.detail || 'Failed'));

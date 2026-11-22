@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DebridFlow</title>
+  <title>OmniSym</title>
 
   <!-- PWA Manifest & App Configuration -->
   <link rel="manifest" href="/manifest.json">
@@ -11,7 +11,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="DebridFlow">
+  <meta name="apple-mobile-web-app-title" content="OmniSym">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
@@ -21,7 +21,7 @@
     (function() {
       const serverTheme = document.documentElement.getAttribute('data-theme') || '__UI_THEME__';
       document.documentElement.setAttribute('data-theme', serverTheme);
-      try { localStorage.setItem('debridflow_theme', serverTheme); } catch(e) {}
+      try { localStorage.setItem('omnisym_theme', serverTheme); } catch(e) {}
     })();
   </script>
 </head>
@@ -32,7 +32,7 @@
     <div class="brand" onclick="goHome()" title="Accueil (File d'attente)" data-i18n-title="tip_brand_home">
       <span class="status-orb __ORB_CLS__" id="status-orb" title="__API_DETAIL__"></span>
       <div class="brand-text">
-        <h2>DebridFlow</h2>
+        <h2>OmniSym</h2>
         <div class="api-sub __ORB_CLS__" id="api-sub" title="__API_DETAIL__">__API_LABEL__</div>
       </div>
     </div>
@@ -208,7 +208,7 @@
         <span>🔍</span> <span data-i18n="finder_title">Recherche Multi-Moteurs (Torrents, Magnets &amp; DDL)</span>
       </h3>
       <p style="margin:0; font-size:13px; color:var(--text-muted);" data-i18n="finder_subtitle">
-        Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans DebridFlow.
+        Interroge simultanément DuckDuckGo, Brave, Bing, Yandex, Google, Yahoo, Mojeek... pour extraire des liens vérifiés directement téléchargeables dans OmniSym.
       </p>
     </div>
 
@@ -331,7 +331,7 @@
         <div style="display:flex; gap:8px;">
           <button type="button" class="btn-sec" onclick="copyFinderSelected()" style="font-size:12px; padding:6px 12px;" data-i18n="btn_copy_selected">📋 Copier sélectionnés</button>
           <button type="button" id="btn-finder-bulk-dl" class="btn-main" onclick="downloadFinderSelected()" style="font-size:12px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px;">
-            <span>⚡</span> <span data-i18n="btn_dl_selected_pyrdt">Télécharger la sélection dans DebridFlow</span>
+            <span>⚡</span> <span data-i18n="btn_dl_selected_pyrdt">Télécharger la sélection dans OmniSym</span>
           </button>
         </div>
       </div>
@@ -537,7 +537,7 @@
                 <div class="field">
                   <label data-i18n="lbl_agent">Nom de l'agent / User-Agent</label>
                   <input type="text" name="agent" value="__AGENT__" required>
-                  <small class="hint" data-i18n="hint_agent">Identifiant envoyé à l'API (ex: DebridFlow-Billou).</small>
+                  <small class="hint" data-i18n="hint_agent">Identifiant envoyé à l'API (ex: OmniSym-Billou).</small>
                 </div>
                 <div class="field full">
                   <label data-i18n="lbl_api_base">URL de l'API</label>
@@ -699,7 +699,7 @@
                   <span>🧩</span> <span>Intégration Navigateur (Clic-droit &amp; 1-Clic)</span>
                 </h4>
                 <small class="hint" style="display:block;margin-bottom:14px;">
-                  Ajoutez instantanément des torrents, magnets ou liens DDL (1fichier, Rapidgator, etc.) à DebridFlow d'un simple clic-droit depuis n'importe quel site web :
+                  Ajoutez instantanément des torrents, magnets ou liens DDL (1fichier, Rapidgator, etc.) à OmniSym d'un simple clic-droit depuis n'importe quel site web :
                 </small>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);display:flex;flex-direction:column;justify-content:space-between;gap:10px;">
@@ -710,7 +710,7 @@
                       <small class="hint" style="margin-top:4px;display:block;">Menu contextuel natif Chrome au clic-droit sur liens et textes sélectionnés, popup de statut et notifications.</small>
                     </div>
                     <div>
-                      <a href="/static/debridflow-chrome-extension.zip" download class="btn-main" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12px;padding:6px 14px;border-radius:6px;width:fit-content;">
+                      <a href="/static/omnisym-chrome-extension.zip" download class="btn-main" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12px;padding:6px 14px;border-radius:6px;width:fit-content;">
                         <span>⬇️</span> <span>Télécharger l'Extension (.zip)</span>
                       </a>
                     </div>
@@ -723,7 +723,7 @@
                       <small class="hint" style="margin-top:4px;display:block;">Installation directe avec badges ⚡ automatiques sur les sites de torrents et raccourci Alt+Clic.</small>
                     </div>
                     <div>
-                      <a href="/static/debridflow.user.js" target="_blank" class="btn-sec" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12px;padding:6px 14px;border-radius:6px;width:fit-content;">
+                      <a href="/static/omnisym.user.js" target="_blank" class="btn-sec" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:12px;padding:6px 14px;border-radius:6px;width:fit-content;">
                         <span>⚡</span> <span>Installer le Userscript</span>
                       </a>
                     </div>
@@ -1049,7 +1049,7 @@
                   <div style="background:rgba(248,81,73,0.06);padding:14px;border-radius:8px;border:1px solid rgba(248,81,73,0.3);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                     <div>
                       <div style="font-weight:700;font-size:13px;color:#f85149;" data-i18n="title_reset_settings">Supprimer tous les paramètres &amp; Réafficher l'Onboarding</div>
-                      <small class="hint" style="margin:2px 0 0;" data-i18n="hint_reset_settings">Réinitialise tous les paramètres de DebridFlow à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.</small>
+                      <small class="hint" style="margin:2px 0 0;" data-i18n="hint_reset_settings">Réinitialise tous les paramètres de OmniSym à leurs valeurs d'origine et réaffiche l'assistant de configuration initiale.</small>
                     </div>
                     <button type="button" class="btn-del" onclick="resetSettingsAndRelaunchOnboarding()" style="padding:7px 16px;font-size:12px;cursor:pointer;" data-i18n="btn_reset_settings">🗑️ Supprimer &amp; Relancer l'onboarding</button>
                   </div>
@@ -1213,7 +1213,7 @@
     <div class="ob-header">
       <div class="ob-header-top">
         <div class="ob-title-wrap">
-          <h2><span style="font-size:22px;">🚀</span> <span data-i18n="ob_title">Bienvenue sur DebridFlow</span></h2>
+          <h2><span style="font-size:22px;">🚀</span> <span data-i18n="ob_title">Bienvenue sur OmniSym</span></h2>
           <p data-i18n="ob_subtitle">Assistant de première configuration pas à pas</p>
         </div>
         <button type="button" onclick="skipOnboarding()" title="Fermer / Passer" data-i18n-title="tip_close" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px 8px;">✕</button>
@@ -1237,7 +1237,7 @@
     <div class="ob-body">
       <!-- Step 1: Styles & Affichage -->
       <div id="ob-page-1" class="ob-page active">
-        <div class="ob-section-hint" data-i18n="ob_hint_step1">Personnalisez l'apparence et le confort visuel de DebridFlow. Vous pouvez changer le thème ou la langue à tout moment.</div>
+        <div class="ob-section-hint" data-i18n="ob_hint_step1">Personnalisez l'apparence et le confort visuel de OmniSym. Vous pouvez changer le thème ou la langue à tout moment.</div>
         <div class="grid">
           <div class="field">
             <label data-i18n="lbl_theme_choice">Thème de l'interface</label>
@@ -1299,7 +1299,7 @@
           </div>
           <div class="field">
             <label data-i18n="lbl_agent">Nom de l'agent / User-Agent</label>
-            <input type="text" id="ob_agent" placeholder="DebridFlow-Billou">
+            <input type="text" id="ob_agent" placeholder="OmniSym-Billou">
             <small class="hint" data-i18n="hint_agent">Identifiant envoyé aux API.</small>
           </div>
           <div class="field">
@@ -1312,7 +1312,7 @@
 
       <!-- Step 3: Stockage & Dossiers -->
       <div id="ob-page-3" class="ob-page">
-        <div class="ob-section-hint" data-i18n="ob_hint_step3">Configurez les chemins où Rclone monte le disque distant et où DebridFlow stocke les téléchargements et liens symboliques.</div>
+        <div class="ob-section-hint" data-i18n="ob_hint_step3">Configurez les chemins où Rclone monte le disque distant et où OmniSym stocke les téléchargements et liens symboliques.</div>
         <div class="grid">
           <div class="field">
             <label data-i18n="lbl_rclone_mount">Chemin de montage Rclone (source magnets)</label>
@@ -1363,7 +1363,7 @@
 
       <!-- Step 5: Automatisation & Sécurité -->
       <div id="ob-page-5" class="ob-page">
-        <div class="ob-section-hint" data-i18n="ob_hint_step5">Ajustez le comportement de nettoyage automatique et protégez l'accès à DebridFlow.</div>
+        <div class="ob-section-hint" data-i18n="ob_hint_step5">Ajustez le comportement de nettoyage automatique et protégez l'accès à OmniSym.</div>
         <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:16px;">
           <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);" data-i18n="title_clean_options">Options de nettoyage :</h4>
           <div class="chk-line">
@@ -1464,7 +1464,7 @@
         <div style="text-align:center;padding:15px 0 10px;">
           <div style="font-size:48px;line-height:1;margin-bottom:8px;">🍿🎉</div>
           <h3 style="font-size:24px;font-weight:800;color:#3fb950;margin:0 0 8px 0;" data-i18n="ob_summary_title">🎉 Tout est prêt ! Bon DL</h3>
-          <p style="color:var(--text-muted);font-size:14px;max-width:540px;margin:0 auto 20px;" data-i18n="ob_summary_desc">Votre configuration DebridFlow est prête. Cliquez ci-dessous pour appliquer vos réglages et démarrer vos téléchargements.</p>
+          <p style="color:var(--text-muted);font-size:14px;max-width:540px;margin:0 auto 20px;" data-i18n="ob_summary_desc">Votre configuration OmniSym est prête. Cliquez ci-dessous pour appliquer vos réglages et démarrer vos téléchargements.</p>
         </div>
 
         <div class="ob-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;">
@@ -1488,7 +1488,7 @@
 
         <div style="text-align:center;margin-top:20px;">
           <button type="button" class="btn-save" onclick="finishOnboarding()" style="font-size:16px;padding:12px 32px;background:#238636;border-color:#2ea043;cursor:pointer;">
-            🍿 <span data-i18n="ob_btn_finish_alt">Bon DL ! Lancer DebridFlow 🚀</span>
+            🍿 <span data-i18n="ob_btn_finish_alt">Bon DL ! Lancer OmniSym 🚀</span>
           </button>
         </div>
       </div>

@@ -13,7 +13,7 @@ from app.alldebrid import alldebrid_upload_file, alldebrid_upload_magnet
 from app.bencode import parse_magnet_uri, parse_torrent_bytes, sanitize_filename
 from app.state import resolve_service, save_state, settings_db, state_lock, torrents_db
 
-logger = logging.getLogger("DebridFlow.Notifications")
+logger = logging.getLogger("OmniSym.Notifications")
 
 
 class TelegramNotifier:
@@ -79,9 +79,9 @@ class TelegramNotifier:
             return {"ok": False, "error": "Token de bot ou Chat ID manquant"}
 
         msg = (
-            "🔔 <b>DebridFlow — Test de Notification Telegram</b>\n\n"
+            "🔔 <b>OmniSym — Test de Notification Telegram</b>\n\n"
             "✅ <b>Connexion réussie !</b>\n"
-            "La liaison entre DebridFlow et votre bot Telegram est opérationnelle.\n"
+            "La liaison entre OmniSym et votre bot Telegram est opérationnelle.\n"
             "Vous recevrez désormais les notifications sélectionnées (scans, liens morts, téléchargements, etc.)."
         )
         ok = await self._dispatch(token, cid, msg)
@@ -99,7 +99,7 @@ class TelegramNotifier:
         scan_type = "Scan complet forcé ⚡" if is_full else "Scan incrémental rapide 🔄"
         paths_str = ", ".join(str(p) for p in (paths or [])) if paths else "Tous les dossiers"
         text = (
-            f"🔍 <b>DebridFlow — Début du Scan de Médiathèque</b>\n\n"
+            f"🔍 <b>OmniSym — Début du Scan de Médiathèque</b>\n\n"
             f"• <b>Type</b> : {scan_type}\n"
             f"• <b>Dossiers</b> : <code>{html.escape(paths_str)}</code>"
         )
@@ -118,7 +118,7 @@ class TelegramNotifier:
         dur_str = f" en {duration:.1f}s" if duration > 0 else ""
 
         text = (
-            f"{status_emoji} <b>DebridFlow — Scan de Médiathèque Terminé{dur_str}</b>\n\n"
+            f"{status_emoji} <b>OmniSym — Scan de Médiathèque Terminé{dur_str}</b>\n\n"
             f"• <b>Fichiers analysés</b> : {local_links}\n"
             f"• <b>Liens morts détectés</b> : <b>{dead}</b>\n"
             f"• <b>Total magnets cloud</b> : {total_mags}\n"
@@ -134,7 +134,7 @@ class TelegramNotifier:
             return
 
         text = (
-            f"⚠️ <b>DebridFlow — {dead_count} Lien(s) Mort(s) Détecté(s) !</b>\n\n"
+            f"⚠️ <b>OmniSym — {dead_count} Lien(s) Mort(s) Détecté(s) !</b>\n\n"
             f"Des fichiers de votre médiathèque pointent vers des cibles Debrid inexistantes ou supprimées."
         )
         if dead_samples:
@@ -153,7 +153,7 @@ class TelegramNotifier:
             return
         arr_info = " (et supprimés dans Radarr / Sonarr)" if deleted_arr else ""
         text = (
-            f"🗑️ <b>DebridFlow — Nettoyage de Liens Morts</b>\n\n"
+            f"🗑️ <b>OmniSym — Nettoyage de Liens Morts</b>\n\n"
             f"• <b>{cleaned_count}</b> lien(s) mort(s) supprimé(s){arr_info}."
         )
         await self.send_message(text)
@@ -188,7 +188,7 @@ class TelegramNotifier:
             details_txt = "\n" + details_txt
 
         text = (
-            f"✅ <b>DebridFlow — Récupération Terminée</b>\n\n"
+            f"✅ <b>OmniSym — Récupération Terminée</b>\n\n"
             f"• <b>Nom</b> : <code>{html.escape(str(name))}</code>\n"
             f"• <b>Catégorie</b> : <code>{html.escape(str(category or 'Aucune'))}</code>\n"
             f"• <b>Mode</b> : {mode_badge}{details_txt}"
@@ -199,7 +199,7 @@ class TelegramNotifier:
         if not settings_db.get("telegram_notify_error", True):
             return
         text = (
-            f"❌ <b>DebridFlow — Erreur Détectée</b>\n\n"
+            f"❌ <b>OmniSym — Erreur Détectée</b>\n\n"
             f"• <b>Contexte</b> : {html.escape(str(title))}\n"
             f"• <b>Détails</b> : <code>{html.escape(str(message))}</code>"
         )

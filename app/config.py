@@ -28,7 +28,7 @@ DEFAULT_SERVICES: Dict[str, Dict[str, str]] = {
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "api_key": os.getenv("ALLDEBRID_API_KEY", "").strip(),
     "api_base": os.getenv("ALLDEBRID_API_BASE", "https://api.alldebrid.com/v4").rstrip("/"),
-    "agent": os.getenv("ALLDEBRID_AGENT", "DebridFlow-Billou"),
+    "agent": os.getenv("ALLDEBRID_AGENT", "OmniSym-Billou"),
     "rclone_mount_dir": os.getenv("RCLONE_MOUNT_DIR", "/mnt/alldebrid/magnets"),
     "download_base_dir": os.getenv("DOWNLOAD_BASE_DIR", "/mnt/virtual/Medias/DL"),
     "poll_interval": float(os.getenv("POLL_INTERVAL", "3.0")),
@@ -79,4 +79,4 @@ logging.basicConfig(
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
-logger = logging.getLogger("DebridFlow")
+logger = logging.getLogger("OmniSym")

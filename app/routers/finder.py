@@ -119,7 +119,7 @@ async def api_finder_search(payload: Dict[str, Any] = Body(...)):
 @router.post("/download")
 async def api_finder_download(payload: Dict[str, Any] = Body(...)):
     """
-    Télécharge un ou plusieurs liens trouvés directement dans DebridFlow.
+    Télécharge un ou plusieurs liens trouvés directement dans OmniSym.
     Prend en charge les liens magnet, les fichiers .torrent (téléchargés puis envoyés),
     et les liens DDL (Rapidgator, etc.) envoyés dans la file DDL.
     """
@@ -188,7 +188,7 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                 # 2. Liens de fichiers .torrent distants
                 elif ".torrent" in raw_url.lower() or item_kind == "torrent":
                     # Télécharger le fichier .torrent
-                    resp = await client.get(raw_url, headers={"User-Agent": "DebridFlow"}, follow_redirects=True)
+                    resp = await client.get(raw_url, headers={"User-Agent": "OmniSym"}, follow_redirects=True)
                     resp.raise_for_status()
                     torrent_bytes = resp.content
 
@@ -262,19 +262,19 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                     added_items.append({"hash": info_hash, "name": hint_name or raw_fname, "type": "ddl"})
 
             except Exception as exc:
-                logger.error(f"Erreur ajout Finder vers DebridFlow pour '{raw_url[:60]}' : {exc}")
+                logger.error(f"Erreur ajout Finder vers OmniSym pour '{raw_url[:60]}' : {exc}")
                 errors.append(f"{raw_url[:60]}... : {exc}")
 
     if not added_items and errors:
         return JSONResponse({"status": "error", "message": "; ".join(errors)}, status_code=400)
 
-    logger.info(f"Finder: {len(added_items)} élément(s) transféré(s) vers la file DebridFlow.")
+    logger.info(f"Finder: {len(added_items)} élément(s) transféré(s) vers la file OmniSym.")
     return JSONResponse(
         {
             "status": "ok",
             "count": len(added_items),
             "items": added_items,
             "errors": errors,
-            "message": f"{len(added_items)} téléchargement(s) ajouté(s) à DebridFlow avec succès !",
+            "message": f"{len(added_items)} téléchargement(s) ajouté(s) à OmniSym avec succès !",
         }
     )

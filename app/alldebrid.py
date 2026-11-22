@@ -17,7 +17,7 @@ async def check_alldebrid_api_health(
     provider = get_provider(prov_key)
     key = api_key if api_key is not None else settings_db.get("api_key", "")
     base = api_base if api_base is not None else settings_db.get("api_base", provider.default_api_base)
-    ag = agent if agent is not None else settings_db.get("agent", "DebridFlow-Billou")
+    ag = agent if agent is not None else settings_db.get("agent", "OmniSym-Billou")
 
     health = await provider.check_health(client, api_key=key, api_base=base, agent=ag)
     api_health.update(health)
@@ -31,7 +31,7 @@ async def alldebrid_upload_magnet(client: httpx.AsyncClient, magnet: str) -> Dic
         magnet,
         api_key=settings_db.get("api_key", ""),
         api_base=settings_db.get("api_base", provider.default_api_base),
-        agent=settings_db.get("agent", "DebridFlow-Billou"),
+        agent=settings_db.get("agent", "OmniSym-Billou"),
     )
 
 
@@ -43,7 +43,7 @@ async def alldebrid_upload_file(client: httpx.AsyncClient, filename: str, conten
         content,
         api_key=settings_db.get("api_key", ""),
         api_base=settings_db.get("api_base", provider.default_api_base),
-        agent=settings_db.get("agent", "DebridFlow-Billou"),
+        agent=settings_db.get("agent", "OmniSym-Billou"),
     )
 
 
@@ -54,7 +54,7 @@ async def alldebrid_get_statuses(client: httpx.AsyncClient, ids: List[Any]) -> D
         ids,
         api_key=settings_db.get("api_key", ""),
         api_base=settings_db.get("api_base", provider.default_api_base),
-        agent=settings_db.get("agent", "DebridFlow-Billou"),
+        agent=settings_db.get("agent", "OmniSym-Billou"),
     )
 
 
@@ -65,7 +65,7 @@ async def alldebrid_get_magnet_files(client: httpx.AsyncClient, ad_id: Any) -> L
         ad_id,
         api_key=settings_db.get("api_key", ""),
         api_base=settings_db.get("api_base", provider.default_api_base),
-        agent=settings_db.get("agent", "DebridFlow-Billou"),
+        agent=settings_db.get("agent", "OmniSym-Billou"),
     )
 
 
@@ -76,7 +76,7 @@ async def alldebrid_delete_magnet(client: httpx.AsyncClient, ad_id: Any) -> None
         ad_id,
         api_key=settings_db.get("api_key", ""),
         api_base=settings_db.get("api_base", provider.default_api_base),
-        agent=settings_db.get("agent", "DebridFlow-Billou"),
+        agent=settings_db.get("agent", "OmniSym-Billou"),
     )
 
 
@@ -90,5 +90,5 @@ async def alldebrid_unlock_link(
         password=password,
         api_key=settings_db.get("api_key", ""),
         api_base=settings_db.get("api_base", provider.default_api_base),
-        agent=settings_db.get("agent", "DebridFlow-Billou"),
+        agent=settings_db.get("agent", "OmniSym-Billou"),
     )

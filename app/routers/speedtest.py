@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.state import settings_db
 
-logger = logging.getLogger("DebridFlow.Speedtest")
+logger = logging.getLogger("OmniSym.Speedtest")
 router = APIRouter()
 
 
@@ -38,7 +38,7 @@ async def api_run_speedtest() -> JSONResponse:
         if ad_key:
             try:
                 t0 = time.time()
-                r_ad = await client.get(f"https://api.alldebrid.com/v4/user?agent=DebridFlow-Billou&apikey={ad_key}")
+                r_ad = await client.get(f"https://api.alldebrid.com/v4/user?agent=OmniSym-Billou&apikey={ad_key}")
                 result["alldebrid_ping_ms"] = round((time.time() - t0) * 1000, 1)
                 if r_ad.status_code == 200:
                     data = r_ad.json()

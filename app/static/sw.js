@@ -1,5 +1,5 @@
-// DebridFlow PWA Service Worker (Minimal & Robuste)
-const CACHE_NAME = 'debridflow-pwa-v1';
+// OmniSym PWA Service Worker (Minimal & Robuste)
+const CACHE_NAME = 'omnisym-pwa-v1';
 
 // Ressources critiques de l'App Shell pour démarrage instantané
 const SHELL_ASSETS = [
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(SHELL_ASSETS).catch((err) => {
-        console.warn('[DebridFlow SW] Pré-cache partiel:', err);
+        console.warn('[OmniSym SW] Pré-cache partiel:', err);
       });
     }).then(() => self.skipWaiting())
   );

@@ -1,6 +1,6 @@
 {
-  "name": "DebridFlow",
-  "short_name": "DebridFlow",
+  "name": "OmniSym",
+  "short_name": "OmniSym",
   "description": "Multi-Debrid Symlink & Download Manager",
   "start_url": "/",
   "scope": "/",

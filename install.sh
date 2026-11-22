@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# DebridFlow - Script d'installation automatique Bare-Metal (sans Docker)
+# OmniSym - Script d'installation automatique Bare-Metal (sans Docker)
 # Compatible Debian, Ubuntu, Raspberry Pi OS, Fedora, Arch Linux, Alpine
 # ==============================================================================
 
@@ -20,7 +20,7 @@ cd "$SCRIPT_DIR"
 
 echo -e "${CYAN}${BOLD}"
 echo "=========================================================="
-echo "        DebridFlow - Installation Autonome (Bare-Metal)   "
+echo "        OmniSym - Installation Autonome (Bare-Metal)   "
 echo "=========================================================="
 echo -e "${NC}"
 
@@ -66,7 +66,7 @@ else
   PY_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)")
   
   if [ "$PY_MAJOR" -lt 3 ] || ([ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 10 ]); then
-    echo -e "${YELLOW}[!] Python $PY_VER détecté. DebridFlow requiert Python 3.10 ou supérieur.${NC}"
+    echo -e "${YELLOW}[!] Python $PY_VER détecté. OmniSym requiert Python 3.10 ou supérieur.${NC}"
     NEED_PYTHON_INSTALL=1
   else
     echo -e "${GREEN}[✓] Python $PY_VER détecté (compatible).${NC}"
@@ -138,18 +138,18 @@ echo -e "${GREEN}[✓] Script de démarrage généré : ./start.sh${NC}"
 # 9. Proposition d'installation en service systemd
 if command -v systemctl >/dev/null 2>&1 && [ -n "$SUDO" -o "$(id -u)" -eq 0 ]; then
   echo ""
-  echo -e "${CYAN}Voulez-vous installer DebridFlow en tant que service système systemd ?${NC}"
-  echo "(Permet de lancer DebridFlow en arrière-plan et au démarrage de la machine)"
+  echo -e "${CYAN}Voulez-vous installer OmniSym en tant que service système systemd ?${NC}"
+  echo "(Permet de lancer OmniSym en arrière-plan et au démarrage de la machine)"
   read -r -p "Installer le service systemd ? [o/N] : " INSTALL_SYSTEMD
   
   if [[ "$INSTALL_SYSTEMD" =~ ^[oOyY]$ ]]; then
     CURRENT_USER="$(logname 2>/dev/null || echo "$SUDO_USER" | grep -v root || whoami)"
-    SERVICE_FILE="/etc/systemd/system/debridflow.service"
+    SERVICE_FILE="/etc/systemd/system/omnisym.service"
     
     echo -e "${BLUE}[*] Création du service systemd dans $SERVICE_FILE...${NC}"
     $SUDO bash -c "cat << EOF > $SERVICE_FILE
 [Unit]
-Description=DebridFlow - Multi-Debrid Symlink & Download Client
+Description=OmniSym - Multi-Debrid Symlink & Download Client
 After=network.target
 
 [Service]
@@ -166,22 +166,22 @@ WantedBy=multi-user.target
 EOF"
 
     $SUDO systemctl daemon-reload
-    $SUDO systemctl enable debridflow.service
-    $SUDO systemctl restart debridflow.service
+    $SUDO systemctl enable omnisym.service
+    $SUDO systemctl restart omnisym.service
     
-    echo -e "${GREEN}[✓] Service systemd 'debridflow' activé et démarré !${NC}"
-    echo "    - Voir les logs : sudo journalctl -u debridflow -f"
-    echo "    - Statut        : sudo systemctl status debridflow"
-    echo "    - Arrêter       : sudo systemctl stop debridflow"
+    echo -e "${GREEN}[✓] Service systemd 'omnisym' activé et démarré !${NC}"
+    echo "    - Voir les logs : sudo journalctl -u omnisym -f"
+    echo "    - Statut        : sudo systemctl status omnisym"
+    echo "    - Arrêter       : sudo systemctl stop omnisym"
   fi
 fi
 
 echo ""
 echo -e "${GREEN}${BOLD}==========================================================${NC}"
-echo -e "${GREEN}${BOLD}        Installation de DebridFlow terminée avec succès ! ${NC}"
+echo -e "${GREEN}${BOLD}        Installation de OmniSym terminée avec succès ! ${NC}"
 echo -e "${GREEN}${BOLD}==========================================================${NC}"
 echo ""
-echo -e "Pour démarrer DebridFlow manuellement :"
+echo -e "Pour démarrer OmniSym manuellement :"
 echo -e "  ${CYAN}./start.sh${NC}"
 echo ""
 echo -e "Accès Web : ${BOLD}http://localhost:6505${NC} ou ${BOLD}http://<IP_DE_VOTRE_MACHINE>:6505${NC}"

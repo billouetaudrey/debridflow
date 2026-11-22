@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         DebridFlow - 1-Click & Right-Click Downloader
-// @namespace    https://github.com/billouetaudrey/debridflow
+// @name         OmniSym - 1-Click & Right-Click Downloader
+// @namespace    https://github.com/billouetaudrey/omnisym
 // @version      1.0.0
-// @description  Envoyez n'importe quel lien (Magnet, Torrent, DDL 1fichier/Rapidgator/etc.) vers DebridFlow via clic-droit, raccourci Alt+Clic ou badge ⚡
-// @author       DebridFlow
+// @description  Envoyez n'importe quel lien (Magnet, Torrent, DDL 1fichier/Rapidgator/etc.) vers OmniSym via clic-droit, raccourci Alt+Clic ou badge ⚡
+// @author       OmniSym
 // @match        *://*/*
-// @icon         https://raw.githubusercontent.com/billouetaudrey/debridflow/main/app/static/icons/icon-192.png
+// @icon         https://raw.githubusercontent.com/billouetaudrey/omnisym/main/app/static/icons/icon-192.png
 // @grant        GM_xmlhttpRequest
 // @grant        GM_notification
 // @grant        GM_setValue
@@ -32,9 +32,9 @@
   }
 
   // Enregistrement des commandes dans le menu Tampermonkey
-  GM_registerMenuCommand("🌐 Définir l'URL DebridFlow", () => {
+  GM_registerMenuCommand("🌐 Définir l'URL OmniSym", () => {
     const cur = getConfig().serverUrl;
-    const url = prompt("Adresse de votre serveur DebridFlow :\n(Ex: http://192.168.1.50:6505 ou https://df.mondomaine.ovh)", cur);
+    const url = prompt("Adresse de votre serveur OmniSym :\n(Ex: http://192.168.1.50:6505 ou https://df.mondomaine.ovh)", cur);
     if (url !== null && url.trim()) {
       GM_setValue('df_server_url', url.trim());
       showToast("URL mise à jour : " + url.trim(), "success");
@@ -59,10 +59,10 @@
 
   GM_registerMenuCommand("🔐 Identifiants API (si authentification requise)", () => {
     const curU = getConfig().username;
-    const u = prompt("Nom d'utilisateur DebridFlow (laisser vide si aucun) :", curU);
+    const u = prompt("Nom d'utilisateur OmniSym (laisser vide si aucun) :", curU);
     if (u !== null) {
       GM_setValue('df_username', u.trim());
-      const p = prompt("Mot de passe DebridFlow (laisser vide si aucun) :", getConfig().password);
+      const p = prompt("Mot de passe OmniSym (laisser vide si aucun) :", getConfig().password);
       if (p !== null) {
         GM_setValue('df_password', p.trim());
         showToast("Identifiants enregistrés !", "success");
@@ -104,7 +104,7 @@
     .df-toast.info { border-color: #1f6feb; }
     .df-toast-icon { font-size: 16px; }
 
-    /* Menu contextuel DebridFlow */
+    /* Menu contextuel OmniSym */
     #df-context-menu {
       position: fixed;
       z-index: 2147483646;
@@ -188,13 +188,13 @@
     }, 3500);
   }
 
-  // --- ENVOI VERS DEBRIDFLOW ---
-  function sendLinkToDebridFlow(url, preferredMode = null) {
+  // --- ENVOI VERS OMNISYM ---
+  function sendLinkToOmniSym(url, preferredMode = null) {
     if (!url) return;
     const cfg = getConfig();
     const mode = preferredMode || cfg.transferMode;
 
-    showToast("Envoi vers DebridFlow en cours...", "info");
+    showToast("Envoi vers OmniSym en cours...", "info");
 
     const isMagnet = url.startsWith('magnet:');
     const isTorrentUrl = url.toLowerCase().includes('.torrent');
@@ -265,10 +265,10 @@
           if (response.status >= 200 && response.status < 300) {
             const data = JSON.parse(response.responseText || '{}');
             const itemName = (data.items && data.items[0] && data.items[0].name) || itemLabel;
-            showToast(`Ajouté à DebridFlow : ${itemName}`, 'success');
+            showToast(`Ajouté à OmniSym : ${itemName}`, 'success');
             if (typeof GM_notification === 'function') {
               GM_notification({
-                title: "⚡ DebridFlow",
+                title: "⚡ OmniSym",
                 text: `Ajouté avec succès : ${itemName}`,
                 timeout: 3000
               });
@@ -279,14 +279,14 @@
               const errData = JSON.parse(response.responseText);
               errMsg = errData.message || errData.detail || errMsg;
             } catch(e) {}
-            showToast(`Erreur DebridFlow : ${errMsg}`, 'error');
+            showToast(`Erreur OmniSym : ${errMsg}`, 'error');
           }
         } catch (e) {
           showToast(`Erreur réponse : ${e.message}`, 'error');
         }
       },
       onerror: function(err) {
-        showToast(`Impossible de joindre DebridFlow sur ${cfg.serverUrl}. Vérifiez l'URL dans le menu Tampermonkey.`, 'error');
+        showToast(`Impossible de joindre OmniSym sur ${cfg.serverUrl}. Vérifiez l'URL dans le menu Tampermonkey.`, 'error');
       }
     });
   }
@@ -345,11 +345,11 @@
 
       menu.innerHTML = `
         <div class="df-menu-header">
-          <span>⚡ DebridFlow</span>
+          <span>⚡ OmniSym</span>
           <span style="font-size:10px;color:#8b949e;">${cfg.category}</span>
         </div>
         <div class="df-menu-item" id="df-act-send">
-          <span>📥</span> <span>Envoyer à DebridFlow</span>
+          <span>📥</span> <span>Envoyer à OmniSym</span>
         </div>
         <div class="df-menu-item" id="df-act-symlink">
           <span>🔗</span> <span>Envoyer en mode Symlink</span>
@@ -373,15 +373,15 @@
 
       menu.querySelector('#df-act-send').onclick = () => {
         closeContextMenu();
-        sendLinkToDebridFlow(href, cfg.transferMode);
+        sendLinkToOmniSym(href, cfg.transferMode);
       };
       menu.querySelector('#df-act-symlink').onclick = () => {
         closeContextMenu();
-        sendLinkToDebridFlow(href, 'symlink');
+        sendLinkToOmniSym(href, 'symlink');
       };
       menu.querySelector('#df-act-dl').onclick = () => {
         closeContextMenu();
-        sendLinkToDebridFlow(href, 'download');
+        sendLinkToOmniSym(href, 'download');
       };
       menu.querySelector('#df-act-native').onclick = () => {
         closeContextMenu();
@@ -398,7 +398,7 @@
       if (linkEl && linkEl.href) {
         e.preventDefault();
         e.stopPropagation();
-        sendLinkToDebridFlow(linkEl.href);
+        sendLinkToOmniSym(linkEl.href);
       }
     }
   }, true);
@@ -414,11 +414,11 @@
       const badge = document.createElement('span');
       badge.className = 'df-menu-badge';
       badge.innerHTML = '⚡';
-      badge.title = "Envoyer immédiatement à DebridFlow (1-clic)";
+      badge.title = "Envoyer immédiatement à OmniSym (1-clic)";
       badge.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        sendLinkToDebridFlow(a.href);
+        sendLinkToOmniSym(a.href);
       };
 
       if (a.nextSibling) {

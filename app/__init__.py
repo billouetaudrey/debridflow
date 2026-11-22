@@ -1,4 +1,4 @@
-"""DebridFlow - Fast Multi-Debrid Symlink & Download Client for *arr stack."""
+"""OmniSym - Fast Multi-Debrid Symlink & Download Client for *arr stack."""
 
 from app.main import app
 

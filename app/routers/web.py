@@ -542,7 +542,7 @@ async def test_api_connection(
     provider: str = Form("alldebrid"),
     api_key: str = Form(""),
     api_base: str = Form(""),
-    agent: str = Form("DebridFlow-Billou"),
+    agent: str = Form("OmniSym-Billou"),
     rclone_mount_dir: str = Form("/mnt/alldebrid/magnets"),
 ):
     mount_path = Path(rclone_mount_dir.strip() or "/mnt/alldebrid/magnets")
@@ -592,7 +592,7 @@ async def update_settings(
     provider: str = Form("alldebrid"),
     api_key: str = Form(""),
     api_base: str = Form(""),
-    agent: str = Form("DebridFlow-Billou"),
+    agent: str = Form("OmniSym-Billou"),
     rclone_mount_dir: str = Form("/mnt/alldebrid/magnets"),
     download_base_dir: str = Form("/mnt/virtual/Medias/DL"),
     poll_interval: float = Form(3.0),
@@ -661,7 +661,7 @@ async def update_settings(
         settings_db["provider"] = clean_prov
         settings_db["api_key"] = api_key.strip()
         settings_db["api_base"] = api_base.strip().rstrip("/") or prov_obj.default_api_base
-        settings_db["agent"] = agent.strip() or "DebridFlow-Billou"
+        settings_db["agent"] = agent.strip() or "OmniSym-Billou"
         settings_db["rclone_mount_dir"] = rclone_mount_dir.strip() or "/mnt/alldebrid/magnets"
         settings_db["download_base_dir"] = download_base_dir.strip() or "/mnt/virtual/Medias/DL"
         settings_db["poll_interval"] = max(1.5, float(poll_interval))

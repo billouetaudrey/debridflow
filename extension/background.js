@@ -1,4 +1,4 @@
-// DebridFlow Chrome Extension - Background Service Worker (Manifest V3)
+// OmniSym Chrome Extension - Background Service Worker (Manifest V3)
 
 function getSettings() {
   return new Promise((resolve) => {
@@ -36,7 +36,7 @@ chrome.runtime.onInstalled.addListener(() => {
     // Menu principal
     chrome.contextMenus.create({
       id: 'df-send-default',
-      title: '⚡ Envoyer à DebridFlow',
+      title: '⚡ Envoyer à OmniSym',
       contexts: ['link', 'selection']
     });
 
@@ -60,7 +60,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   let targetUrl = info.linkUrl || (info.selectionText ? info.selectionText.trim() : '');
   if (!targetUrl) {
-    notify('DebridFlow', 'Aucun lien ou texte sélectionné valide.', true);
+    notify('OmniSym', 'Aucun lien ou texte sélectionné valide.', true);
     return;
   }
 
@@ -70,10 +70,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === 'df-send-symlink') mode = 'symlink';
   if (info.menuItemId === 'df-send-download') mode = 'download';
 
-  sendToDebridFlow(targetUrl, settings, mode);
+  sendToOmniSym(targetUrl, settings, mode);
 });
 
-async function sendToDebridFlow(url, settings, mode) {
+async function sendToOmniSym(url, settings, mode) {
   const isMagnet = url.startsWith('magnet:');
   const isTorrent = url.toLowerCase().includes('.torrent');
 
@@ -116,16 +116,16 @@ async function sendToDebridFlow(url, settings, mode) {
     if (uploadResp.ok) {
       const data = await uploadResp.json();
       const itemName = (data.items && data.items[0] && data.items[0].name) || (isMagnet ? 'Magnet' : 'Lien');
-      notify('⚡ DebridFlow', `Ajouté avec succès (${mode}) :\n${itemName}`);
+      notify('⚡ OmniSym', `Ajouté avec succès (${mode}) :\n${itemName}`);
     } else {
       let errMsg = `Erreur HTTP ${uploadResp.status}`;
       try {
         const errJson = await uploadResp.json();
         errMsg = errJson.message || errJson.detail || errMsg;
       } catch(e) {}
-      notify('❌ Erreur DebridFlow', errMsg, true);
+      notify('❌ Erreur OmniSym', errMsg, true);
     }
   } catch (err) {
-    notify('❌ Impossible de joindre DebridFlow', `Vérifiez l'URL du serveur (${settings.serverUrl}) dans les options de l'extension.`, true);
+    notify('❌ Impossible de joindre OmniSym', `Vérifiez l'URL du serveur (${settings.serverUrl}) dans les options de l'extension.`, true);
   }
 }

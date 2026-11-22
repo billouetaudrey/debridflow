@@ -30,7 +30,7 @@ class AllDebridProvider(BaseDebridProvider):
     ) -> Dict[str, Any]:
         key_to_test = (api_key or "").strip()
         base_to_test = (api_base or self.default_api_base).strip().rstrip("/")
-        agent_to_test = (agent or "DebridFlow-Billou").strip()
+        agent_to_test = (agent or "OmniSym-Billou").strip()
         now_ts = int(time.time())
 
         if not key_to_test:
