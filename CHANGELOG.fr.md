@@ -12,6 +12,11 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.9.0] — 2026-11-22
 
 ### Ajouté
+- **Tri interactif des colonnes au clic (ID, Nom, Catégorie, Vitesse, Statut)** :
+  - En-têtes de tableau cliquables avec indicateurs d'ordre actifs (`▲` croissant / `▼` décroissant) et basculement en un clic.
+  - Tri multi-critères : par **Statut** (avec progression), par **Vitesse / Débit** (du plus rapide au plus lent), par **Nom** (alphabétique A-Z / Z-A), par **ID** (numérique AllDebrid / hash) et par **Service / Catégorie**.
+  - Persistance automatique du critère et de l'ordre de tri dans `localStorage` (maintien permanent lors des actualisations automatiques de 2s et réouvertures).
+  - Tri appliqué en temps réel à l'intérieur de chaque groupe pliable ainsi qu'en vue liste plate.
 - **Affichage des débits en direct (par débridage et global)** :
   - **Débit individuel par débridage** : affichage d'un badge de débit en temps réel directement à côté de la catégorie (`☁️ X.X Mo/s` pour le débridage cloud chez AllDebrid, `📥 Y.Y Mo/s` pour le téléchargement local vers le disque).
   - **Débit global cumulé par catégorie & groupe** : affichage du débit cumulé en temps réel dans chaque en-tête de catégorie pliable (`📁 Catégorie : tv-whisparr [41] [⚡ 75.9 Ko/s]`) et par statut.

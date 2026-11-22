@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.9.0] — 2026-11-22
 
 ### Added
+- **Interactive Click-to-Sort Table Headers (ID, Name, Category, Speed, Status)**:
+  - Clickable column headers with active sort direction indicators (`▲` ascending / `▼` descending) and one-click toggle.
+  - Multi-criteria sorting: by **Status** (combined with progress), by **Speed / Rate** (highest throughput first), by **Name** (alphabetical A-Z / Z-A), by **ID** (AllDebrid numeric / hash), and by **Service / Category**.
+  - Persistent sorting preferences saved in `localStorage` across 2-second background polling cycles and page reloads.
+  - Sorting seamlessly applied both inside individual collapsible accordion groups and in flat table view.
 - **Real-Time Speed Metrics (Per-Debrid Item & Global Totals)**:
   - **Individual Debrid Speed Badge**: displays real-time speed badges directly beside the category tag (`☁️ X.X MB/s` for cloud debriding on AllDebrid, `📥 Y.Y MB/s` for local disk downloads).
   - **Cumulative Speed per Category & Group**: displays live aggregate speed inside each collapsible category header (`📁 Category: tv-whisparr [41] [⚡ 75.9 KB/s]`) and status group.

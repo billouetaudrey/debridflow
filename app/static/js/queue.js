@@ -125,9 +125,12 @@ function updateHeaderStatus(items, apiHealth) {
 let currentQueueFilter = 'all';
 let currentQueueGrouping = 'status';
 let collapsedGroupsSet = new Set();
+let currentQueueSortField = 'added';
+let currentQueueSortOrder = 'desc';
 
 const VALID_FILTERS = new Set(['all', 'downloading', 'debriding', 'failed', 'completed', 'paused']);
 const VALID_GROUPINGS = new Set(['status', 'category', 'mode', 'none']);
+const VALID_SORT_FIELDS = new Set(['id', 'name', 'category', 'speed', 'status', 'added']);
 
 try {
   let sf = localStorage.getItem('omnisym_queue_filter');
@@ -148,9 +151,92 @@ try {
 
   const sc = localStorage.getItem('omnisym_collapsed_groups');
   if (sc) collapsedGroupsSet = new Set(JSON.parse(sc));
+
+  const sfield = localStorage.getItem('omnisym_queue_sort_field');
+  if (sfield && VALID_SORT_FIELDS.has(sfield)) currentQueueSortField = sfield;
+
+  const sorder = localStorage.getItem('omnisym_queue_sort_order');
+  if (sorder === 'asc' || sorder === 'desc') currentQueueSortOrder = sorder;
 } catch (e) {
   currentQueueFilter = 'all';
   currentQueueGrouping = 'status';
+}
+
+function setQueueSort(field) {
+  if (!VALID_SORT_FIELDS.has(field)) return;
+  if (currentQueueSortField === field) {
+    currentQueueSortOrder = currentQueueSortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentQueueSortField = field;
+    currentQueueSortOrder = (field === 'speed' || field === 'status' || field === 'id') ? 'desc' : 'asc';
+  }
+  try {
+    localStorage.setItem('omnisym_queue_sort_field', currentQueueSortField);
+    localStorage.setItem('omnisym_queue_sort_order', currentQueueSortOrder);
+  } catch (e) {}
+  updateSortHeaderIcons();
+  if (window.currentQueueItems) {
+    renderQueue(window.currentQueueItems);
+  }
+}
+
+function updateSortHeaderIcons() {
+  const fields = ['id', 'name', 'category', 'speed', 'status'];
+  fields.forEach(f => {
+    const th = document.getElementById('th-sort-' + f);
+    const icon = document.getElementById('sort-icon-' + f);
+    if (!th || !icon) return;
+    if (currentQueueSortField === f) {
+      th.classList.add('active-sort');
+      icon.textContent = currentQueueSortOrder === 'asc' ? '▲' : '▼';
+    } else {
+      th.classList.remove('active-sort');
+      icon.textContent = '↕';
+    }
+  });
+}
+
+function sortQueueItemList(itemsList) {
+  if (!itemsList || itemsList.length <= 1) return itemsList;
+  const list = itemsList.slice();
+  const mult = currentQueueSortOrder === 'desc' ? -1 : 1;
+
+  list.sort((a, b) => {
+    if (currentQueueSortField === 'name') {
+      const na = (a.name || '').toLowerCase();
+      const nb = (b.name || '').toLowerCase();
+      return na.localeCompare(nb) * mult;
+    }
+    if (currentQueueSortField === 'id') {
+      const ida = Number(a.ad_id) || 0;
+      const idb = Number(b.ad_id) || 0;
+      if (ida !== idb) return (ida - idb) * mult;
+      return String(a.hash || '').localeCompare(String(b.hash || '')) * mult;
+    }
+    if (currentQueueSortField === 'speed') {
+      const spdA = isItemDebrided(a) ? (Number(a.dlspeed) || 0) : (Number(a.cloud_speed) || 0);
+      const spdB = isItemDebrided(b) ? (Number(b.dlspeed) || 0) : (Number(b.cloud_speed) || 0);
+      if (spdA !== spdB) return (spdA - spdB) * mult;
+      return (Number(a.progress || 0) - Number(b.progress || 0)) * mult;
+    }
+    if (currentQueueSortField === 'status') {
+      const grpOrder = { 'failed': 1, 'downloading': 2, 'debriding': 3, 'paused': 4, 'completed': 5, 'other': 6 };
+      const ga = grpOrder[getItemTypeGroup(a)] || 9;
+      const gb = grpOrder[getItemTypeGroup(b)] || 9;
+      if (ga !== gb) return (ga - gb) * mult;
+      return (Number(a.progress || 0) - Number(b.progress || 0)) * mult;
+    }
+    if (currentQueueSortField === 'category') {
+      const ca = (a.category || '').toLowerCase();
+      const cb = (b.category || '').toLowerCase();
+      return ca.localeCompare(cb) * mult;
+    }
+    const ta = Number(a.added_on) || 0;
+    const tb = Number(b.added_on) || 0;
+    return (ta - tb) * mult;
+  });
+
+  return list;
 }
 
 function saveCollapsedGroups() {
@@ -312,7 +398,7 @@ function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass 
     ? `<span class="badge-group-speed" title="${esc(t('tip_group_speed') || 'Débit cumulé de ce groupe')}">⚡ ${formatSpeed(groupSpeed)}</span>`
     : '';
   return `<tr class="queue-group-row ${openClass}" onclick="toggleQueueGroup('${groupId}')" data-group-id="${groupId}">
-    <td colspan="6" class="queue-group-cell">
+    <td colspan="7" class="queue-group-cell">
       <div class="queue-group-header-content">
         <div class="queue-group-title">
           <span class="queue-chevron">▶</span>
@@ -430,9 +516,9 @@ function renderQueueRow(item, checkedSet, groupId = '') {
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span class="tag">${esc(item.category)}</span>
         ${modeBadge}
-        ${speedTag}
       </div>
     </td>
+    <td class="col-speed">${speedTag || '<span style="color:#8b949e;font-size:11px;">--</span>'}</td>
     <td class="col-status">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
         <span class="badge ${badgeCls}">${stateTxt}</span>
@@ -519,6 +605,8 @@ function renderQueue(items) {
   const tbody = document.getElementById('queue-tbody');
   const checkedSet = new Set(getSelectedHashes());
 
+  updateSortHeaderIcons();
+
   const filterSelect = document.getElementById('queue-filter-select');
   if (filterSelect && document.activeElement !== filterSelect && filterSelect.value !== currentQueueFilter) {
     filterSelect.value = currentQueueFilter;
@@ -557,7 +645,7 @@ function renderQueue(items) {
   updateOptionText('opt-filter-paused', `⏸️ ${t('q_filter_paused') || 'En pause'} (${counts.paused})`);
 
   if (!items || items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan='6' style='color:#8b949e;text-align:center'>${esc(t('no_torrents'))}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan='7' style='color:#8b949e;text-align:center'>${esc(t('no_torrents'))}</td></tr>`;
     updateSelection();
     return;
   }
@@ -568,8 +656,11 @@ function renderQueue(items) {
     filteredItems = items.filter(it => matchesQueueFilter(it, currentQueueFilter));
   }
 
+  // Application du tri interactif sélectionné par l'utilisateur
+  filteredItems = sortQueueItemList(filteredItems);
+
   if (filteredItems.length === 0) {
-    tbody.innerHTML = `<tr><td colspan='6' style='color:#8b949e;text-align:center'>${esc(t('q_no_filtered_torrents') || 'Aucun élément ne correspond au filtre sélectionné')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan='7' style='color:#8b949e;text-align:center'>${esc(t('q_no_filtered_torrents') || 'Aucun élément ne correspond au filtre sélectionné')}</td></tr>`;
     updateSelection();
     return;
   }

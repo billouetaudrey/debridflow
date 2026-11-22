@@ -155,10 +155,21 @@
       <thead>
         <tr>
           <th style="width:28px" data-text-all="Tout sélectionner"><input type="checkbox" id="chk-all" onclick="toggleAll(this)"></th>
-          <th data-i18n="th_id">ID (AD / Hash)</th>
-          <th data-i18n="th_name">Nom</th>
-          <th data-i18n="th_service">Service / Mode</th>
-          <th data-i18n="th_status">Statut</th>
+          <th class="th-sortable" id="th-sort-id" onclick="setQueueSort('id')" title="Trier par ID (AD / Hash)" data-i18n-title="tip_sort_id">
+            <span data-i18n="th_id">ID (AD / Hash)</span> <span class="sort-icon" id="sort-icon-id">↕</span>
+          </th>
+          <th class="th-sortable" id="th-sort-name" onclick="setQueueSort('name')" title="Trier par Nom" data-i18n-title="tip_sort_name">
+            <span data-i18n="th_name">Nom</span> <span class="sort-icon" id="sort-icon-name">↕</span>
+          </th>
+          <th class="th-sortable" id="th-sort-category" onclick="setQueueSort('category')" title="Trier par Service / Catégorie" data-i18n-title="tip_sort_cat">
+            <span data-i18n="th_service">Service / Mode</span> <span class="sort-icon" id="sort-icon-category">↕</span>
+          </th>
+          <th class="th-sortable" id="th-sort-speed" onclick="setQueueSort('speed')" title="Trier par Vitesse / Débit" data-i18n-title="tip_sort_speed">
+            <span data-i18n="th_speed">Vitesse / Débit</span> <span class="sort-icon" id="sort-icon-speed">↕</span>
+          </th>
+          <th class="th-sortable" id="th-sort-status" onclick="setQueueSort('status')" title="Trier par Statut" data-i18n-title="tip_sort_status">
+            <span data-i18n="th_status">Statut</span> <span class="sort-icon" id="sort-icon-status">↕</span>
+          </th>
           <th data-i18n="th_actions">Actions</th>
         </tr>
       </thead>

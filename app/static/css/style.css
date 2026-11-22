@@ -760,10 +760,11 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   #queue-table tbody td { border: 0; padding: 0; width: auto; }
   #queue-table tbody td.col-chk { order: 1; }
   #queue-table tbody td.col-id { order: 2; font-size: 12px; display: flex; gap: 8px; align-items: center; }
-  #queue-table tbody td.col-cat { order: 3; margin-left: auto; display: flex; gap: 6px; align-items: center; }
-  #queue-table tbody td.col-name { order: 4; width: 100%; font-weight: 600; font-size: 14px; margin-top: 4px; word-break: break-word; overflow-wrap: anywhere; }
-  #queue-table tbody td.col-status { order: 5; width: 100%; }
-  #queue-table tbody td.col-actions { order: 6; width: 100%; display: flex; gap: 8px; margin-top: 8px; }
+  #queue-table tbody td.col-cat { order: 3; display: flex; gap: 6px; align-items: center; }
+  #queue-table tbody td.col-speed { order: 4; margin-left: auto; display: flex; align-items: center; }
+  #queue-table tbody td.col-name { order: 5; width: 100%; font-weight: 600; font-size: 14px; margin-top: 4px; word-break: break-word; overflow-wrap: anywhere; }
+  #queue-table tbody td.col-status { order: 6; width: 100%; }
+  #queue-table tbody td.col-actions { order: 7; width: 100%; display: flex; gap: 8px; margin-top: 8px; }
   #queue-table tbody td.col-actions button { flex: 1; padding: 9px 6px; text-align: center; }
 
   /* Scanner Responsive */
@@ -1249,6 +1250,32 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   color: #58a6ff;
   border: 1px solid rgba(56, 139, 253, 0.4);
   margin-left: 6px;
+}
+
+/* Sortable Table Headers */
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.th-sortable:hover {
+  background: var(--btn-sec-hover);
+  color: var(--text-bright);
+}
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+.th-sortable.active-sort {
+  color: #58a6ff;
+}
+.th-sortable.active-sort .sort-icon {
+  color: #58a6ff;
+  font-weight: 800;
 }
 
 
