@@ -11,6 +11,12 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ## [2.9.1] — 2026-11-23
 
+### Ajouté
+- **Recherche d'alternative pour les magnets et téléchargements en erreur** :
+  - Ajout du bouton d'action `🔍 Rechercher` et de l'icône loupe cliquable à côté du titre pour tout torrent ou téléchargement DDL en statut d'erreur dans la file d'attente (`state === 'error'`).
+  - Ouvre automatiquement l'onglet Finder multi-moteurs avec le titre nettoyé et lance la recherche instantanément pour trouver une release ou un lien alternatif en un clic.
+  - Intégration dans le gestionnaire Médiathèque & Liens : bouton de recherche directe sur les cartes de magnets en statut mort API (`statusCode > 4`) et sur les liens morts locaux sans association Arr.
+
 ### Corrigé
 - **Filtrage intelligent de la médiathèque & exclusion des fichiers non téléchargés ou hors dossiers scannés** :
   - **Exclusion des téléchargements en cours** : les magnets dont le statut AllDebrid est `< 4` (0 = traitement/attente, 1 = en cours de téléchargement cloud, 2 = compression, 3 = téléversement) ou qui sont en cours de transfert local actif ne sont plus listés dans l'onglet Médiathèque. Ils restent gérés dans l'onglet File d'attente et ne sont plus étiquetés à tort comme « Non symlinkés ».

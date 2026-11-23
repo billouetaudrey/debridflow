@@ -200,6 +200,8 @@ function renderDeadLinks(deadList) {
     } else if (item.media_type === 'whisparr' && item.media_id) {
       mediaBadge = `<span class="badge-tag whisparr">🔞 Whisparr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
       researchBtn = `<button type="button" class="btn-sec" style="color:#e066ff;border-color:#e066ff;" onclick="onResearchDeadLinkClick(${idx})">${esc(t('btn_retrigger_whisparr'))}</button>`;
+    } else {
+      researchBtn = `<button type="button" class="btn-sec" style="color:#58a6ff;border-color:#58a6ff;font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;" onclick="onSearchDeadLinkAlternative(${idx})" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`;
     }
 
     return `<tr>
@@ -224,6 +226,53 @@ function onCleanDeadSymlinkClick(idx) {
   const item = (scannerData.dead_symlinks || [])[idx];
   if (!item) return;
   cleanDeadSymlink(item.path);
+}
+
+function onSearchDeadLinkAlternative(idx) {
+  const item = (scannerData.dead_symlinks || [])[idx];
+  if (!item) return;
+  const name = item.media_title || item.filename || '';
+  if (!name) return;
+  if (typeof searchAlternative === 'function') {
+    searchAlternative(name);
+  } else {
+    showTab('finder');
+    const input = document.getElementById('finder_query');
+    if (input) {
+      input.value = name;
+      input.focus();
+    }
+    if (typeof runFinderSearch === 'function') {
+      runFinderSearch();
+    }
+  }
+}
+
+function searchScannerMagnetAlternative(magId) {
+  let magName = '';
+  if (scannerData && scannerData.grouped_magnets) {
+    for (const mags of Object.values(scannerData.grouped_magnets)) {
+      const found = mags.find(m => m.id === magId);
+      if (found) {
+        magName = found.name;
+        break;
+      }
+    }
+  }
+  if (!magName) return;
+  if (typeof searchAlternative === 'function') {
+    searchAlternative(magName);
+  } else {
+    showTab('finder');
+    const input = document.getElementById('finder_query');
+    if (input) {
+      input.value = magName;
+      input.focus();
+    }
+    if (typeof runFinderSearch === 'function') {
+      runFinderSearch();
+    }
+  }
 }
 
 async function researchDeadLink(mediaType, mediaId, path) {
@@ -363,7 +412,7 @@ function renderMagnetsList(grouped) {
           <div class="mag-info-left">
             <input type="checkbox" class="sc-mag-chk" value="${mag.id}" data-name="${esc(mag.name)}">
             <div>
-              <div style="font-weight:600;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)}</div>
+              <div style="font-weight:600;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)} <a href="javascript:void(0)" onclick="searchScannerMagnetAlternative(${mag.id})" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a></div>
               <div class="mag-meta">
                 <span>ID: #${mag.id}</span>
                 <span>${esc(t('meta_size'))} ${formatSize(mag.size)}</span>
@@ -373,6 +422,7 @@ function renderMagnetsList(grouped) {
             </div>
           </div>
           <div class="mag-actions">
+            <button type="button" class="btn-sec" onclick="searchScannerMagnetAlternative(${mag.id})" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>
             <button type="button" class="btn-sec" onclick="downloadScannerMagnet(${mag.id}, '${esc(mag.name)}', '${esc(mag.hash || '')}', ${mag.size || 0})" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;" title="Basculer en téléchargement réel sur le serveur"><span>📥</span> <span>${esc(t('btn_download') || 'Télécharger')}</span></button>
             <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">${esc(t('btn_delete'))}</button>
           </div>
@@ -393,7 +443,7 @@ function renderMagnetsList(grouped) {
           <div class="mag-info-left">
             <input type="checkbox" class="sc-mag-chk" value="${mag.id}" data-name="${esc(mag.name)}" ${idx > 0 ? 'data-isdup="1"' : ''}>
             <div>
-              <div style="font-weight:500;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)} ${isBest}</div>
+              <div style="font-weight:500;font-size:13px;word-break:break-word;overflow-wrap:anywhere;">${esc(mag.name)} ${isBest} <a href="javascript:void(0)" onclick="searchScannerMagnetAlternative(${mag.id})" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a></div>
               <div class="mag-meta">
                 <span>ID: #${mag.id}</span>
                 <span>${esc(t('meta_size'))} ${formatSize(mag.size)}</span>
@@ -403,6 +453,7 @@ function renderMagnetsList(grouped) {
             </div>
           </div>
           <div class="mag-actions">
+            <button type="button" class="btn-sec" onclick="searchScannerMagnetAlternative(${mag.id})" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>
             <button type="button" class="btn-sec" onclick="downloadScannerMagnet(${mag.id}, '${esc(mag.name)}', '${esc(mag.hash || '')}', ${mag.size || 0})" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;" title="Basculer en téléchargement réel sur le serveur"><span>📥</span> <span>${esc(t('btn_download') || 'Télécharger')}</span></button>
             <button type="button" class="btn-del" onclick="deleteSingleMagnet(${mag.id}, '${esc(mag.name)}')">${esc(t('btn_delete'))}</button>
           </div>

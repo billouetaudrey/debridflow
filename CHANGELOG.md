@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.9.1] — 2026-11-23
 
+### Added
+- **Alternative Finder Search for Errored Magnets and Downloads**:
+  - Added dedicated `🔍 Search` action button and inline clickable magnifying glass next to the filename for any torrent or DDL download in `error` state in the queue.
+  - Automatically switches to the Multi-Engine Finder tab, pre-fills the cleaned release title, and initiates a search with one click to find replacements.
+  - Also integrated into the Media Library & Links tab for dead/errored provider magnets (`statusCode > 4`) and unlinked dead symlinks.
+
 ### Fixed
 - **Smart Media Library Filtering & Exclusion of In-Progress or Non-Scanned Downloads**:
   - **In-Progress Download Exclusion**: Magnets with AllDebrid status `< 4` (0 = processing, 1 = downloading, 2 = compressing, 3 = uploading) or active local transfers are no longer displayed in the Media Library tab. They remain strictly in the Queue tab and are no longer mistakenly tagged as "Not Symlinked".

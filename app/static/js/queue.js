@@ -219,17 +219,23 @@ function clearQueueSearch() {
   onQueueSearchInput('');
 }
 
-function searchAlternative(hash) {
-  const item = (window.currentQueueItems || []).find(it => it.hash === hash);
-  if (!item) return;
-  let q = item.name || '';
-  for (const ext of ['.mkv', '.mp4', '.avi', '.ts', '.wmv', '.m4v', '.mov', '.iso', '.rar', '.zip']) {
+function searchAlternative(hashOrName) {
+  let name = '';
+  const item = (window.currentQueueItems || []).find(it => it.hash === hashOrName);
+  if (item) {
+    name = item.name || '';
+  } else {
+    name = hashOrName || '';
+  }
+  if (!name) return;
+  let q = name;
+  for (const ext of ['.mkv', '.mp4', '.avi', '.ts', '.wmv', '.m4v', '.mov', '.iso', '.rar', '.zip', '.tar', '.gz']) {
     if (q.toLowerCase().endsWith(ext)) {
       q = q.slice(0, -ext.length);
       break;
     }
   }
-  q = q.replace(/[._\-]/g, ' ').replace(/\s+/g, ' ').strip ? q.replace(/[._\-]/g, ' ').replace(/\s+/g, ' ').trim() : q.trim();
+  q = q.replace(/[._\-]/g, ' ').replace(/\s+/g, ' ').trim();
 
   showTab('finder');
   const input = document.getElementById('finder_query');
@@ -241,6 +247,7 @@ function searchAlternative(hash) {
     runFinderSearch();
   }
 }
+window.searchAlternative = searchAlternative;
 
 function updateSortSelect() {
   const sel = document.getElementById('queue-sort-select');
@@ -581,7 +588,10 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
 
   const isDebriding = getItemTypeGroup(item) === 'debriding';
-  const searchBtn = isDebriding
+  const isFailed = getItemTypeGroup(item) === 'failed' || state === 'error' || Boolean(item.error_msg);
+  const canSearch = isDebriding || isFailed;
+
+  const searchBtn = canSearch
     ? `<button type="button" class="btn-sec q-btn-search" onclick="searchAlternative('${fullId}')" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`
     : '';
 
@@ -592,7 +602,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
   return `<tr class="queue-item-row ${groupClass} ${collapsedClass}" data-hash="${fullId}" data-group-id="${groupId}">
     <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
     <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
-    <td class="col-name">${esc(item.name)}${isDebriding ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
+    <td class="col-name">${esc(item.name)}${canSearch ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
     <td class="col-cat">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span class="tag">${esc(item.category)}</span>
@@ -888,13 +898,15 @@ function renderQueue(items) {
           ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
           : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
 
+        const isDdlError = state === 'error' || Boolean(item.error_msg);
         const isDdlDebriding = state === 'resolving' || (!item.is_debrided && state !== 'error' && state !== 'completed');
-        const ddlSearchBtn = isDdlDebriding
+        const canDdlSearch = isDdlDebriding || isDdlError;
+        const ddlSearchBtn = canDdlSearch
           ? `<button type="button" class="btn-sec q-btn-search" onclick="searchAlternative('${fullId}')" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`
           : '';
 
         return `<tr>
-          <td class="col-name"><strong>${esc(item.name)}</strong>${isDdlDebriding ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
+          <td class="col-name"><strong>${esc(item.name)}</strong>${canDdlSearch ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
           <td class="col-cat"><span class="tag">${esc(item.category)}</span><div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
           <td class="col-status">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
