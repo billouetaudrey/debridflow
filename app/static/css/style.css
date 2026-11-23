@@ -294,6 +294,60 @@ body {
   color: var(--text-bright);
   padding: 4px 8px;
 }
+/* Queue Search Bar */
+.q-search-box {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  min-width: 200px;
+  max-width: 280px;
+  flex: 1 1 200px;
+}
+.q-search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+.q-search-input {
+  width: 100%;
+  padding: 6px 28px 6px 30px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg-card);
+  color: var(--text-bright);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.q-search-input:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
+.q-search-clear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.q-search-clear:hover {
+  color: var(--text-bright);
+}
+.q-btn-search {
+  transition: background 0.15s, border-color 0.15s;
+}
+.q-btn-search:hover {
+  background: rgba(88, 166, 255, 0.15);
+  border-color: #58a6ff !important;
+}
 .queue-grouping-tools {
   display: flex;
   align-items: center;
@@ -712,6 +766,12 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+  }
+  .q-search-box {
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    order: 0;
   }
   .queue-selects-group {
     width: 100%;

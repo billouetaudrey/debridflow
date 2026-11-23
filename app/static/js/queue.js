@@ -127,6 +127,7 @@ let currentQueueGrouping = 'status';
 let collapsedGroupsSet = new Set();
 let currentQueueSortField = 'added';
 let currentQueueSortOrder = 'desc';
+let currentQueueSearchQuery = '';
 
 const VALID_FILTERS = new Set(['all', 'downloading', 'debriding', 'failed', 'completed', 'paused']);
 const VALID_GROUPINGS = new Set(['status', 'category', 'mode', 'none']);
@@ -197,6 +198,47 @@ function onSortSelectChange(val) {
   updateSortSelect();
   if (window.currentQueueItems) {
     renderQueue(window.currentQueueItems);
+  }
+}
+
+function onQueueSearchInput(val) {
+  currentQueueSearchQuery = (val || '').trim();
+  const clearBtn = document.getElementById('queue-search-clear');
+  if (clearBtn) clearBtn.style.display = currentQueueSearchQuery ? 'inline-block' : 'none';
+  if (window.currentQueueItems) {
+    renderQueue(window.currentQueueItems);
+  }
+}
+
+function clearQueueSearch() {
+  const input = document.getElementById('queue-search-input');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  onQueueSearchInput('');
+}
+
+function searchAlternative(hash) {
+  const item = (window.currentQueueItems || []).find(it => it.hash === hash);
+  if (!item) return;
+  let q = item.name || '';
+  for (const ext of ['.mkv', '.mp4', '.avi', '.ts', '.wmv', '.m4v', '.mov', '.iso', '.rar', '.zip']) {
+    if (q.toLowerCase().endsWith(ext)) {
+      q = q.slice(0, -ext.length);
+      break;
+    }
+  }
+  q = q.replace(/[._\-]/g, ' ').replace(/\s+/g, ' ').strip ? q.replace(/[._\-]/g, ' ').replace(/\s+/g, ' ').trim() : q.trim();
+
+  showTab('finder');
+  const input = document.getElementById('finder_query');
+  if (input) {
+    input.value = q;
+    input.focus();
+  }
+  if (typeof runFinderSearch === 'function') {
+    runFinderSearch();
   }
 }
 
@@ -538,6 +580,11 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
     : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
 
+  const isDebriding = getItemTypeGroup(item) === 'debriding';
+  const searchBtn = isDebriding
+    ? `<button type="button" class="btn-sec q-btn-search" onclick="searchAlternative('${fullId}')" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`
+    : '';
+
   const groupClass = groupId ? `group-row-${groupId}` : '';
   const isCollapsed = isGroupCollapsed(groupId);
   const collapsedClass = isCollapsed ? 'group-collapsed' : '';
@@ -545,7 +592,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
   return `<tr class="queue-item-row ${groupClass} ${collapsedClass}" data-hash="${fullId}" data-group-id="${groupId}">
     <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
     <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
-    <td class="col-name">${esc(item.name)}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
+    <td class="col-name">${esc(item.name)}${isDebriding ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
     <td class="col-cat">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span class="tag">${esc(item.category)}</span>
@@ -561,6 +608,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
       <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
     </td>
     <td class="actions col-actions">
+      ${searchBtn}
       ${retryBtn}
       ${pauseBtn}
       <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>
@@ -642,6 +690,13 @@ function renderQueue(items) {
   updateSortHeaderIcons();
   updateSortSelect();
 
+  const searchInput = document.getElementById('queue-search-input');
+  if (searchInput && document.activeElement !== searchInput && searchInput.value !== currentQueueSearchQuery) {
+    searchInput.value = currentQueueSearchQuery;
+  }
+  const clearBtn = document.getElementById('queue-search-clear');
+  if (clearBtn) clearBtn.style.display = currentQueueSearchQuery ? 'inline-block' : 'none';
+
   const filterSelect = document.getElementById('queue-filter-select');
   if (filterSelect && document.activeElement !== filterSelect && filterSelect.value !== currentQueueFilter) {
     filterSelect.value = currentQueueFilter;
@@ -691,11 +746,27 @@ function renderQueue(items) {
     filteredItems = items.filter(it => matchesQueueFilter(it, currentQueueFilter));
   }
 
+  // Filtrage textuel par la barre de recherche
+  if (currentQueueSearchQuery) {
+    const q = currentQueueSearchQuery.toLowerCase();
+    filteredItems = filteredItems.filter(it => {
+      const name = (it.name || '').toLowerCase();
+      const cat = (it.category || '').toLowerCase();
+      const hash = (it.hash || '').toLowerCase();
+      const adId = String(it.ad_id || '').toLowerCase();
+      const savePath = (it.save_path || '').toLowerCase();
+      return name.includes(q) || cat.includes(q) || hash.includes(q) || adId.includes(q) || savePath.includes(q);
+    });
+  }
+
   // Application du tri interactif sélectionné par l'utilisateur
   filteredItems = sortQueueItemList(filteredItems);
 
   if (filteredItems.length === 0) {
-    tbody.innerHTML = `<tr><td colspan='7' style='color:#8b949e;text-align:center'>${esc(t('q_no_filtered_torrents') || 'Aucun élément ne correspond au filtre sélectionné')}</td></tr>`;
+    const emptyMsg = currentQueueSearchQuery
+      ? `${esc(t('q_no_search_results', { query: currentQueueSearchQuery }) || `Aucun résultat pour « ${currentQueueSearchQuery} »`)}`
+      : `${esc(t('q_no_filtered_torrents') || 'Aucun élément ne correspond au filtre sélectionné')}`;
+    tbody.innerHTML = `<tr><td colspan='7' style='color:#8b949e;text-align:center;padding:24px 12px;'>${emptyMsg}</td></tr>`;
     updateSelection();
     return;
   }
@@ -817,8 +888,13 @@ function renderQueue(items) {
           ? `<button class="btn-main" onclick="batchAction('retry', ['${fullId}'])" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;"><span>🔄</span> <span>${esc(t('btn_retry'))}</span></button>`
           : `<button class="btn-sec" onclick="batchAction('retry', ['${fullId}'])">${esc(t('btn_retry'))}</button>`;
 
+        const isDdlDebriding = state === 'resolving' || (!item.is_debrided && state !== 'error' && state !== 'completed');
+        const ddlSearchBtn = isDdlDebriding
+          ? `<button type="button" class="btn-sec q-btn-search" onclick="searchAlternative('${fullId}')" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`
+          : '';
+
         return `<tr>
-          <td class="col-name"><strong>${esc(item.name)}</strong><div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
+          <td class="col-name"><strong>${esc(item.name)}</strong>${isDdlDebriding ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
           <td class="col-cat"><span class="tag">${esc(item.category)}</span><div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
           <td class="col-status">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
@@ -828,6 +904,7 @@ function renderQueue(items) {
             <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
           </td>
           <td class="actions col-actions" style="text-align:right;">
+            ${ddlSearchBtn}
             ${ddlRetryBtn}
             ${pauseBtn}
             <button class="btn-del" onclick="openDeleteModal(['${fullId}'])">${esc(t('btn_delete'))}</button>

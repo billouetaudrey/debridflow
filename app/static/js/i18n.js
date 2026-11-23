@@ -138,6 +138,11 @@ const TRANSLATIONS = {
     // Queue Filters & Groups
     q_filter_label: "Filtrer\u00A0:",
     q_filter_all: "Tous",
+    ph_queue_search: "Rechercher dans la file...",
+    tip_clear_search: "Effacer la recherche",
+    q_no_search_results: "Aucun élément ne correspond à votre recherche « {query} »",
+    btn_search: "Rechercher",
+    tip_search_alternative: "Rechercher une source alternative dans OmniSym Finder",
     q_filter_downloading: "DL en cours",
     q_filter_debriding: "Débridage en cours",
     q_filter_failed: "En échec",
@@ -591,6 +596,11 @@ const TRANSLATIONS = {
     // Queue Filters & Groups
     q_filter_label: "Filter:",
     q_filter_all: "All",
+    ph_queue_search: "Search in queue...",
+    tip_clear_search: "Clear search",
+    q_no_search_results: "No items match your search \"{query}\"",
+    btn_search: "Search",
+    tip_search_alternative: "Search for alternative source in OmniSym Finder",
     q_filter_downloading: "Downloading",
     q_filter_debriding: "Debriding",
     q_filter_failed: "Failed",

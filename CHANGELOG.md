@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.9.0] — 2026-11-22
 
 ### Added
+- **Live Search Bar in Queue**:
+  - Real-time text search input with quick clear button (`✕`) integrated directly into the queue controls bar.
+  - Multi-attribute filtering (filename, category, hash, AllDebrid ID, save path).
+  - Seamlessly integrates with status filters, sorting, and collapsible groups (only groups with matching items remain visible).
+  - Retains input focus and state across background 2-second polling cycles without cursor interruptions.
+- **Search Alternative Button for Items Under Cloud Debriding**:
+  - Dedicated `🔍 Search` button in action column and inline magnifying glass icon next to the title for files currently undergoing cloud debriding or DDL.
+  - Automatically switches to the Multi-Engine Finder tab, pre-fills the cleaned title, and triggers an immediate multi-engine search to find alternative releases or direct links in one click.
 - **Mobile & Desktop Sort Dropdown Menu**:
   - Added dedicated `Sort:` select menu in the queue controls bar (Status & Speed, Speed fastest/slowest, Name A-Z / Z-A, ID newest/oldest, Category A-Z / Z-A).
   - Enables full sorting capability on mobile/touch screens where table column headers are hidden in favor of responsive cards.

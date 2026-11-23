@@ -12,6 +12,14 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.9.0] — 2026-11-22
 
 ### Ajouté
+- **Barre de recherche en direct dans la file d'attente** :
+  - Champ de saisie instantané avec icône loupe et bouton d'effacement rapide (`✕`) intégré dans la barre de contrôle.
+  - Filtrage multi-critères en temps réel (titre du fichier, catégorie, hash, identifiant AllDebrid, dossier de destination).
+  - Compatible avec tous les filtres de statut, tris interactifs et regroupements pliables (seuls les groupes contenant des résultats restent affichés).
+  - Préservation du focus et de la saisie sans interruption lors du rafraîchissement automatique de 2 secondes.
+- **Bouton de recherche d'alternative pour les fichiers en cours de débridage** :
+  - Bouton dédié `🔍 Rechercher` dans les actions et icône loupe rapide à côté du titre pour tout fichier en cours de débridage cloud ou DDL.
+  - Ouvre automatiquement l'onglet Recherche (Finder multi-moteurs), pré-remplit le titre nettoyé et lance instantanément la recherche multi-sources pour trouver une release alternative ou un lien direct en un clic.
 - **Menu déroulant de tri pour mobile & desktop** :
   - Intégration d'un sélecteur déroulant `Trier :` dans la barre de contrôle de la file d'attente (Statut & Vitesse, Vitesse +/- rapide, Nom A-Z / Z-A, ID +/- récent, Catégorie A-Z / Z-A).
   - Offre un contrôle de tri complet et tactile sur smartphone où les en-têtes de colonnes du tableau sont masqués au profit des cartes responsives.
