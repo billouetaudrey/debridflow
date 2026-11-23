@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.9.1] — 2026-11-23
 
 ### Added
+- **Remember Choice in Deletion Options**:
+  - Added "Remember my choice" checkbox in the deletion confirmation modal (`#del-modal`).
+  - Persistent `localStorage` storage for the user's deletion preferences ("Also delete local files / symlinks" and "Also delete magnet on AllDebrid").
+  - Automatically pre-selects the saved choices whenever the deletion dialog is opened.
 - **Alternative Finder Search for Errored Magnets and Downloads**:
   - Added dedicated `🔍 Search` action button and inline clickable magnifying glass next to the filename for any torrent or DDL download in `error` state in the queue.
   - Automatically switches to the Multi-Engine Finder tab, pre-fills the cleaned release title, and initiates a search with one click to find replacements.

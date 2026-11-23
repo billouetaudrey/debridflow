@@ -12,6 +12,10 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.9.1] — 2026-11-23
 
 ### Ajouté
+- **Mémorisation du choix dans les options de suppression** :
+  - Ajout de la case à cocher « Mémoriser mon choix » dans la boîte modale de confirmation de suppression (`#del-modal`).
+  - Mémorisation persistante dans `localStorage` de l'état des options (« Supprimer les fichiers locaux / symlinks » et « Supprimer le magnet sur AllDebrid »).
+  - Pré-sélection automatique des options enregistrées à chaque future ouverture de la modale de suppression.
 - **Recherche d'alternative pour les magnets et téléchargements en erreur** :
   - Ajout du bouton d'action `🔍 Rechercher` et de l'icône loupe cliquable à côté du titre pour tout torrent ou téléchargement DDL en statut d'erreur dans la file d'attente (`state === 'error'`).
   - Ouvre automatiquement l'onglet Finder multi-moteurs avec le titre nettoyé et lance la recherche instantanément pour trouver une release ou un lien alternatif en un clic.

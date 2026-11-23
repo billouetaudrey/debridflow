@@ -194,6 +194,7 @@ const TRANSLATIONS = {
     modal_desc: "Retirer {n} élément(s) de la liste OmniSym :",
     opt_del_files: "Supprimer aussi les fichiers / liens symboliques locaux",
     opt_del_ad: "Supprimer aussi le magnet chez le fournisseur",
+    opt_del_remember: "Mémoriser mon choix",
     btn_cancel: "Annuler",
     btn_confirm_delete: "Confirmer la suppression",
 
@@ -652,6 +653,7 @@ const TRANSLATIONS = {
     modal_desc: "Remove {n} item(s) from OmniSym list:",
     opt_del_files: "Also delete local files / symbolic links",
     opt_del_ad: "Also delete magnet on provider",
+    opt_del_remember: "Remember my choice",
     btn_cancel: "Cancel",
     btn_confirm_delete: "Confirm deletion",
 

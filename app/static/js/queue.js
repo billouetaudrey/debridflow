@@ -1007,6 +1007,25 @@ function openDeleteModal(hashes) {
   pendingDeleteHashes = hashes;
   modalOpen = true;
   document.getElementById('del-modal-desc').textContent = t('modal_desc', { n: hashes.length });
+
+  // Restauration du choix mémorisé
+  const isRemembered = localStorage.getItem('omnisym_del_remember') === '1';
+  const remChk = document.getElementById('opt-del-remember');
+  if (remChk) remChk.checked = isRemembered;
+
+  if (isRemembered) {
+    const savedFiles = localStorage.getItem('omnisym_del_files');
+    const savedAd = localStorage.getItem('omnisym_del_ad');
+    const chkFiles = document.getElementById('opt-del-files');
+    const chkAd = document.getElementById('opt-del-ad');
+    if (chkFiles && savedFiles !== null) {
+      chkFiles.checked = savedFiles === '1';
+    }
+    if (chkAd && savedAd !== null) {
+      chkAd.checked = savedAd === '1';
+    }
+  }
+
   document.getElementById('del-modal').style.display = 'flex';
 }
 
@@ -1022,8 +1041,23 @@ function closeDeleteModal() {
 
 async function confirmDelete() {
   if (!pendingDeleteHashes.length) return;
-  const delFiles = document.getElementById('opt-del-files').checked ? 'true' : 'false';
-  const delAd = document.getElementById('opt-del-ad').checked ? 'true' : 'false';
+  const chkFiles = document.getElementById('opt-del-files');
+  const chkAd = document.getElementById('opt-del-ad');
+  const chkRem = document.getElementById('opt-del-remember');
+
+  const delFiles = chkFiles && chkFiles.checked ? 'true' : 'false';
+  const delAd = chkAd && chkAd.checked ? 'true' : 'false';
+
+  if (chkRem && chkRem.checked) {
+    localStorage.setItem('omnisym_del_remember', '1');
+    localStorage.setItem('omnisym_del_files', delFiles === 'true' ? '1' : '0');
+    localStorage.setItem('omnisym_del_ad', delAd === 'true' ? '1' : '0');
+  } else {
+    localStorage.removeItem('omnisym_del_remember');
+    localStorage.removeItem('omnisym_del_files');
+    localStorage.removeItem('omnisym_del_ad');
+  }
+
   const fd = new FormData();
   fd.append('hashes', pendingDeleteHashes.join('|'));
   fd.append('deleteFiles', delFiles);
