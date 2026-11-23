@@ -39,6 +39,11 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - Le filtre « DL en cours » n'inclut dorénavant que les éléments déjà débridés en cours de téléchargement local ou de transfert actif.
 
 ### Corrigé
+- **Relance des liens morts dans Radarr, Sonarr & Whisparr** :
+  - **Correction du blocage au clic** : remplacement de l'injection directe des chemins dans les attributs `onclick` par un indexage sécurisé, évitant les erreurs de syntaxe JavaScript causées par les apostrophes dans les titres de médias (ex. *Guy Ritchie's*, *Marvel's*).
+  - **Purge effective du fichier mort avant recherche** : suppression explicite de l'entrée du fichier mort dans l'API de Radarr (`DELETE /api/v3/moviefile/{id}`) et Sonarr (`DELETE /api/v3/episodefile/{id}`) avant de déclencher `MoviesSearch` ou `SeriesSearch`, garantissant que Radarr/Sonarr détecte le média comme manquant et télécharge immédiatement une nouvelle release.
+  - **Prise en charge complète de Whisparr** : intégration de Whisparr dans la relance individuelle et groupée des liens morts.
+  - **Nettoyage immédiat du cache** : retrait instantané du lien mort de la mémoire et du cache local dès la relance réussie.
 - **Alignement typographique et saut de ligne des libellés (`Filtrer :`, `Grouper :`, `Trier :`)** :
   - Empêchement du renvoi à la ligne intempestif des deux-points (`:`) sur smartphone et petits écrans grâce à l'utilisation d'espaces insécables (`&nbsp;` / `\u00A0`) et de styles CSS stricts (`white-space: nowrap`, `flex-shrink: 0`).
 - **Persistance du repliage des groupes lors du rafraîchissement automatique** :

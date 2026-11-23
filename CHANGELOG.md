@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The "Downloading" filter now exclusively contains already-debrided items undergoing active local disk download or transfer.
 
 ### Fixed
+- **Retrigger Dead Links in Radarr, Sonarr & Whisparr**:
+  - **Fixed Click Unresponsiveness**: resolved JavaScript SyntaxErrors caused by unescaped single quotes/apostrophes in media filenames (e.g. *Guy Ritchie's*, *Marvel's*) by referencing items safely by index instead of inlined paths.
+  - **Effective Dead File Deletion Before Search**: explicitly deleted dead file references via Radarr (`DELETE /api/v3/moviefile/{id}`) and Sonarr (`DELETE /api/v3/episodefile/{id}`) prior to sending `MoviesSearch` or `SeriesSearch`, ensuring *Arr registers the media as missing and immediately downloads a replacement.
+  - **Whisparr Retrigger Support**: added full Whisparr support for single and bulk dead link retriggering.
+  - **Immediate Cache Purge**: automatically removed retriggered dead links from memory and cache upon successful search trigger.
 - **Label Typography and Colon Line-Wrapping (`Filter:`, `Group:`, `Sort:`)**:
   - Fixed unwanted colon line-breaks on narrow mobile screens using non-breaking spaces and strict CSS rules (`white-space: nowrap`, `flex-shrink: 0`).
 - **Persistent Group Collapsing During Automatic Polling**:

@@ -187,16 +187,19 @@ function renderDeadLinks(deadList) {
   if (btnResearchAll) btnResearchAll.style.display = 'inline-block';
   if (btnCleanAll) btnCleanAll.style.display = 'inline-block';
 
-  tbody.innerHTML = deadList.map(item => {
+  tbody.innerHTML = deadList.map((item, idx) => {
     let mediaBadge = `<span class="badge-tag unlinked">${esc(t('media_unknown'))}</span>`;
     let researchBtn = '';
 
     if (item.media_type === 'radarr' && item.media_id) {
       mediaBadge = `<span class="badge-tag radarr">🎬 Radarr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
-      researchBtn = `<button type="button" class="btn-sec" style="color:#f5a623;border-color:#f5a623;" onclick="researchDeadLink('radarr', ${item.media_id}, '${esc(item.path)}')">${esc(t('btn_retrigger_radarr'))}</button>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#f5a623;border-color:#f5a623;" onclick="onResearchDeadLinkClick(${idx})">${esc(t('btn_retrigger_radarr'))}</button>`;
     } else if (item.media_type === 'sonarr' && item.media_id) {
       mediaBadge = `<span class="badge-tag sonarr">📺 Sonarr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
-      researchBtn = `<button type="button" class="btn-sec" style="color:#58a6ff;border-color:#58a6ff;" onclick="researchDeadLink('sonarr', ${item.media_id}, '${esc(item.path)}')">${esc(t('btn_retrigger_sonarr'))}</button>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#58a6ff;border-color:#58a6ff;" onclick="onResearchDeadLinkClick(${idx})">${esc(t('btn_retrigger_sonarr'))}</button>`;
+    } else if (item.media_type === 'whisparr' && item.media_id) {
+      mediaBadge = `<span class="badge-tag whisparr">🔞 Whisparr</span> <strong>${esc(item.media_title || item.filename)}</strong>`;
+      researchBtn = `<button type="button" class="btn-sec" style="color:#e066ff;border-color:#e066ff;" onclick="onResearchDeadLinkClick(${idx})">${esc(t('btn_retrigger_whisparr'))}</button>`;
     }
 
     return `<tr>
@@ -205,10 +208,22 @@ function renderDeadLinks(deadList) {
       <td style="font-family:monospace;font-size:11px;color:#f85149;word-break:break-all;">${esc(item.target || t('missing_target'))}</td>
       <td style="display:flex;gap:6px;align-items:center;">
         ${researchBtn}
-        <button type="button" class="btn-del" onclick="cleanDeadSymlink('${esc(item.path)}')">${esc(t('btn_purge'))}</button>
+        <button type="button" class="btn-del" onclick="onCleanDeadSymlinkClick(${idx})">${esc(t('btn_purge'))}</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+function onResearchDeadLinkClick(idx) {
+  const item = (scannerData.dead_symlinks || [])[idx];
+  if (!item) return;
+  researchDeadLink(item.media_type, item.media_id, item.path);
+}
+
+function onCleanDeadSymlinkClick(idx) {
+  const item = (scannerData.dead_symlinks || [])[idx];
+  if (!item) return;
+  cleanDeadSymlink(item.path);
 }
 
 async function researchDeadLink(mediaType, mediaId, path) {
@@ -267,7 +282,7 @@ async function cleanDeadSymlink(path) {
 }
 
 async function researchAllDeadLinks() {
-  const matched = (scannerData.dead_symlinks || []).filter(d => d.media_type === 'radarr' || d.media_type === 'sonarr');
+  const matched = (scannerData.dead_symlinks || []).filter(d => d.media_type === 'radarr' || d.media_type === 'sonarr' || d.media_type === 'whisparr');
   if (matched.length === 0) return alert(t('no_dead_arr'));
   if (!confirm(t('confirm_research_all_dead', { n: matched.length }))) return;
 
