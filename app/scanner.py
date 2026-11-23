@@ -11,9 +11,37 @@ from typing import Any, Dict, List, Optional, Set
 import httpx
 
 from app.config import logger
-from app.state import settings_db, state_lock
+from app.state import get_services_config, resolve_service, settings_db, state_lock, torrents_db
 
 SCANNER_CACHE_FILE = Path("/data/scanner_cache.json") if Path("/data").is_dir() else Path(__file__).resolve().parent.parent / "data" / "scanner_cache.json"
+
+
+def is_category_in_scan_paths(category: str, scan_paths: List[Path]) -> bool:
+    """
+    Vérifie si une catégorie ou un service appartient aux dossiers de médiathèque scannés.
+    - Exclut les services de téléchargement brut hors médiathèque (whisparr, tv-whisparr, torrent-direct, direct).
+    - Vérifie si le dossier cible d'un service correspond à l'un des scan_paths.
+    """
+    cat = (category or "").strip().lower()
+    if not cat:
+        return True
+    if cat in ("whisparr", "tv-whisparr", "torrent-direct", "direct"):
+        return False
+    try:
+        svcs = get_services_config()
+        mode, target_dir = resolve_service(cat)
+        target_resolved = target_dir.resolve()
+        is_in_scan = any(
+            target_resolved == sp or target_resolved.is_relative_to(sp) or sp.is_relative_to(target_resolved)
+            for sp in scan_paths
+        )
+        if not is_in_scan and mode == "download":
+            return False
+        if not is_in_scan and cat not in ("radarr", "sonarr", "tv-sonarr", "prowlarr"):
+            return False
+    except Exception:
+        pass
+    return True
 
 
 def simplify_name(name: str) -> str:
@@ -127,6 +155,7 @@ class ScannerService:
         self._current_scan_task: Optional[asyncio.Task] = None
         self.dir_mtimes: Dict[str, float] = {}
         self.file_entries: Dict[str, List[Dict[str, Any]]] = {}
+        self.torrent_categories: Dict[str, str] = {}
         self._load_cache()
 
     def _load_cache(self) -> None:
@@ -145,6 +174,7 @@ class ScannerService:
                     self.stats = data.get("stats", self.stats)
                     self.dir_mtimes = data.get("dir_mtimes", {})
                     self.file_entries = data.get("file_entries", {})
+                    self.torrent_categories = data.get("torrent_categories", {})
             except Exception as e:
                 logger.warning(f"Erreur chargement cache scanner : {e}")
 
@@ -161,6 +191,7 @@ class ScannerService:
                 "stats": self.stats,
                 "dir_mtimes": self.dir_mtimes,
                 "file_entries": self.file_entries,
+                "torrent_categories": self.torrent_categories,
             }
             with open(SCANNER_CACHE_FILE, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False)
@@ -533,29 +564,93 @@ class ScannerService:
                             data = r.json()
                             if data.get("status") == "success":
                                 raw_mags = data.get("data", {}).get("magnets", [])
-                                total_mags = len(raw_mags)
-                                self.progress["stage"] = f"Traitement de {total_mags} magnets et détection des doublons..."
+                                self.progress["stage"] = "Filtrage et analyse des magnets de la médiathèque..."
                                 self.progress["percent"] = 88
+
+                                # Synchroniser l'historique des catégories depuis torrents_db
+                                for thash, titem in torrents_db.items():
+                                    tcat = titem.get("category", "")
+                                    if tcat:
+                                        self.torrent_categories[thash.lower()] = tcat
+                                        if titem.get("ad_id"):
+                                            self.torrent_categories[str(titem["ad_id"])] = tcat
+
+                                # Pré-calcul des répertoires hors médiathèque pour exclusion instantanée
+                                non_media_simps: Set[str] = set()
+                                try:
+                                    services_cfg = get_services_config()
+                                    for s_name in services_cfg.keys():
+                                        if not is_category_in_scan_paths(s_name, paths):
+                                            _, t_dir = resolve_service(s_name)
+                                            if t_dir.is_dir():
+                                                for root, _, files in os.walk(t_dir):
+                                                    for f in files:
+                                                        non_media_simps.add(simplify_name(f))
+                                except Exception as err_nm:
+                                    logger.debug(f"Scanner: erreur indexation non_media_simps : {err_nm}")
+
                                 for mag in raw_mags:
                                     if self._stop_requested:
                                         self._abort_scan()
                                         return
-                                    orig_name = mag.get("filename") or mag.get("name") or "Nom indisponible"
-                                    norm_name = normalize_filename(orig_name) or orig_name
 
-                                    # Présent en local ?
+                                    status_code = int(mag.get("statusCode") or 0)
+                                    orig_name = mag.get("filename") or mag.get("name") or "Nom indisponible"
+                                    mag_hash = (mag.get("hash") or "").lower()
+                                    mag_id = mag.get("id")
+                                    mag_id_str = str(mag_id) if mag_id else ""
                                     simp = simplify_name(orig_name)
+
+                                    # RÈGLE 1 : Ne pas afficher tant que ce n'est pas téléchargé !
+                                    # statusCode < 4 (0=en attente/traitement, 1=téléchargement, 2=compression, 3=téléversement)
+                                    if status_code < 4:
+                                        continue
+
+                                    # Si le torrent est actuellement en cours de téléchargement local dans torrents_db
+                                    tor_entry = torrents_db.get(mag_hash)
+                                    if not tor_entry and mag_id:
+                                        for t_val in torrents_db.values():
+                                            if t_val.get("ad_id") == mag_id:
+                                                tor_entry = t_val
+                                                break
+                                    if tor_entry and tor_entry.get("state") in ("downloading", "queued", "copying", "checkingDL"):
+                                        continue
+
+                                    # Présent en local dans media_scan_paths ?
                                     is_local = bool(cache.get(simp))
 
+                                    # RÈGLE 2 : Ne pas afficher si ce n'est pas dans la liste des dossiers à scanner
+                                    cat = (
+                                        tor_entry.get("category")
+                                        if tor_entry
+                                        else self.torrent_categories.get(mag_hash) or self.torrent_categories.get(mag_id_str) or ""
+                                    ).lower()
+
+                                    if not is_local:
+                                        # Si le torrent provient d'un service/catégorie hors médiathèque (ex: whisparr, torrent-direct)
+                                        if cat and not is_category_in_scan_paths(cat, paths):
+                                            continue
+
+                                        # Si le fichier existe dans un dossier de téléchargement hors médiathèque
+                                        if simp in non_media_simps:
+                                            continue
+
+                                        # Si le magnet est mort côté API (statusCode > 4) et qu'il n'est pas lié à la médiathèque
+                                        if status_code > 4:
+                                            is_arr_cat = cat in ("radarr", "sonarr", "tv-sonarr")
+                                            if not is_arr_cat:
+                                                continue
+
+                                    norm_name = normalize_filename(orig_name) or orig_name
                                     mag_entry = {
-                                        "id": mag.get("id"),
+                                        "id": mag_id,
                                         "name": orig_name,
-                                        "hash": mag.get("hash") or "",
+                                        "hash": mag_hash,
                                         "size": mag.get("size", 0),
-                                        "statusCode": int(mag.get("statusCode") or 0),
+                                        "statusCode": status_code,
                                         "status": mag.get("status", ""),
                                         "is_local": is_local,
-                                        "is_dead": int(mag.get("statusCode") or 0) > 4,
+                                        "is_dead": status_code > 4,
                                         "downloaded": mag.get("downloaded", 0),
                                         "seeders": mag.get("seeders", 0),
                                     }
@@ -563,6 +658,7 @@ class ScannerService:
                                     if norm_name not in grouped:
                                         grouped[norm_name] = []
                                     grouped[norm_name].append(mag_entry)
+                                    total_mags += 1
 
                                 # Trier chaque groupe : local en premier, statut 4 (ready), puis taille décroissante
                                 for norm_name in grouped:
@@ -583,7 +679,9 @@ class ScannerService:
                 self.progress["stage"] = "Finalisation et calcul des statistiques..."
                 self.progress["percent"] = 95
                 duplicates_count = sum(len(mags) - 1 for mags in grouped.values() if len(mags) > 1)
-                unlinked_count = sum(1 for mags in grouped.values() for m in mags if not m["is_local"])
+                unlinked_count = sum(
+                    1 for mags in grouped.values() for m in mags if not m["is_local"] and not m["is_dead"] and m["statusCode"] == 4
+                )
                 api_dead_count = sum(1 for mags in grouped.values() for m in mags if m["is_dead"])
 
                 self.local_cache = cache
@@ -878,7 +976,9 @@ class ScannerService:
             self.total_magnets = sum(len(mags) for mags in self.grouped_magnets.values())
             self.stats["total_magnets"] = self.total_magnets
             self.stats["duplicates"] = sum(len(mags) - 1 for mags in self.grouped_magnets.values() if len(mags) > 1)
-            self.stats["unlinked"] = sum(1 for mags in self.grouped_magnets.values() for m in mags if not m.get("is_local"))
+            self.stats["unlinked"] = sum(
+                1 for mags in self.grouped_magnets.values() for m in mags if not m.get("is_local") and not m.get("is_dead") and m.get("statusCode") == 4
+            )
             self.stats["api_dead"] = sum(1 for mags in self.grouped_magnets.values() for m in mags if m.get("is_dead"))
             self._save_cache()
 

@@ -351,8 +351,12 @@ function renderMagnetsList(grouped) {
 
     if (isSingle) {
       const mag = mags[0];
-      const localBadge = mag.is_local ? `<span class="badge-tag local">${esc(t('tag_symlinked'))}</span>` : `<span class="badge-tag unlinked">${esc(t('tag_not_symlinked'))}</span>`;
-      const deadBadge = mag.is_dead ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>` : '';
+      const localBadge = mag.is_local
+        ? `<span class="badge-tag local">${esc(t('tag_symlinked'))}</span>`
+        : (mag.is_dead
+            ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>`
+            : `<span class="badge-tag unlinked">${esc(t('tag_not_symlinked'))}</span>`);
+      const deadBadge = (mag.is_dead && mag.is_local) ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>` : '';
 
       html += `<div class="mag-group sc-mag-card" id="mag-single-${mag.id}" data-title="${esc(normTitle.toLowerCase())} ${esc(mag.name.toLowerCase())}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}" data-dup="0">
         <div class="mag-item" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
@@ -378,8 +382,12 @@ function renderMagnetsList(grouped) {
       let childrenHtml = '';
       mags.forEach((mag, idx) => {
         const isBest = idx === 0 ? `<span style="color:#58a6ff;font-size:11px;">${esc(t('tag_kept_default'))}</span>` : '';
-        const localBadge = mag.is_local ? `<span class="badge-tag local">${esc(t('tag_symlinked'))}</span>` : `<span class="badge-tag unlinked">${esc(t('tag_not_symlinked'))}</span>`;
-        const deadBadge = mag.is_dead ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>` : '';
+        const localBadge = mag.is_local
+          ? `<span class="badge-tag local">${esc(t('tag_symlinked'))}</span>`
+          : (mag.is_dead
+              ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>`
+              : `<span class="badge-tag unlinked">${esc(t('tag_not_symlinked'))}</span>`);
+        const deadBadge = (mag.is_dead && mag.is_local) ? `<span class="badge-tag dead">${esc(t('tag_dead_api'))}</span>` : '';
 
         childrenHtml += `<div class="mag-item sc-mag-child" id="mag-child-${mag.id}" data-dead="${mag.is_dead ? '1':'0'}" data-local="${mag.is_local ? '1':'0'}">
           <div class="mag-info-left">
@@ -459,7 +467,8 @@ function filterMagnetsDisplay() {
       const hasDead = card.getAttribute('data-dead') === '1' || card.querySelector('[data-dead="1"]') !== null;
       matchFilter = hasDead;
     } else if (currentMagnetsFilter === 'unlinked') {
-      const hasUnlinked = card.getAttribute('data-local') === '0' || card.querySelector('[data-local="0"]') !== null;
+      const hasUnlinked = (card.getAttribute('data-local') === '0' && card.getAttribute('data-dead') !== '1')
+        || card.querySelector('[data-local="0"][data-dead="0"]') !== null;
       matchFilter = hasUnlinked;
     }
 

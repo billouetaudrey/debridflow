@@ -9,6 +9,15 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.9.1] — 2026-11-23
+
+### Corrigé
+- **Filtrage intelligent de la médiathèque & exclusion des fichiers non téléchargés ou hors dossiers scannés** :
+  - **Exclusion des téléchargements en cours** : les magnets dont le statut AllDebrid est `< 4` (0 = traitement/attente, 1 = en cours de téléchargement cloud, 2 = compression, 3 = téléversement) ou qui sont en cours de transfert local actif ne sont plus listés dans l'onglet Médiathèque. Ils restent gérés dans l'onglet File d'attente et ne sont plus étiquetés à tort comme « Non symlinkés ».
+  - **Respect strict des dossiers configurés dans Paramètres / Médiathèque (`media_scan_paths`)** : les torrents issus de catégories ou de services hors médiathèque (ex. Whisparr, Torrent-Direct, répertoires de téléchargement direct non inclus dans la médiathèque) n'apparaissent plus dans la liste des magnets de la médiathèque.
+  - **Comptage et badges fiables pour les magnets « Non symlinkés »** : seuls les magnets AllDebrid terminés (`statusCode == 4`), valides et absents du disque local dans les dossiers scannés sont comptabilisés dans les « Non symlinkés ». Les magnets en erreur ou expirés sont cantonnés au statut « Morts API » sans cumuler de faux badges.
+  - **Filtre « Non symlinkés » dans l'interface** : le bouton de filtre n'affiche désormais que les véritables fichiers non symlinkés en excluant les erreurs API.
+
 ## [2.9.0] — 2026-11-22
 
 ### Ajouté

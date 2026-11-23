@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.1] — 2026-11-23
+
+### Fixed
+- **Smart Media Library Filtering & Exclusion of In-Progress or Non-Scanned Downloads**:
+  - **In-Progress Download Exclusion**: Magnets with AllDebrid status `< 4` (0 = processing, 1 = downloading, 2 = compressing, 3 = uploading) or active local transfers are no longer displayed in the Media Library tab. They remain strictly in the Queue tab and are no longer mistakenly tagged as "Not Symlinked".
+  - **Strict Adherence to Configured Media Library Scan Folders (`media_scan_paths`)**: Torrents associated with services/categories outside the media library (e.g. Whisparr, Torrent-Direct, direct download folders outside the scanned paths) are excluded from media library magnets and duplicates analysis.
+  - **Accurate Statistics & Badges for "Not Symlinked" Items**: Only completed (`statusCode == 4`) and valid magnets missing from local media storage receive the "Not Symlinked" badge and count. Provider errors/expired items are cleanly isolated under "Dead API".
+  - **Interactive Filter Cleanliness**: The "Not Symlinked" filter button now solely displays valid unlinked items, preventing dead/expired provider items from cluttering the view.
+
 ## [2.9.0] — 2026-11-22
 
 ### Added
