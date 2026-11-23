@@ -28,24 +28,71 @@ def simplify_name(name: str) -> str:
 def normalize_filename(filename: str) -> str:
     name = urllib.parse.unquote(filename)
     name = html.unescape(name)
-    name = re.sub(r"[._\-]", " ", name)
 
-    m = re.search(r"^(.*?)(?:\s)(19\d{2}|20\d{2}|S\d{2}E\d{2}|S\d{2})(?:\s|$)", name, flags=re.IGNORECASE)
-    if m:
-        name = f"{m.group(1)} {m.group(2)}"
-    else:
-        tags = [
-            "mkv", "mp4", "avi", "1080p", "720p", "2160p", "4k", "web", "webrip",
-            "bluray", "remux", "multi", "french", "vff", "vostfr", "x265", "h265",
-            "truefrench", "proper", "repack", "ac3", "dts", "eac3", "x264", "h264"
-        ]
-        regex = r"\b(" + "|".join(tags) + r")\b"
-        name = re.sub(regex, " ", name, flags=re.IGNORECASE)
+    # Nettoyage des extensions courantes
+    for ext in (".mkv", ".mp4", ".avi", ".ts", ".wmv", ".m4v", ".mov", ".iso"):
+        if name.lower().endswith(ext):
+            name = name[:-len(ext)]
+            break
 
-    name = name.lower()
-    name = re.sub(r"[^\w\s]", " ", name)
-    name = re.sub(r"\s+", " ", name).strip()
-    return name.title() if name else filename
+    # Remplacer les séparateurs de release par des espaces
+    clean = re.sub(r"[._\-]", " ", name)
+    clean = re.sub(r"\s+", " ", clean).strip()
+
+    # 1. Vérifier si un motif Saison / Épisode est présent (prioritaire pour les séries)
+    # Ex: S01E02, S01, S1, S01-S03, Saison 01, Saison 1, Season 1, Season 01
+    se_match = re.search(
+        r"^(.*?)\b(?:(s\d{1,2}(?:(?:e|ep)\d{1,3}(?:[e\-]\d{1,3})?|[\-–]s?\d{1,2})?)|(?:saison|season)\s*(\d{1,2}(?:[\-–]\d{1,2})?))\b",
+        clean,
+        flags=re.IGNORECASE,
+    )
+    if se_match:
+        prefix = se_match.group(1).strip()
+        if se_match.group(2):
+            se_raw = se_match.group(2).upper()
+            m_s = re.match(r"^S(\d+)(?:E(\d+))?$", se_raw)
+            if m_s:
+                s_val = int(m_s.group(1))
+                if m_s.group(2):
+                    e_val = int(m_s.group(2))
+                    se_tag = f"S{s_val:02d}E{e_val:02d}"
+                else:
+                    se_tag = f"S{s_val:02d}"
+            else:
+                se_tag = se_raw
+        else:
+            s_val = se_match.group(3)
+            if s_val.isdigit():
+                se_tag = f"S{int(s_val):02d}"
+            else:
+                se_tag = f"S{s_val}"
+
+        prefix = re.sub(r"[^\w\s]", " ", prefix)
+        prefix = re.sub(r"\s+", " ", prefix).strip()
+        result = f"{prefix} {se_tag}".strip()
+        return result.title() if result else filename
+
+    # 2. Si pas de saison, chercher l'année pour les films (ex: Inception 2010)
+    m_year = re.search(r"^(.*?)\b(19\d{2}|20\d{2})\b", clean, flags=re.IGNORECASE)
+    if m_year:
+        title = m_year.group(1).strip()
+        year = m_year.group(2)
+        title = re.sub(r"[^\w\s]", " ", title)
+        title = re.sub(r"\s+", " ", title).strip()
+        if title:
+            return f"{title} {year}".title()
+
+    # 3. Fallback : nettoyage des tags de qualité / release
+    tags = [
+        "mkv", "mp4", "avi", "1080p", "720p", "2160p", "4k", "uhd", "web", "webrip", "webdl",
+        "bluray", "remux", "multi", "french", "vff", "vfq", "vostfr", "x265", "h265", "hevc",
+        "truefrench", "proper", "repack", "ac3", "dts", "eac3", "x264", "h264", "hdlight"
+    ]
+    regex = r"\b(" + "|".join(tags) + r")\b"
+    clean = re.sub(regex, " ", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"[^\w\s]", " ", clean)
+    clean = re.sub(r"\s+", " ", clean).strip()
+    return clean.title() if clean else filename
 
 
 class ScannerService:

@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The "Downloading" filter now exclusively contains already-debrided items undergoing active local disk download or transfer.
 
 ### Fixed
+- **TV Series Duplicate Detection (Season 01 vs Season 02)**:
+  - **Priority Season & Episode Preservation**: fixed filename normalization (`normalize_filename`) which previously truncated release names prematurely at the first detected year token (e.g. *One Piece 2023 S01* and *One Piece 2023 S02* were both reduced to *One Piece 2023*, generating a false duplicate).
+  - **Multi-Format Standardization**: added robust detection and canonicalization for television patterns (`S01`, `S1`, `Saison 1`, `Season 01`, `S01E02`, `S01-S03`), ensuring distinct seasons and episodes are never incorrectly grouped as duplicates.
 - **Retrigger Dead Links in Radarr, Sonarr & Whisparr**:
   - **Fixed Click Unresponsiveness**: resolved JavaScript SyntaxErrors caused by unescaped single quotes/apostrophes in media filenames (e.g. *Guy Ritchie's*, *Marvel's*) by referencing items safely by index instead of inlined paths.
   - **Effective Dead File Deletion Before Search**: explicitly deleted dead file references via Radarr (`DELETE /api/v3/moviefile/{id}`) and Sonarr (`DELETE /api/v3/episodefile/{id}`) prior to sending `MoviesSearch` or `SeriesSearch`, ensuring *Arr registers the media as missing and immediately downloads a replacement.

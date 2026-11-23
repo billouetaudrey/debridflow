@@ -39,6 +39,9 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - Le filtre « DL en cours » n'inclut dorénavant que les éléments déjà débridés en cours de téléchargement local ou de transfert actif.
 
 ### Corrigé
+- **Détection des doublons de séries (Saison 01 vs Saison 02)** :
+  - **Préservation prioritaire de la saison et de l'épisode** : correction de l'algorithme de normalisation des noms de fichiers (`normalize_filename`) qui tronquait prématurément le titre dès la première année rencontrée (ex: *One Piece 2023 S01* et *One Piece 2023 S02* étaient tous deux tronqués en *One Piece 2023*, créant un faux doublon).
+  - **Standardisation multi-formats** : détection et normalisation automatique des formats de séries (`S01`, `S1`, `Saison 1`, `Season 01`, `S01E02`, `S01-S03`), garantissant que chaque saison et chaque épisode reste un média distinct et n'est jamais confondu avec une autre saison.
 - **Relance des liens morts dans Radarr, Sonarr & Whisparr** :
   - **Correction du blocage au clic** : remplacement de l'injection directe des chemins dans les attributs `onclick` par un indexage sécurisé, évitant les erreurs de syntaxe JavaScript causées par les apostrophes dans les titres de médias (ex. *Guy Ritchie's*, *Marvel's*).
   - **Purge effective du fichier mort avant recherche** : suppression explicite de l'entrée du fichier mort dans l'API de Radarr (`DELETE /api/v3/moviefile/{id}`) et Sonarr (`DELETE /api/v3/episodefile/{id}`) avant de déclencher `MoviesSearch` ou `SeriesSearch`, garantissant que Radarr/Sonarr détecte le média comme manquant et télécharge immédiatement une nouvelle release.
