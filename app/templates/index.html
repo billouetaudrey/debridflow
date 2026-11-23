@@ -16,7 +16,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
 
-  <link rel="stylesheet" href="/static/css/style.css?v=2.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.8">
   <script>
     (function() {
       const serverTheme = document.documentElement.getAttribute('data-theme') || '__UI_THEME__';
@@ -106,13 +106,6 @@
 
     <!-- Barre de Filtres & Regroupement Pliable/Dépliable & Tri & Recherche -->
     <div class="queue-controls-bar">
-      <!-- Recherche rapide dans la file -->
-      <div class="q-search-box">
-        <span class="q-search-icon">🔍</span>
-        <input type="text" id="queue-search-input" class="q-search-input" placeholder="Rechercher dans la file..." data-i18n-placeholder="ph_queue_search" oninput="onQueueSearchInput(this.value)" autocomplete="off">
-        <button type="button" id="queue-search-clear" class="q-search-clear" onclick="clearQueueSearch()" style="display:none;" title="Effacer la recherche" data-i18n-title="tip_clear_search">&times;</button>
-      </div>
-
       <div class="queue-selects-group">
         <div class="q-control-item">
           <label for="queue-filter-select" data-i18n="q_filter_label">Filtrer&nbsp;:</label>
@@ -171,6 +164,13 @@
         <button type="button" class="btn-sec q-btn-compact" id="btn-q-collapse-all" onclick="collapseAllQueueGroups()" title="Tout replier" data-i18n-title="q_collapse_all">
           <span>📁</span> <span data-i18n="q_collapse_all">Tout replier</span>
         </button>
+      </div>
+
+      <!-- Recherche rapide dans la file -->
+      <div class="q-search-box">
+        <span class="q-search-icon">🔍</span>
+        <input type="text" id="queue-search-input" class="q-search-input" placeholder="Rechercher dans la file..." data-i18n-placeholder="ph_queue_search" oninput="onQueueSearchInput(this.value)" autocomplete="off">
+        <button type="button" id="queue-search-clear" class="q-search-clear" onclick="clearQueueSearch()" style="display:none;" title="Effacer la recherche" data-i18n-title="tip_clear_search">&times;</button>
       </div>
     </div>
     <table id="queue-table">
