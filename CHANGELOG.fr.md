@@ -12,6 +12,10 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ## [2.9.2] — 2026-11-25
 
 ### Ajouté
+- **Affichage en direct du temps écoulé et du temps restant estimé (ETA)** :
+  - Calcul et affichage dynamique du temps écoulé (`⏱️ Écoulé : Xm Ys`) et du temps restant estimé (`⏳ Restant : Xh Ym`) sous les barres de progression pour les copies locales et les téléchargements cloud actifs.
+  - Formatage adaptatif et lisible des durées avec gestion des unités jours, heures, minutes et secondes (`j`, `h`, `m`, `s`).
+  - Persistance de la date de début en mémoire de session (`sessionStorage`) pour conserver le décompte du temps écoulé sans le réinitialiser lors d'un rafraîchissement de page.
 - **Retentatives progressives automatiques pour les fichiers montés dans Rclone** :
   - Mise en place d'une stratégie de réessais progressifs à intervalles échelonnés (10s, 20s, 30s, 60s, 120s, 180s — total 7 minutes) lorsqu'un torrent est débridé sur le cloud (`statusCode == 4`) mais pas encore visible dans le montage local Rclone (`/mnt/alldebrid/magnets`).
   - Élimination des faux échecs et mises en erreur prématurées après un timeout statique court de 60s.
@@ -22,6 +26,16 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - **Configuration de l'URL RC Rclone** : ajout du paramètre `rclone_rc_url` dans les paramètres et validation de son statut lors du test de connexion.
 
 ### Corrigé
+- **Correction du crash silencieux du worker d'arrière-plan** :
+  - Ajout de l'import manquant `Optional` dans `app/worker.py` ayant provoqué un `NameError` immédiat au démarrage de la boucle asynchrone sur Python 3.12.
+  - Ajout de callbacks de diagnostic sur les tâches asynchrones (`task.add_done_callback`) dans `main.py` pour journaliser toute exception non interceptée dans les logs.
+- **Libellé d'état pour les torrents déjà débridés ou en cache** :
+  - Ajout du statut `st_init_transfer` (« Initialisation transfert... ») empêchant l'affichage par défaut trompeur « Débridage en cours... » pour un contenu déjà débridé en attente de transfert local.
+- **Résilience du rafraîchissement automatique de l'interface & invalidation du cache PWA** :
+  - Intégration d'un timeout de 8 secondes avec `AbortController` dans `refreshQueue` empêchant le verrouillage permanent de `isFetching` en cas de latence réseau ou disque.
+  - Sécurisation du rendu de la file d'attente et du statut de l'en-tête par des blocs `try...catch` protecteurs.
+  - Correction d'une erreur de portée de variable dans le rendu du tableau dédié aux liens DDL.
+  - Montée de version du cache du Service Worker PWA (`omnisym-pwa-v2`) et des assets statiques (`?v=2.8`) forçant une mise à jour propre des scripts sur les navigateurs clients.
 - **Correction de l'erreur d'upload de fichiers .torrent manuels** :
   - Résolution de l'exception `cannot access local variable 'raw_url' where it is not associated with a value` survenue lors de l'ajout manuel de fichiers `.torrent` dans l'interface sans lien magnet associé.
   - Génération automatique d'un URI magnet synthétique (`magnet:?xt=urn:btih:...`) pour permettre la relance ultérieure de ces torrents.

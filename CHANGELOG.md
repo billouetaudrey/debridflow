@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.9.2] — 2026-11-25
 
 ### Added
+- **Live Elapsed Time and Estimated Remaining Time (ETA) Display**:
+  - Dynamically calculates and displays elapsed time (`⏱️ Elapsed: Xm Ys`) and estimated remaining time (`⏳ Remaining: Xh Ym`) under progress bars for active local copies and cloud downloads.
+  - Formats durations adaptively with day, hour, minute, and second units (`d`, `h`, `m`, `s`).
+  - Integrates session storage persistence to preserve elapsed time tracking across page reloads.
 - **Progressive Auto-Retries for Rclone Mounted Releases**:
   - Implemented an escalating backoff retry schedule (10s, 20s, 30s, 60s, 120s, 180s — 7 minutes total) when a torrent is completed on the debrid provider (`statusCode == 4`) but not yet indexed in the local rclone VFS mount (`/mnt/alldebrid/magnets`).
   - Eliminates premature error states and false timeouts previously caused by rigid 60s static timeouts.
@@ -22,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Rclone RC API Configuration**: Added configurable `rclone_rc_url` setting with live status feedback during the connection test.
 
 ### Fixed
+- **Worker Coroutine Crash on Startup**:
+  - Fixed missing `Optional` import in `app/worker.py` that caused a silent `NameError` crash inside `background_worker` on Python 3.12.
+  - Added robust task done callbacks in `main.py` lifespan to log any unhandled background task exceptions.
+- **Queue Status Text for Cached/Ready Debrided Torrents**:
+  - Added `st_init_transfer` status label ("Initialisation transfert...") preventing fallback to "Débridage en cours..." when a debrided release is queued for transfer.
+- **Resilient UI Auto-Refresh & PWA Cache Invalidation**:
+  - Implemented an `AbortController` 8-second request timeout in `refreshQueue` preventing `isFetching` lockups on slow or pending requests.
+  - Wrapped queue row rendering and header status updates in protective `try...catch` blocks.
+  - Fixed variable scope reference error in DDL table rendering.
+  - Bumped PWA service worker cache name to `omnisym-pwa-v2` and asset query versioning to `?v=2.8` to force clean cache updates.
 - **Fix upload crash for manual .torrent files**:
   - Resolved `cannot access local variable 'raw_url' where it is not associated with a value` error occurring when uploading standalone `.torrent` files in the web UI without accompanying magnet links.
   - Automatically generates a synthetic magnet URI (`magnet:?xt=urn:btih:...`) allowing future retries of uploaded torrents.
