@@ -171,12 +171,28 @@ function updateHeaderStatus(items, apiHealth) {
     orb.classList.add('dl');
     sub.classList.add('dl');
     const spdTxt = totalLocalSpeed > 0 ? ` (${formatSpeed(totalLocalSpeed)})` : '';
-    sub.textContent = t('status_dl', { n: activeDl.length }) + spdTxt + ' — ' + apiBaseLabel;
+    let etaTxt = '';
+    if (totalLocalSpeed > 0) {
+      const remBytes = activeDl.reduce((acc, it) => acc + Math.max(0, (Number(it.size) || 0) * (1 - (Number(it.progress) || 0))), 0);
+      if (remBytes > 0) {
+        const etaSec = Math.floor(remBytes / totalLocalSpeed);
+        if (etaSec > 0) etaTxt = ` • ⏳ ${formatDuration(etaSec)}`;
+      }
+    }
+    sub.textContent = t('status_dl', { n: activeDl.length }) + spdTxt + etaTxt + ' — ' + apiBaseLabel;
   } else if (activeCloud.length > 0 || totalCloudSpeed > 0) {
     orb.classList.add('sym');
     sub.classList.add('sym');
     const spdTxt = totalCloudSpeed > 0 ? ` (${formatSpeed(totalCloudSpeed)})` : '';
-    sub.textContent = `☁️ Débridage cloud : ${activeCloud.length}${spdTxt} — ` + apiBaseLabel;
+    let etaTxt = '';
+    if (totalCloudSpeed > 0) {
+      const remBytes = activeCloud.reduce((acc, it) => acc + Math.max(0, (Number(it.size) || 0) * (1 - (Number(it.progress) || 0))), 0);
+      if (remBytes > 0) {
+        const etaSec = Math.floor(remBytes / totalCloudSpeed);
+        if (etaSec > 0) etaTxt = ` • ⏳ ${formatDuration(etaSec)}`;
+      }
+    }
+    sub.textContent = `☁️ Débridage cloud : ${activeCloud.length}${spdTxt}${etaTxt} — ` + apiBaseLabel;
   } else if (activeSym.length > 0) {
     orb.classList.add('sym');
     sub.classList.add('sym');
@@ -544,12 +560,51 @@ function collapseAllQueueGroups() {
   document.querySelectorAll('.queue-item-row').forEach(el => el.classList.add('group-collapsed'));
 }
 
-function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass = 'tag', groupSpeed = 0) {
+function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass = 'tag', groupSpeed = 0, itemsList = []) {
   const isCollapsed = isGroupCollapsed(groupId);
   const openClass = isCollapsed ? '' : 'open';
   const speedBadge = groupSpeed > 0
     ? `<span class="badge-group-speed" title="${esc(t('tip_group_speed') || 'Débit cumulé de ce groupe')}">⚡ ${formatSpeed(groupSpeed)}</span>`
     : '';
+
+  let timeBadges = '';
+  if (itemsList && itemsList.length > 0) {
+    const isTransferGroup = groupId === 'downloading' || groupId === 'debriding' || (groupId.startsWith('mode_') && (groupId.includes('download') || groupId.includes('ddl'))) || (groupId.startsWith('cat_'));
+    const activeTransfers = itemsList.filter(it => it.state === 'copying' || (!isItemDebrided(it) && it.state === 'downloading') || (Number(it.dlspeed) || 0) > 0 || (Number(it.cloud_speed) || 0) > 0);
+
+    if (activeTransfers.length > 0) {
+      const nowSec = Math.floor(Date.now() / 1000);
+      let earliestStart = Infinity;
+      for (const it of activeTransfers) {
+        const st = Number(it.ready_since) || itemStartTimes[it.hash] || nowSec;
+        if (st < earliestStart) earliestStart = st;
+      }
+      if (earliestStart !== Infinity && earliestStart <= nowSec) {
+        const elapsedSec = Math.max(0, nowSec - earliestStart);
+        if (elapsedSec > 0) {
+          const lblElapsed = (typeof t === 'function' ? t('lbl_elapsed') : null) || 'Écoulé :';
+          timeBadges += `<span class="badge-group-time" title="${esc(t('tip_elapsed_time') || 'Temps écoulé')}">⏱️ ${esc(lblElapsed)} ${formatDuration(elapsedSec)}</span>`;
+        }
+      }
+
+      let totalRemainingBytes = 0;
+      for (const it of activeTransfers) {
+        const sz = Number(it.size) || 0;
+        const prog = Number(it.progress) || 0;
+        if (sz > 0) {
+          totalRemainingBytes += Math.max(0, sz * (1 - prog));
+        }
+      }
+      if (groupSpeed > 0 && totalRemainingBytes > 0) {
+        const etaSec = Math.floor(totalRemainingBytes / groupSpeed);
+        if (etaSec > 0) {
+          const lblEta = (typeof t === 'function' ? t('lbl_eta') : null) || 'Restant :';
+          timeBadges += `<span class="badge-group-eta" title="${esc(t('tip_eta_time') || 'Temps restant estimé pour ce groupe')}">⏳ ${esc(lblEta)} ${formatDuration(etaSec)}</span>`;
+        }
+      }
+    }
+  }
+
   return `<tr class="queue-group-row ${openClass}" onclick="toggleQueueGroup('${groupId}')" data-group-id="${groupId}">
     <td colspan="7" class="queue-group-cell">
       <div class="queue-group-header-content">
@@ -559,6 +614,7 @@ function renderGroupHeaderRow(groupId, groupIcon, groupTitle, count, badgeClass 
           <span class="queue-group-label">${esc(groupTitle)}</span>
           <span class="badge ${badgeClass}">${count}</span>
           ${speedBadge}
+          ${timeBadges}
         </div>
         <div class="queue-group-tools" onclick="event.stopPropagation()">
           <button type="button" class="btn-sec q-grp-sel-btn" onclick="toggleSelectGroup('${groupId}')" title="${esc(t('select_all') || 'Sélectionner ce groupe')}">
@@ -876,7 +932,7 @@ function renderQueue(items) {
       const gId = 'cat_' + cat.replace(/[^a-zA-Z0-9_-]/g, '_');
       const gTitle = `${t('q_grp_cat_prefix') || 'Catégorie :'} ${cat}`;
       const groupSpeed = catItems.reduce((sum, it) => sum + (isItemDebrided(it) ? (Number(it.dlspeed) || 0) : (Number(it.cloud_speed) || 0)), 0);
-      html += renderGroupHeaderRow(gId, '📁', gTitle, catItems.length, 'run', groupSpeed);
+      html += renderGroupHeaderRow(gId, '📁', gTitle, catItems.length, 'run', groupSpeed, catItems);
       html += catItems.map(it => renderQueueRow(it, checkedSet, gId)).join('');
     }
     tbody.innerHTML = html;
@@ -895,7 +951,7 @@ function renderQueue(items) {
       if (mData.items.length === 0) continue;
       const gId = 'mode_' + mKey;
       const groupSpeed = mData.items.reduce((sum, it) => sum + (isItemDebrided(it) ? (Number(it.dlspeed) || 0) : (Number(it.cloud_speed) || 0)), 0);
-      html += renderGroupHeaderRow(gId, mData.icon, mData.title, mData.items.length, 'run', groupSpeed);
+      html += renderGroupHeaderRow(gId, mData.icon, mData.title, mData.items.length, 'run', groupSpeed, mData.items);
       html += mData.items.map(it => renderQueueRow(it, checkedSet, gId)).join('');
     }
     tbody.innerHTML = html;
@@ -929,7 +985,7 @@ function renderQueue(items) {
       if (list.length === 0) continue;
       const gTitle = t(def.labelKey) || def.defaultLabel;
       const groupSpeed = list.reduce((sum, it) => sum + (isItemDebrided(it) ? (Number(it.dlspeed) || 0) : (Number(it.cloud_speed) || 0)), 0);
-      html += renderGroupHeaderRow(def.id, def.icon, gTitle, list.length, def.badgeCls, groupSpeed);
+      html += renderGroupHeaderRow(def.id, def.icon, gTitle, list.length, def.badgeCls, groupSpeed, list);
       html += list.map(it => renderQueueRow(it, checkedSet, def.id)).join('');
     }
     tbody.innerHTML = html;

@@ -398,6 +398,7 @@ input[type="text"].q-search-input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   font-weight: 600;
   font-size: 13px;
   color: var(--text-bright);
@@ -1339,7 +1340,27 @@ small.hint { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
   background: rgba(56, 139, 253, 0.15);
   color: #58a6ff;
   border: 1px solid rgba(56, 139, 253, 0.4);
-  margin-left: 6px;
+  margin-left: 4px;
+}
+.badge-group-time {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(139, 148, 158, 0.15);
+  color: #c9d1d9;
+  border: 1px solid rgba(139, 148, 158, 0.35);
+  margin-left: 4px;
+}
+.badge-group-eta {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(210, 153, 34, 0.15);
+  color: #e3b341;
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  margin-left: 4px;
 }
 
 /* Sortable Table Headers */

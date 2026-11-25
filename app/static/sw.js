@@ -1,5 +1,5 @@
 // OmniSym PWA Service Worker (Minimal & Robuste)
-const CACHE_NAME = 'omnisym-pwa-v2';
+const CACHE_NAME = 'omnisym-pwa-v3';
 
 // Ressources critiques de l'App Shell pour démarrage instantané
 const SHELL_ASSETS = [

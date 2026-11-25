@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Live Elapsed Time and Estimated Remaining Time (ETA) Display**:
   - Dynamically calculates and displays elapsed time (`⏱️ Elapsed: Xm Ys`) and estimated remaining time (`⏳ Remaining: Xh Ym`) under progress bars for active local copies and cloud downloads.
+  - Added cumulative elapsed time and remaining time badges directly in the queue group header rows (`Téléchargements / Transferts en cours`, `Débridage cloud en cours`).
+  - Added global live remaining ETA inside the topbar status indicator (`#api-sub`).
   - Formats durations adaptively with day, hour, minute, and second units (`d`, `h`, `m`, `s`).
   - Integrates session storage persistence to preserve elapsed time tracking across page reloads.
 - **Progressive Auto-Retries for Rclone Mounted Releases**:

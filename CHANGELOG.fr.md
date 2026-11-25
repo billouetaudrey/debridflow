@@ -14,6 +14,8 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 ### Ajouté
 - **Affichage en direct du temps écoulé et du temps restant estimé (ETA)** :
   - Calcul et affichage dynamique du temps écoulé (`⏱️ Écoulé : Xm Ys`) et du temps restant estimé (`⏳ Restant : Xh Ym`) sous les barres de progression pour les copies locales et les téléchargements cloud actifs.
+  - Ajout des badges dynamiques de temps écoulé et de temps restant estimé directement dans les en-têtes de groupe de la file d'attente (`Téléchargements / Transferts en cours`, `Débridage cloud en cours`).
+  - Ajout de l'ETA globale restante directement dans la barre d'état supérieure (`#api-sub`).
   - Formatage adaptatif et lisible des durées avec gestion des unités jours, heures, minutes et secondes (`j`, `h`, `m`, `s`).
   - Persistance de la date de début en mémoire de session (`sessionStorage`) pour conserver le décompte du temps écoulé sans le réinitialiser lors d'un rafraîchissement de page.
 - **Retentatives progressives automatiques pour les fichiers montés dans Rclone** :
