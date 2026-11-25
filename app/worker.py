@@ -38,6 +38,7 @@ async def background_worker() -> None:
     logger.info("Worker OmniSym actif et en écoute.")
     copying_hashes: Set[str] = set()
     active_downloads: Set[str] = set()
+    active_target_paths: Set[str] = set()
 
     async def _run_transfer(
         http_client: httpx.AsyncClient,
@@ -46,6 +47,7 @@ async def background_worker() -> None:
         mounted_files: List[Path],
         mode: str,
         dest_dir: Path,
+        target_path: Optional[str] = None,
     ) -> None:
         try:
             def on_progress(bytes_copied: int, total_expected: int, instant_speed: float):
@@ -142,6 +144,8 @@ async def background_worker() -> None:
         finally:
             copying_hashes.discard(info_hash)
             active_downloads.discard(info_hash)
+            if target_path:
+                active_target_paths.discard(target_path)
 
     async def _run_ddl_download(
         http_client: httpx.AsyncClient,
@@ -154,7 +158,7 @@ async def background_worker() -> None:
             raw_name = item_snapshot.get("name") or "fichier"
             clean_name = sanitize_filename(raw_name) or "fichier"
             target_file = dest_dir / clean_name
-            tmp_file = dest_dir / f".{clean_name}.part"
+            tmp_file = dest_dir / f".{clean_name}.{item_id[:8]}.part"
             download_url = item_snapshot.get("download_url")
 
             if not download_url:
@@ -555,22 +559,34 @@ async def background_worker() -> None:
                                 torrents_db[info_hash]["retry_status"] = ""
                                 save_state()
 
+                    clean_root_name = sanitize_filename(ad_filename)
+                    target_path = str(dest_dir / clean_root_name) if len(mounted_files) > 1 else str(dest_dir / mounted_files[0].name)
+
                     if mode == "symlink":
                         copying_hashes.add(info_hash)
                         entry_copy = dict(item, name=ad_filename, size=ad_size)
-                        asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir))
+                        asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir, target_path))
                     else:
                         # mode == "download" (DDL copie locale)
+                        # Si un autre transfert écrit déjà vers exactement le même dossier cible, on attend qu'il termine
+                        if target_path in active_target_paths:
+                            async with state_lock:
+                                if info_hash in torrents_db and torrents_db[info_hash]["state"] != "queued":
+                                    torrents_db[info_hash]["state"] = "queued"
+                                    save_state()
+                            continue
+
                         if len(active_downloads) < max_concurrent:
                             copying_hashes.add(info_hash)
                             active_downloads.add(info_hash)
+                            active_target_paths.add(target_path)
                             async with state_lock:
                                 if info_hash in torrents_db:
                                     torrents_db[info_hash]["state"] = "copying"
                                     save_state()
                             logger.info(f"Début copie locale ({len(mounted_files)} fichier(s)) -> {dest_dir} : {ad_filename}")
                             entry_copy = dict(item, name=ad_filename, size=ad_size)
-                            asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir))
+                            asyncio.create_task(_run_transfer(client, info_hash, entry_copy, mounted_files, mode, dest_dir, target_path))
                         else:
                             async with state_lock:
                                 if info_hash in torrents_db and torrents_db[info_hash]["state"] != "queued":

@@ -181,16 +181,37 @@ def materialize_files_for_torrent(
     created_paths: List[str] = []
     total_copied_bytes = 0
     t_transfer_start = time.time()
+    info_h = str(entry.get("hash") or "")[:8]
 
     total_expected_bytes = int(entry.get("size") or sum(f.stat().st_size for f in source_files if f.exists()))
 
     def _transfer(src: Path, dst: Path, already_copied: int) -> int:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        # Si le fichier de destination existe déjà et possède exactement la même taille que la source, il est complet
+        if mode == "download" and dst.exists() and not dst.is_symlink():
+            try:
+                src_sz = src.stat().st_size
+                if dst.stat().st_size == src_sz:
+                    if progress_callback:
+                        progress_callback(already_copied + src_sz, total_expected_bytes, 0.0)
+                    return src_sz
+            except OSError:
+                pass
+
         if dst.exists() or dst.is_symlink():
-            dst.unlink()
+            try:
+                dst.unlink()
+            except OSError:
+                pass
+
         if mode == "download":
-            tmp_dst = dst.with_name(f".{dst.name}.part")
+            part_name = f".{dst.name}.{info_h}.part" if info_h else f".{dst.name}.part"
+            tmp_dst = dst.with_name(part_name)
             if tmp_dst.exists():
-                tmp_dst.unlink()
+                try:
+                    tmp_dst.unlink()
+                except OSError:
+                    pass
             bytes_copied = copy_chunked_with_limit(
                 src,
                 tmp_dst,
@@ -199,7 +220,12 @@ def materialize_files_for_torrent(
                 total_expected=total_expected_bytes,
                 already_copied=already_copied,
             )
-            os.replace(tmp_dst, dst)
+            if tmp_dst.exists():
+                os.replace(tmp_dst, dst)
+            elif dst.exists() and dst.stat().st_size == src.stat().st_size:
+                pass
+            else:
+                raise FileNotFoundError(f"Fichier temporaire disparu après copie : {tmp_dst}")
             return bytes_copied
         else:
             os.symlink(src, dst)

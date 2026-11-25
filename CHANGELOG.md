@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fix upload crash for manual .torrent files**:
   - Resolved `cannot access local variable 'raw_url' where it is not associated with a value` error occurring when uploading standalone `.torrent` files in the web UI without accompanying magnet links.
   - Automatically generates a synthetic magnet URI (`magnet:?xt=urn:btih:...`) allowing future retries of uploaded torrents.
+- **Concurrent Transfers and Multi-Part Torrents (Part 1, Part 2) Handling**:
+  - **Hash-Isolated Temporary Files**: Names temporary `.part` files using the torrent's short hash (`.<name>.<hash>.part`), preventing accidental overwrites or file deletions when concurrent torrents share the same folder or release name.
+  - **Destination Path Concurrency Lock**: Automatically queues transfers targeting the exact same destination directory to serialize execution and eliminate write collisions.
+  - **Deduplication of Already Completed Files**: Skips re-copying existing files that already match the source file size, allowing smooth merging of complementary multi-part releases into a single target directory.
+  - **Recursive Parent Directory Creation**: Added `dst.parent.mkdir(parents=True, exist_ok=True)` preventing `[Errno 2] No such file or directory` errors.
 
 ## [2.9.1] — 2026-11-23
 
