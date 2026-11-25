@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 # Fichier de persistance d'état (utilise /data/state.json sous Docker ou ./data/state.json en local)
 def _get_default_state_file() -> Path:
