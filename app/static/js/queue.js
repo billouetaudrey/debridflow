@@ -103,38 +103,46 @@ function formatDuration(totalSeconds) {
   return `${d}${dayUnit} ${remH < 10 ? '0' : ''}${remH}h`;
 }
 
-function getTimeInfoHtml(item, state, isDl, isDebrided) {
-  const isTransferActive = state === 'copying' || (state === 'downloading' && (isDl || !isDebrided));
-  if (!isTransferActive || !item.size || item.size <= 0) return '';
+function getTimeInfoHtml(item, state) {
+  try {
+    const isDl = item.transfer_mode === 'download';
+    const isDebrided = isItemDebrided(item);
+    const isTransferActive = state === 'copying' || (state === 'downloading' && (isDl || !isDebrided));
+    if (!isTransferActive || !item.size || item.size <= 0) return '';
 
-  const nowSec = Math.floor(Date.now() / 1000);
-  let startTs = Number(item.ready_since) || 0;
-  if (!startTs && itemStartTimes[item.hash]) {
-    startTs = itemStartTimes[item.hash];
-  } else if (!startTs) {
-    itemStartTimes[item.hash] = nowSec;
-    startTs = nowSec;
-    saveItemStartTimes();
+    const nowSec = Math.floor(Date.now() / 1000);
+    let startTs = Number(item.ready_since) || 0;
+    if (!startTs && itemStartTimes[item.hash]) {
+      startTs = itemStartTimes[item.hash];
+    } else if (!startTs) {
+      itemStartTimes[item.hash] = nowSec;
+      startTs = nowSec;
+      saveItemStartTimes();
+    }
+
+    const elapsedSec = Math.max(0, nowSec - startTs);
+    const elapsedStr = formatDuration(elapsedSec);
+
+    let etaSec = Number(item.eta) || 0;
+    const currentSpeed = (isDebrided ? (Number(item.dlspeed) || 0) : (Number(item.cloud_speed) || 0));
+    if (etaSec <= 0 && currentSpeed > 0) {
+      const remainingBytes = Math.max(0, item.size * (1 - (Number(item.progress) || 0)));
+      etaSec = Math.floor(remainingBytes / currentSpeed);
+    }
+    const etaStr = etaSec > 0 ? formatDuration(etaSec) : (currentSpeed > 0 ? '...' : '--');
+
+    const lblElapsed = (typeof t === 'function' ? t('lbl_elapsed') : null) || 'Écoulé :';
+    const lblEta = (typeof t === 'function' ? t('lbl_eta') : null) || 'Restant :';
+    const tipElapsed = (typeof t === 'function' ? t('tip_elapsed_time') : null) || 'Temps écoulé';
+    const tipEta = (typeof t === 'function' ? t('tip_eta_time') : null) || 'Temps restant estimé';
+
+    return `<div class="queue-time-info" style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;color:#8b949e;margin-top:4px;max-width:180px;">
+      <span title="${esc(tipElapsed)}">⏱️ ${esc(lblElapsed)} ${elapsedStr}</span>
+      <span title="${esc(tipEta)}">⏳ ${esc(lblEta)} ${etaStr}</span>
+    </div>`;
+  } catch (e) {
+    return '';
   }
-
-  const elapsedSec = Math.max(0, nowSec - startTs);
-  const elapsedStr = formatDuration(elapsedSec);
-
-  let etaSec = Number(item.eta) || 0;
-  const currentSpeed = (isDebrided ? (Number(item.dlspeed) || 0) : (Number(item.cloud_speed) || 0));
-  if (etaSec <= 0 && currentSpeed > 0) {
-    const remainingBytes = Math.max(0, item.size * (1 - (Number(item.progress) || 0)));
-    etaSec = Math.floor(remainingBytes / currentSpeed);
-  }
-  const etaStr = etaSec > 0 ? formatDuration(etaSec) : (currentSpeed > 0 ? '...' : '--');
-
-  const lblElapsed = t('lbl_elapsed') || 'Écoulé :';
-  const lblEta = t('lbl_eta') || 'Restant :';
-
-  return `<div class="queue-time-info" style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;color:#8b949e;margin-top:4px;max-width:180px;">
-    <span title="${esc(t('tip_elapsed_time') || 'Temps écoulé')}">⏱️ ${esc(lblElapsed)} ${elapsedStr}</span>
-    <span title="${esc(t('tip_eta_time') || 'Temps restant estimé')}">⏳ ${esc(lblEta)} ${etaStr}</span>
-  </div>`;
 }
 function updateHeaderStatus(items, apiHealth) {
   const orb = document.getElementById('status-orb');
@@ -687,7 +695,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
         ${debridBadge}
       </div>
       <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
-      ${getTimeInfoHtml(item, state, isDl, isDebrided)}
+      ${getTimeInfoHtml(item, state)}
     </td>
     <td class="actions col-actions">
       ${searchBtn}
@@ -986,7 +994,7 @@ function renderQueue(items) {
               <span class="tag debrid-cache" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>
             </div>
             <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
-      ${getTimeInfoHtml(item, state, isDl, isDebrided)}
+      ${getTimeInfoHtml(item, state)}
           </td>
           <td class="actions col-actions" style="text-align:right;">
             ${ddlSearchBtn}
@@ -1005,15 +1013,27 @@ function renderQueue(items) {
 async function refreshQueue() {
   if (isFetching || modalOpen) return;
   isFetching = true;
+  let abortTimer = null;
   try {
-    const res = await fetch('/api/ui/queue', { cache: 'no-store' });
+    const controller = new AbortController();
+    abortTimer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch('/api/ui/queue', { cache: 'no-store', signal: controller.signal });
+    if (abortTimer) clearTimeout(abortTimer);
     if (res.ok) {
       const data = await res.json();
       const items = data.items || [];
       window.currentQueueItems = items;
-      updateHeaderStatus(items, data.api_health);
+      try {
+        updateHeaderStatus(items, data.api_health);
+      } catch (errHeader) {
+        console.warn('[OmniSym] Header status error:', errHeader);
+      }
       if (currentTab === 'queue' || currentTab === 'ddl') {
-        renderQueue(items);
+        try {
+          renderQueue(items);
+        } catch (errRender) {
+          console.warn('[OmniSym] Render error:', errRender);
+        }
       }
       const activeCountEl = document.getElementById('ddl-active-count-txt');
       if (activeCountEl && data.max_concurrent_downloads !== undefined) {
@@ -1046,8 +1066,12 @@ async function refreshQueue() {
       }
     }
   } catch (e) {
-    updateHeaderStatus([], { ok: false, label: t('api_test_err'), detail: t('status_unreachable') });
+    if (abortTimer) clearTimeout(abortTimer);
+    try {
+      updateHeaderStatus([], { ok: false, label: t('api_test_err'), detail: t('status_unreachable') });
+    } catch (_) {}
   } finally {
+    if (abortTimer) clearTimeout(abortTimer);
     isFetching = false;
   }
 }
