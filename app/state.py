@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 from app.bencode import sanitize_filename
 from app.config import DEFAULT_SERVICES, DEFAULT_SETTINGS, STATE_FILE, logger
