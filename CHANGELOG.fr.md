@@ -21,6 +21,11 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - **Rafraîchissement instantané lors d'une relance manuelle** : le clic sur « Relancer » ou « Reprendre » remet à zéro les compteurs de tentatives et déclenche immédiatement l'invalidation du cache VFS.
   - **Configuration de l'URL RC Rclone** : ajout du paramètre `rclone_rc_url` dans les paramètres et validation de son statut lors du test de connexion.
 
+### Corrigé
+- **Correction de l'erreur d'upload de fichiers .torrent manuels** :
+  - Résolution de l'exception `cannot access local variable 'raw_url' where it is not associated with a value` survenue lors de l'ajout manuel de fichiers `.torrent` dans l'interface sans lien magnet associé.
+  - Génération automatique d'un URI magnet synthétique (`magnet:?xt=urn:btih:...`) pour permettre la relance ultérieure de ces torrents.
+
 ## [2.9.1] — 2026-11-23
 
 ### Ajouté

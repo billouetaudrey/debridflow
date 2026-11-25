@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Instant Reset on Manual Resume/Retry**: Resuming or retrying an item resets retry attempts and immediately triggers a VFS refresh in the background.
   - **Rclone RC API Configuration**: Added configurable `rclone_rc_url` setting with live status feedback during the connection test.
 
+### Fixed
+- **Fix upload crash for manual .torrent files**:
+  - Resolved `cannot access local variable 'raw_url' where it is not associated with a value` error occurring when uploading standalone `.torrent` files in the web UI without accompanying magnet links.
+  - Automatically generates a synthetic magnet URI (`magnet:?xt=urn:btih:...`) allowing future retries of uploaded torrents.
+
 ## [2.9.1] — 2026-11-23
 
 ### Added

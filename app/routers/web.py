@@ -319,12 +319,13 @@ async def api_upload_torrent(
                 if real_hash:
                     info_hash = real_hash
 
+                torrent_mag_uri = raw_url
                 async with state_lock:
                     torrents_db[info_hash] = {
                         "hash": info_hash,
                         "ad_id": ad_id,
                         "name": ad_name,
-                        "magnet_uri": raw_url,
+                        "magnet_uri": torrent_mag_uri,
                         "category": cat,
                         "transfer_mode": mode,
                         "save_path": str(save_dir),
@@ -365,12 +366,13 @@ async def api_upload_torrent(
                 if real_hash:
                     info_hash = real_hash
 
+                synthetic_magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={ad_name}"
                 async with state_lock:
                     torrents_db[info_hash] = {
                         "hash": info_hash,
                         "ad_id": ad_id,
                         "name": ad_name,
-                        "magnet_uri": raw_url,
+                        "magnet_uri": synthetic_magnet,
                         "category": cat,
                         "transfer_mode": mode,
                         "save_path": str(save_dir),

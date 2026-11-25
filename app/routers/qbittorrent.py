@@ -144,11 +144,15 @@ async def qb_add_torrent(
                 ad_data = await alldebrid_upload_file(client, up_file.filename or f"{info_hash}.torrent", raw_bytes)
                 ad_id = int(ad_data["id"])
                 ad_name = ad_data.get("name") or name
+                real_hash = str(ad_data.get("hash") or "").strip().lower()
+                if real_hash:
+                    info_hash = real_hash
                 async with state_lock:
                     torrents_db[info_hash] = {
                         "hash": info_hash,
                         "ad_id": ad_id,
                         "name": ad_name,
+                        "magnet_uri": f"magnet:?xt=urn:btih:{info_hash}&dn={ad_name}",
                         "category": cat,
                         "transfer_mode": mode,
                         "save_path": str(save_dir),
