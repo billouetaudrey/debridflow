@@ -27,8 +27,11 @@ from app.storage import (
     find_mounted_files,
     is_already_imported_by_arr,
     materialize_files_for_torrent,
+    refresh_rclone_vfs,
     remove_local_artifacts,
 )
+
+RCLONE_RETRY_DELAYS = [10, 20, 30, 60, 120, 180]
 
 
 async def background_worker() -> None:
@@ -471,6 +474,25 @@ async def background_worker() -> None:
                             torrents_db[info_hash]["cloud_status"] = "Débridé"
                             save_state()
 
+                    retry_attempt = int(item.get("rclone_retry_attempt") or 0)
+                    next_retry_ts = float(item.get("rclone_next_retry_ts") or 0.0)
+                    total_delays = len(RCLONE_RETRY_DELAYS)
+
+                    # Si un prochain essai est planifié dans le futur, décompter sans appel disque/réseau lourd
+                    if next_retry_ts > now_ts:
+                        rem = max(1, int(next_retry_ts - now_ts))
+                        status_str = f"Attente montage rclone (tentative {retry_attempt}/{total_delays} • dans {rem}s)"
+                        async with state_lock:
+                            if info_hash in torrents_db:
+                                torrents_db[info_hash]["retry_status"] = status_str
+                                torrents_db[info_hash]["rclone_retry_total"] = total_delays
+                                save_state()
+                        continue
+
+                    # Si c'est une retentative (retry_attempt > 0), forcer un rafraîchissement VFS rclone
+                    if retry_attempt > 0:
+                        await refresh_rclone_vfs("magnets")
+
                     links = ad_info.get("links") or []
                     expected_files = [lnk.get("filename", "") for lnk in links if isinstance(lnk, dict)]
                     if not expected_files:
@@ -479,23 +501,59 @@ async def background_worker() -> None:
                     mounted_files = await asyncio.to_thread(find_mounted_files, ad_filename, expected_files)
 
                     if not mounted_files:
-                        waited = now_ts - ready_since
-                        if mount_timeout > 0 and waited > mount_timeout:
+                        waited = int(now_ts - ready_since)
+                        new_attempt = retry_attempt + 1
+
+                        if new_attempt <= total_delays:
+                            delay = RCLONE_RETRY_DELAYS[new_attempt - 1]
+                            next_ts = now_ts + delay
+                            status_str = f"Attente montage rclone (tentative {new_attempt}/{total_delays} • dans {delay}s)"
+                            async with state_lock:
+                                if info_hash in torrents_db:
+                                    torrents_db[info_hash]["rclone_retry_attempt"] = new_attempt
+                                    torrents_db[info_hash]["rclone_next_retry_ts"] = next_ts
+                                    torrents_db[info_hash]["rclone_retry_total"] = total_delays
+                                    torrents_db[info_hash]["retry_status"] = status_str
+                                    save_state()
+                            logger.info(
+                                f"Fichiers non trouvés dans rclone pour '{ad_filename}' ({waited}s). "
+                                f"Programmation tentative {new_attempt}/{total_delays} dans {delay}s"
+                            )
+                            # Invalidation proactive du cache VFS rclone en tâche de fond
+                            asyncio.create_task(refresh_rclone_vfs("magnets"))
+                            continue
+                        else:
+                            # Toutes les tentatives sont épuisées
                             async with state_lock:
                                 if info_hash in torrents_db:
                                     torrents_db[info_hash]["state"] = "error"
-                                    torrents_db[info_hash]["error_msg"] = f"Introuvable dans rclone après {waited}s"
+                                    torrents_db[info_hash]["rclone_retry_attempt"] = 0
+                                    torrents_db[info_hash]["rclone_next_retry_ts"] = 0.0
+                                    torrents_db[info_hash]["retry_status"] = ""
+                                    torrents_db[info_hash]["error_msg"] = (
+                                        f"Introuvable dans rclone après {total_delays} tentatives ({waited}s)"
+                                    )
                                     save_state()
-                            logger.error(f"Timeout rclone ({waited}s) pour {ad_filename}")
+                            logger.error(f"Timeout rclone après {total_delays} tentatives ({waited}s) pour {ad_filename}")
                             try:
                                 from app.notifications import notifier
-                                await notifier.notify_error(f"Timeout Rclone : {ad_filename}", f"Fichier introuvable dans le montage après {waited}s.")
+                                await notifier.notify_error(
+                                    f"Timeout Rclone : {ad_filename}",
+                                    f"Fichier introuvable dans le montage après {total_delays} tentatives ({waited}s)."
+                                )
                             except Exception:
                                 pass
                             continue
 
-                        logger.info(f"Attente montage rclone ({waited}s/{mount_timeout}s) : {ad_filename}")
-                        continue
+                    # Fichiers trouvés avec succès ! Nettoyage des indicateurs de retry
+                    if retry_attempt > 0 or item.get("retry_status"):
+                        async with state_lock:
+                            if info_hash in torrents_db:
+                                torrents_db[info_hash]["rclone_retry_attempt"] = 0
+                                torrents_db[info_hash]["rclone_next_retry_ts"] = 0.0
+                                torrents_db[info_hash]["rclone_retry_total"] = total_delays
+                                torrents_db[info_hash]["retry_status"] = ""
+                                save_state()
 
                     if mode == "symlink":
                         copying_hashes.add(info_hash)

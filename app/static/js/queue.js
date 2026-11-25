@@ -564,7 +564,13 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
   } else if (state === 'checkingDL') {
     badgeCls = 'run';
-    stateTxt = `${esc(t('st_rclone_wait'))} (${pct}%)`;
+    if (item.retry_attempt && item.retry_total && item.retry_remaining != null) {
+      stateTxt = `⏳ ${esc(t('st_rclone_retry', { attempt: item.retry_attempt, total: item.retry_total, sec: Math.max(0, item.retry_remaining) }))}`;
+    } else if (item.retry_status) {
+      stateTxt = `⏳ ${esc(item.retry_status)}`;
+    } else {
+      stateTxt = `${esc(t('st_rclone_wait'))} (${pct}%)`;
+    }
   } else if (state === 'copying') {
     badgeCls = 'run';
     stateTxt = `${esc(t('st_copying'))} (${pct}%)`;
@@ -589,7 +595,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
 
   const isDebriding = getItemTypeGroup(item) === 'debriding';
   const isFailed = getItemTypeGroup(item) === 'failed' || state === 'error' || Boolean(item.error_msg);
-  const canSearch = isDebriding || isFailed;
+  const canSearch = isDebriding || isFailed || state === 'checkingDL';
 
   const searchBtn = canSearch
     ? `<button type="button" class="btn-sec q-btn-search" onclick="searchAlternative('${fullId}')" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`

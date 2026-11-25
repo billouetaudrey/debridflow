@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.2] — 2026-11-25
+
+### Added
+- **Progressive Auto-Retries for Rclone Mounted Releases**:
+  - Implemented an escalating backoff retry schedule (10s, 20s, 30s, 60s, 120s, 180s — 7 minutes total) when a torrent is completed on the debrid provider (`statusCode == 4`) but not yet indexed in the local rclone VFS mount (`/mnt/alldebrid/magnets`).
+  - Eliminates premature error states and false timeouts previously caused by rigid 60s static timeouts.
+  - **Proactive Rclone VFS Cache Invalidation**: Automatic calls to the rclone Remote Control (RC) API (`POST /vfs/refresh`) for the `magnets` directory before each scheduled retry and on manual resumption, forcing rclone to refresh its WebDAV directory cache without delay.
+  - **Interactive Countdown & Progress Badges in Queue**: Displays the live retry attempt and remaining seconds countdown inside the status badge (`⏳ Waiting for rclone (attempt X/6 • in Ys)`).
+  - **Fuzzy & Resilient Folder Matching**: Added normalized release name matching (`simplify_name`) ignoring minor punctuation, dot/space differences, and bracket variations between the torrent metadata and the mounted filesystem.
+  - **Instant Reset on Manual Resume/Retry**: Resuming or retrying an item resets retry attempts and immediately triggers a VFS refresh in the background.
+  - **Rclone RC API Configuration**: Added configurable `rclone_rc_url` setting with live status feedback during the connection test.
+
 ## [2.9.1] — 2026-11-23
 
 ### Added

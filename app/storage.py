@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import time
 from pathlib import Path
@@ -7,7 +8,41 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import httpx
 
 from app.bencode import sanitize_filename
+from app.config import logger
 from app.state import get_allowed_exts, settings_db
+
+
+def simplify_name(name: str) -> str:
+    """Normalise un nom de fichier/dossier pour comparaison souple (minuscules, sans ponctuation)."""
+    if not name:
+        return ""
+    s = Path(name).stem.lower()
+    return re.sub(r"[^a-z0-9]", "", s)
+
+
+async def refresh_rclone_vfs(dir_name: str = "magnets") -> bool:
+    """
+    Déclenche une invalidation immédiate du cache VFS de rclone via son API Remote Control (RC).
+    Permet à rclone de rafraîchir l'arborescence AllDebrid sans attendre l'expiration du dir-cache-time.
+    """
+    rc_url = settings_db.get("rclone_rc_url", "http://127.0.0.1:5572").rstrip("/")
+    if not rc_url:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.post(
+                f"{rc_url}/vfs/refresh",
+                json={"dir": dir_name, "recursive": "false"},
+            )
+            if resp.status_code == 200:
+                logger.debug(f"Rclone VFS refresh OK pour le dossier '{dir_name}'")
+                return True
+            else:
+                logger.warning(f"Rclone VFS refresh HTTP {resp.status_code} ({dir_name}): {resp.text}")
+                return False
+    except Exception as exc:
+        logger.debug(f"Impossible de contacter l'API rclone RC ({rc_url}): {exc}")
+        return False
 
 
 def copy_chunked_with_limit(
@@ -78,13 +113,15 @@ def find_mounted_files(magnet_name: str, expected_files: List[str]) -> List[Path
     allowed_exts = get_allowed_exts()
     expected_set = {Path(f).name for f in expected_files if f}
     stem_name = Path(magnet_name).stem
+    sim_target = simplify_name(magnet_name)
 
     # 1. Forcer un readdir sur la racine pour invalider les caches négatifs FUSE
     target_lowers = {magnet_name.lower(), stem_name.lower()}
     try:
         with os.scandir(mount_dir) as it:
             for entry in it:
-                if entry.name.lower() in target_lowers:
+                entry_sim = simplify_name(entry.name)
+                if entry.name.lower() in target_lowers or (sim_target and entry_sim == sim_target):
                     p = Path(entry.path)
                     try:
                         if entry.is_file():
@@ -110,15 +147,23 @@ def find_mounted_files(magnet_name: str, expected_files: List[str]) -> List[Path
         except OSError:
             continue
 
-    # 3. Test direct <dossier_candidat>/<fichier_attendu>
-    for exp in expected_set:
-        for base_cand in [mount_dir, mount_dir / magnet_name, mount_dir / stem_name]:
-            direct_file = base_cand / exp
-            try:
-                if direct_file.is_file():
-                    return [direct_file]
-            except OSError:
-                continue
+    # 3. Test direct <dossier_candidat>/<fichier_attendu> ou sous-chemin attendu
+    candidates = [mount_dir, mount_dir / magnet_name, mount_dir / stem_name]
+    for exp_raw in expected_files:
+        if not exp_raw:
+            continue
+        exp_path = Path(exp_raw)
+        for base_cand in candidates:
+            for test_target in [base_cand / exp_path, base_cand / exp_path.name]:
+                try:
+                    if test_target.is_file():
+                        if base_cand != mount_dir and base_cand.is_dir():
+                            matched = _collect_from_folder(base_cand, allowed_exts, expected_set)
+                            if matched:
+                                return matched
+                        return [test_target]
+                except OSError:
+                    continue
 
     return []
 

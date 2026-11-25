@@ -9,6 +9,18 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.9.2] — 2026-11-25
+
+### Ajouté
+- **Retentatives progressives automatiques pour les fichiers montés dans Rclone** :
+  - Mise en place d'une stratégie de réessais progressifs à intervalles échelonnés (10s, 20s, 30s, 60s, 120s, 180s — total 7 minutes) lorsqu'un torrent est débridé sur le cloud (`statusCode == 4`) mais pas encore visible dans le montage local Rclone (`/mnt/alldebrid/magnets`).
+  - Élimination des faux échecs et mises en erreur prématurées après un timeout statique court de 60s.
+  - **Invalidation et rafraîchissement proactif du cache VFS** : appel direct à l'API Remote Control (RC) de rclone (`POST /vfs/refresh`) sur le dossier `magnets` avant chaque tentative et lors d'une relance, forçant rclone à actualiser immédiatement son arborescence WebDAV.
+  - **Suivi visuel et décompte dynamique dans la file d'attente** : affichage du numéro de tentative en cours et d'un décompte en secondes dans le badge d'état (`⏳ Attente rclone (tentative X/6 • dans Ys)`).
+  - **Détection et recherche assouplie des dossiers/fichiers** : comparaison normalisée (`simplify_name`) insensible aux variations de ponctuation, d'espaces et d'extensions entre le nom du magnet et le nom exposé par le montage.
+  - **Rafraîchissement instantané lors d'une relance manuelle** : le clic sur « Relancer » ou « Reprendre » remet à zéro les compteurs de tentatives et déclenche immédiatement l'invalidation du cache VFS.
+  - **Configuration de l'URL RC Rclone** : ajout du paramètre `rclone_rc_url` dans les paramètres et validation de son statut lors du test de connexion.
+
 ## [2.9.1] — 2026-11-23
 
 ### Ajouté

@@ -645,6 +645,11 @@
                   <small class="hint" data-i18n="hint_rclone_mount">Dossier monté par rclone (ex: /mnt/alldebrid/magnets).</small>
                 </div>
                 <div class="field">
+                  <label data-i18n="lbl_rclone_rc_url">URL Remote Control Rclone (RC)</label>
+                  <input type="text" name="rclone_rc_url" value="__RCLONE_RC_URL__" placeholder="http://127.0.0.1:5572">
+                  <small class="hint" data-i18n="hint_rclone_rc_url">Adresse API RC rclone pour rafraîchir instantanément le cache VFS.</small>
+                </div>
+                <div class="field">
                   <label data-i18n="lbl_dl_dir">Dossier racine des téléchargements (DL)</label>
                   <input type="text" name="download_base_dir" value="__DOWNLOAD_BASE_DIR__" required>
                   <small class="hint" data-i18n="hint_dl_dir">Chaque service écrit dans son sous-dossier ici.</small>

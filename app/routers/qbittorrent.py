@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import secrets
 import time
@@ -24,7 +25,11 @@ from app.state import (
     state_lock,
     torrents_db,
 )
-from app.storage import is_already_imported_by_arr, remove_local_artifacts
+from app.storage import (
+    is_already_imported_by_arr,
+    refresh_rclone_vfs,
+    remove_local_artifacts,
+)
 
 router = APIRouter()
 
@@ -322,7 +327,11 @@ async def qb_torrents_resume(hashes: str = Form(...)):
                 torrents_db[h]["state"] = "downloading"
                 torrents_db[h]["error_msg"] = ""
                 torrents_db[h]["ready_since"] = now_ts
+                torrents_db[h]["rclone_retry_attempt"] = 0
+                torrents_db[h]["rclone_next_retry_ts"] = 0.0
+                torrents_db[h]["retry_status"] = ""
         save_state()
+    asyncio.create_task(refresh_rclone_vfs("magnets"))
     return PlainTextResponse("Ok.")
 
 
@@ -330,6 +339,7 @@ async def qb_torrents_resume(hashes: str = Form(...)):
 async def qb_torrents_retry(hashes: str = Form(...)):
     target_hashes = [h.strip().lower() for h in hashes.split("|") if h.strip()]
     now_ts = int(time.time())
+    asyncio.create_task(refresh_rclone_vfs("magnets"))
     async with httpx.AsyncClient() as client:
         async with state_lock:
             for h in target_hashes:
@@ -338,6 +348,9 @@ async def qb_torrents_retry(hashes: str = Form(...)):
                     item["error_msg"] = ""
                     item["ready_since"] = now_ts
                     item["missing_count"] = 0
+                    item["rclone_retry_attempt"] = 0
+                    item["rclone_next_retry_ts"] = 0.0
+                    item["retry_status"] = ""
                     if item.get("is_ddl"):
                         item["state"] = "resolving"
                         item["download_url"] = ""

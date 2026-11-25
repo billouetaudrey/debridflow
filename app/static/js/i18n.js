@@ -132,6 +132,7 @@ const TRANSLATIONS = {
     st_paused: "En pause",
     st_error: "Erreur",
     st_rclone_wait: "Attente rclone",
+    st_rclone_retry: "Attente rclone (tentative {attempt}/{total} • dans {sec}s)",
     st_copying: "Copie locale",
     st_downloading: "Téléchargement",
 
@@ -234,6 +235,8 @@ const TRANSLATIONS = {
 
     lbl_rclone_mount: "Chemin de montage Rclone (source magnets)",
     hint_rclone_mount: "Dossier monté par rclone (ex: /mnt/alldebrid/magnets).",
+    lbl_rclone_rc_url: "URL Remote Control Rclone (RC)",
+    hint_rclone_rc_url: "Adresse de l'API RC de rclone pour forcer le rafraîchissement VFS instantané.",
     lbl_dl_dir: "Dossier racine des téléchargements (DL)",
     hint_dl_dir: "Chaque service écrit dans son sous-dossier ici.",
     lbl_allowed_exts: "Extensions autorisées (séparées par virgules)",
@@ -591,6 +594,7 @@ const TRANSLATIONS = {
     st_paused: "Paused",
     st_error: "Error",
     st_rclone_wait: "Waiting for rclone",
+    st_rclone_retry: "Waiting for rclone (attempt {attempt}/{total} • in {sec}s)",
     st_copying: "Local copying",
     st_downloading: "Downloading",
 
@@ -693,6 +697,8 @@ const TRANSLATIONS = {
 
     lbl_rclone_mount: "Rclone Mount Path (magnets source)",
     hint_rclone_mount: "Folder mounted by rclone (e.g. /mnt/alldebrid/magnets).",
+    lbl_rclone_rc_url: "Rclone Remote Control (RC) URL",
+    hint_rclone_rc_url: "Rclone RC API address to force instant VFS directory cache refresh.",
     lbl_dl_dir: "Root Download Folder (DL)",
     hint_dl_dir: "Each service writes to its own subfolder here.",
     lbl_allowed_exts: "Allowed Extensions (comma-separated)",

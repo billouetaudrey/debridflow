@@ -66,6 +66,10 @@ async def ui_queue_feed():
                 "seeders": int(item.get("seeders") or 0),
                 "cloud_status": str(item.get("cloud_status") or ""),
                 "cloud_speed": int(item.get("cloud_speed") or 0),
+                "retry_status": str(item.get("retry_status") or ""),
+                "retry_attempt": int(item.get("rclone_retry_attempt") or 0),
+                "retry_total": int(item.get("rclone_retry_total") or 0),
+                "retry_remaining": max(0, int(item.get("rclone_next_retry_ts", 0) - time.time())) if item.get("rclone_next_retry_ts") else 0,
             }
             for h, item in items_sorted
         ]
@@ -653,6 +657,7 @@ async def test_api_connection(
     api_base: str = Form(""),
     agent: str = Form("OmniSym-Billou"),
     rclone_mount_dir: str = Form("/mnt/alldebrid/magnets"),
+    rclone_rc_url: str = Form("http://127.0.0.1:5572"),
 ):
     mount_path = Path(rclone_mount_dir.strip() or "/mnt/alldebrid/magnets")
 
@@ -664,6 +669,18 @@ async def test_api_connection(
             mount_status = f"Montage rclone illisible ({exc})"
     else:
         mount_status = f"Dossier rclone introuvable ({mount_path})"
+
+    if rclone_rc_url.strip():
+        try:
+            async with httpx.AsyncClient(timeout=1.5) as client:
+                r_rc = await client.post(
+                    f"{rclone_rc_url.strip().rstrip('/')}/vfs/refresh",
+                    json={"dir": "magnets", "recursive": "false"},
+                )
+                if r_rc.status_code == 200:
+                    mount_status += " • RC VFS actif"
+        except Exception:
+            pass
 
     prov_inst = get_provider(provider)
     resolved_base = api_base.strip() or prov_inst.default_api_base
@@ -703,6 +720,7 @@ async def update_settings(
     api_base: str = Form(""),
     agent: str = Form("OmniSym-Billou"),
     rclone_mount_dir: str = Form("/mnt/alldebrid/magnets"),
+    rclone_rc_url: str = Form("http://127.0.0.1:5572"),
     download_base_dir: str = Form("/mnt/virtual/Medias/DL"),
     poll_interval: float = Form(3.0),
     mount_timeout: int = Form(60),
@@ -774,6 +792,7 @@ async def update_settings(
         settings_db["api_base"] = api_base.strip().rstrip("/") or prov_obj.default_api_base
         settings_db["agent"] = agent.strip() or "OmniSym-Billou"
         settings_db["rclone_mount_dir"] = rclone_mount_dir.strip() or "/mnt/alldebrid/magnets"
+        settings_db["rclone_rc_url"] = rclone_rc_url.strip() or "http://127.0.0.1:5572"
         settings_db["download_base_dir"] = download_base_dir.strip() or "/mnt/virtual/Medias/DL"
         settings_db["poll_interval"] = max(1.5, float(poll_interval))
         settings_db["mount_timeout"] = max(5, int(mount_timeout))
@@ -943,7 +962,8 @@ async def web_dashboard(saved: Optional[str] = None):
                 state_txt = f"Erreur — {html.escape(err)}"
             elif state == "checkingDL":
                 badge_cls = "run"
-                state_txt = f"Montage rclone ({pct}%)"
+                ret_st = item.get("retry_status")
+                state_txt = html.escape(ret_st) if ret_st else f"Montage rclone ({pct}%)"
             elif state == "copying":
                 badge_cls = "run"
                 state_txt = f"Copie locale ({pct}%)"
@@ -1047,6 +1067,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__KEY_LABEL__", html.escape(prov_meta["key_label"]))
         .replace("__KEY_HINT__", html.escape(prov_meta["key_hint"]))
         .replace("__RCLONE_MOUNT_DIR__", html.escape(s["rclone_mount_dir"]))
+        .replace("__RCLONE_RC_URL__", html.escape(str(s.get("rclone_rc_url", "http://127.0.0.1:5572"))))
         .replace("__DOWNLOAD_BASE_DIR__", html.escape(s["download_base_dir"]))
         .replace("__DOWNLOAD_SPEED_LIMIT__", str(s.get("download_speed_limit", 0)))
         .replace("__MAX_CONCURRENT_DOWNLOADS__", str(s.get("max_concurrent_downloads", 3)))
