@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import html
 import re
@@ -35,6 +36,20 @@ router = APIRouter()
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
+
+
+@router.get("/api/debug/tasks")
+async def debug_tasks():
+    tasks = []
+    for t in asyncio.all_tasks():
+        tasks.append({
+            "name": t.get_name(),
+            "done": t.done(),
+            "cancelled": t.cancelled(),
+            "exception": str(t.exception()) if t.done() and not t.cancelled() else None,
+            "coro": str(t.get_coro()),
+        })
+    return JSONResponse(tasks)
 
 
 @router.get("/api/ui/queue")

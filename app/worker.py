@@ -1,7 +1,7 @@
 import asyncio
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 import httpx
 
@@ -264,7 +264,11 @@ async def background_worker() -> None:
             active_downloads.discard(item_id)
 
     async with httpx.AsyncClient() as client:
-        await check_alldebrid_api_health(client)
+        try:
+            await check_alldebrid_api_health(client)
+        except Exception as health_err:
+            logger.warning(f"Erreur vérification santé API initiale : {health_err}")
+
         while True:
             poll_interval = max(1.5, float(settings_db.get("poll_interval", 3.0)))
             mount_timeout = int(settings_db.get("mount_timeout", 60))

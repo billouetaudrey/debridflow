@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
+from app.config import logger
 from app.notifications import run_telegram_listener
 from app.routers import finder, qbittorrent, scanner, speedtest, web
 from app.state import load_state, settings_db
@@ -18,8 +19,21 @@ from app.worker import background_worker
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
     load_state()
-    task = asyncio.create_task(background_worker())
-    tg_task = asyncio.create_task(run_telegram_listener())
+
+    def _on_task_done(t: asyncio.Task):
+        try:
+            if not t.cancelled() and t.exception():
+                logger.error(
+                    f"Tâche asynchrone '{t.get_name()}' a échoué avec une exception : {t.exception()}",
+                    exc_info=t.exception(),
+                )
+        except Exception:
+            pass
+
+    task = asyncio.create_task(background_worker(), name="OmniSym-BackgroundWorker")
+    task.add_done_callback(_on_task_done)
+    tg_task = asyncio.create_task(run_telegram_listener(), name="OmniSym-TelegramListener")
+    tg_task.add_done_callback(_on_task_done)
     yield
     task.cancel()
     tg_task.cancel()

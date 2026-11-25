@@ -559,6 +559,9 @@ function renderQueueRow(item, checkedSet, groupId = '') {
     if (item.cloud_speed && item.cloud_speed > 0) {
       stateTxt += ` • ${formatSpeed(item.cloud_speed)}`;
     }
+  } else if (isDebrided && state === 'downloading') {
+    badgeCls = 'run';
+    stateTxt = `⏳ ${esc(t('st_init_transfer') || 'Initialisation transfert...')}`;
   } else if (state === 'queued') {
     badgeCls = 'pause';
     stateTxt = `${esc(t('st_queued') || 'En attente (slot DL)')}`;
