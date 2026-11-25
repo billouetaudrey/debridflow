@@ -149,13 +149,33 @@ async function testArrConnections() {
       const itemsHtml = data.results.map(r => {
         const icon = r.ok ? '✅' : '❌';
         const color = r.ok ? '#3fb950' : '#f85149';
+        let msg = r.message || '';
+        if (r.ok) {
+          msg = r.version
+            ? t('arr_test_connected', { name: r.app_name || r.name, version: r.version })
+            : t('arr_test_connected_no_ver', { name: r.app_name || r.name });
+        } else if (r.code === 'missing_url') {
+          msg = t('arr_test_missing_url');
+        } else if (r.code === 'missing_key') {
+          msg = t('arr_test_missing_key');
+        } else if (r.code === 'invalid_key') {
+          msg = t('arr_test_invalid_key');
+        } else if (r.code === 'conn_refused') {
+          msg = t('arr_test_conn_refused', { url: r.url || '' });
+        } else if (r.code === 'timeout') {
+          msg = t('arr_test_timeout', { url: r.url || '' });
+        } else if (r.code === 'not_found') {
+          msg = t('arr_test_not_found');
+        } else if (r.code === 'net_error') {
+          msg = t('arr_test_net_error', { error: r.detail || r.message || '' });
+        }
         return `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
             <div>
               <strong>${esc(r.name)}</strong> <span style="color:var(--text-muted);font-size:11px;">(${esc(r.type)})</span>
             </div>
             <div style="color:${color};font-weight:500;">
-              ${icon} ${esc(r.message)}
+              ${icon} ${esc(msg)}
             </div>
           </div>
         `;
@@ -170,7 +190,7 @@ async function testArrConnections() {
   } catch (e) {
     box.style.borderColor = '#f85149';
     box.style.background = 'rgba(248, 81, 73, 0.1)';
-    box.innerHTML = `<span style="color:#f85149;">Erreur réseau lors du test : ${esc(String(e))}</span>`;
+    box.innerHTML = `<span style="color:#f85149;">${esc(t('arr_test_network_err'))}${esc(String(e))}</span>`;
   } finally {
     btn.disabled = false;
     btn.textContent = originalTxt;

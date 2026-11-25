@@ -774,6 +774,7 @@ async def test_arr_connections(
                     "name": name,
                     "type": t_type,
                     "ok": False,
+                    "code": "missing_url",
                     "message": "URL non renseignée",
                 })
                 continue
@@ -783,6 +784,7 @@ async def test_arr_connections(
                     "name": name,
                     "type": t_type,
                     "ok": False,
+                    "code": "missing_key",
                     "message": "Clé API non renseignée",
                 })
                 continue
@@ -794,6 +796,7 @@ async def test_arr_connections(
             ]
             success = False
             last_err = ""
+            err_code = "not_found"
             for ep in endpoints_to_try:
                 try:
                     r = await client.get(ep, headers={"X-Api-Key": key})
@@ -806,26 +809,33 @@ async def test_arr_connections(
                             "name": name,
                             "type": t_type,
                             "ok": True,
+                            "code": "connected",
                             "app_name": app_name,
                             "version": version,
+                            "url": url,
                             "message": msg,
                         })
                         success = True
                         break
                     elif r.status_code in (401, 403):
+                        err_code = "invalid_key"
                         last_err = "Clé API invalide ou non autorisée (HTTP 401/403)"
                         break
                     elif r.status_code == 404:
                         continue
                     else:
+                        err_code = "net_error"
                         last_err = f"Réponse inattendue (HTTP {r.status_code})"
                 except httpx.ConnectError:
+                    err_code = "conn_refused"
                     last_err = f"Connexion refusée sur {url} (vérifiez l'URL ou le port)"
                     break
                 except httpx.TimeoutException:
+                    err_code = "timeout"
                     last_err = f"Timeout dépassé (> 8s) sur {url}"
                     break
                 except Exception as exc:
+                    err_code = "net_error"
                     last_err = f"Erreur de communication : {str(exc)}"
                     break
 
@@ -834,6 +844,9 @@ async def test_arr_connections(
                     "name": name,
                     "type": t_type,
                     "ok": False,
+                    "code": err_code,
+                    "url": url,
+                    "detail": last_err,
                     "message": last_err or "Endpoint d'état introuvable",
                 })
 
