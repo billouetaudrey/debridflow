@@ -3,6 +3,58 @@
 // ==========================================
 let currentObStep = 1;
 
+function addObArrInstanceRow(type = 'radarr', name = '', url = '', apiKey = '') {
+  const container = document.getElementById('ob-arr-instances-list');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'ob-arr-row arr-row';
+
+  const defaults = {
+    radarr: { name: 'Radarr', url: 'http://127.0.0.1:7878' },
+    sonarr: { name: 'Sonarr', url: 'http://127.0.0.1:8989' },
+    whisparr: { name: 'Whisparr', url: 'http://127.0.0.1:6969' },
+    lidarr: { name: 'Lidarr', url: 'http://127.0.0.1:8686' },
+    readarr: { name: 'Readarr', url: 'http://127.0.0.1:8787' }
+  };
+
+  const curType = (type || 'radarr').toLowerCase();
+  const curName = name || (defaults[curType] ? defaults[curType].name : 'Radarr');
+  const curUrl = url || (defaults[curType] ? defaults[curType].url : 'http://127.0.0.1:7878');
+
+  row.innerHTML = `
+    <select class="ob-arr-type" onchange="onObArrTypeChange(this)">
+      <option value="radarr" ${curType === 'radarr' ? 'selected' : ''}>🎬 Radarr</option>
+      <option value="sonarr" ${curType === 'sonarr' ? 'selected' : ''}>📺 Sonarr</option>
+      <option value="whisparr" ${curType === 'whisparr' ? 'selected' : ''}>🔞 Whisparr</option>
+      <option value="lidarr" ${curType === 'lidarr' ? 'selected' : ''}>🎵 Lidarr</option>
+      <option value="readarr" ${curType === 'readarr' ? 'selected' : ''}>📚 Readarr</option>
+    </select>
+    <input type="text" class="ob-arr-name" value="${esc(curName)}" placeholder="Nom" required>
+    <input type="text" class="ob-arr-url" value="${esc(curUrl)}" placeholder="http://127.0.0.1:7878" required>
+    <input type="password" class="ob-arr-key" value="${esc(apiKey)}" placeholder="Clé API">
+    <button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 10px;" title="Retirer">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function onObArrTypeChange(selectEl) {
+  const row = selectEl.parentElement;
+  const nameInput = row.querySelector('.ob-arr-name');
+  const urlInput = row.querySelector('.ob-arr-url');
+  const type = selectEl.value;
+  const defaults = {
+    radarr: { name: 'Radarr', url: 'http://127.0.0.1:7878' },
+    sonarr: { name: 'Sonarr', url: 'http://127.0.0.1:8989' },
+    whisparr: { name: 'Whisparr', url: 'http://127.0.0.1:6969' },
+    lidarr: { name: 'Lidarr', url: 'http://127.0.0.1:8686' },
+    readarr: { name: 'Readarr', url: 'http://127.0.0.1:8787' }
+  };
+  if (defaults[type]) {
+    if (!nameInput.dataset.edited || !nameInput.value) nameInput.value = defaults[type].name;
+    if (!urlInput.dataset.edited || !urlInput.value) urlInput.value = defaults[type].url;
+  }
+}
+
 function openOnboarding(force = false) {
   const modal = document.getElementById('onboarding-modal');
   if (!modal) return;
@@ -106,14 +158,29 @@ function openOnboarding(force = false) {
       addObScanPathRow('/mnt/virtual/Medias/Series');
     }
   }
-  const obRadarrUrl = document.getElementById('ob_radarr_url');
-  if (obRadarrUrl) obRadarrUrl.value = getVal('radarr_url', 'http://127.0.0.1:7878');
-  const obRadarrKey = document.getElementById('ob_radarr_api_key');
-  if (obRadarrKey) obRadarrKey.value = getVal('radarr_api_key');
-  const obSonarrUrl = document.getElementById('ob_sonarr_url');
-  if (obSonarrUrl) obSonarrUrl.value = getVal('sonarr_url', 'http://127.0.0.1:8989');
-  const obSonarrKey = document.getElementById('ob_sonarr_api_key');
-  if (obSonarrKey) obSonarrKey.value = getVal('sonarr_api_key');
+
+  const obArrContainer = document.getElementById('ob-arr-instances-list');
+  if (obArrContainer) {
+    obArrContainer.innerHTML = '';
+    const mainArrRows = document.querySelectorAll('#arr-instances-list .arr-row');
+    if (mainArrRows.length > 0) {
+      mainArrRows.forEach(row => {
+        const typeSelect = row.querySelector('[name="arr_types"]');
+        const nameInput = row.querySelector('[name="arr_names"]');
+        const urlInput = row.querySelector('[name="arr_urls"]');
+        const keyInput = row.querySelector('[name="arr_api_keys"]');
+        addObArrInstanceRow(
+          typeSelect ? typeSelect.value : 'radarr',
+          nameInput ? nameInput.value : 'Radarr',
+          urlInput ? urlInput.value : 'http://127.0.0.1:7878',
+          keyInput ? keyInput.value : ''
+        );
+      });
+    } else {
+      addObArrInstanceRow('radarr', 'Radarr', 'http://127.0.0.1:7878', '');
+      addObArrInstanceRow('sonarr', 'Sonarr', 'http://127.0.0.1:8989', '');
+    }
+  }
 
   const obTgEnabled = document.getElementById('ob_telegram_enabled');
   if (obTgEnabled) {
@@ -413,10 +480,18 @@ function finishOnboarding() {
       addScanPathRow('/mnt/virtual/Medias/Series');
     }
   }
-  setVal('radarr_url', document.getElementById('ob_radarr_url').value);
-  setVal('radarr_api_key', document.getElementById('ob_radarr_api_key').value);
-  setVal('sonarr_url', document.getElementById('ob_sonarr_url').value);
-  setVal('sonarr_api_key', document.getElementById('ob_sonarr_api_key').value);
+  const mainArrContainer = document.getElementById('arr-instances-list');
+  if (mainArrContainer) {
+    mainArrContainer.innerHTML = '';
+    const obArrRows = document.querySelectorAll('#ob-arr-instances-list .ob-arr-row');
+    obArrRows.forEach(r => {
+      const type = r.querySelector('.ob-arr-type').value;
+      const name = r.querySelector('.ob-arr-name').value;
+      const url = r.querySelector('.ob-arr-url').value;
+      const key = r.querySelector('.ob-arr-key').value;
+      addArrInstanceRow(type, name, url, key);
+    });
+  }
 
   const tgOn = document.getElementById('ob_telegram_enabled').checked;
   setChk('telegram_enabled', tgOn);

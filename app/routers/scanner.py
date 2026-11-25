@@ -74,11 +74,12 @@ async def trigger_research(payload: Dict[str, Any] = Body(...)):
     media_type = payload.get("media_type", "")
     media_id = payload.get("media_id")
     dead_path = payload.get("dead_path")
+    media_instance = payload.get("media_instance")
 
     if not media_type or media_id is None:
         return JSONResponse({"status": "error", "message": "media_type et media_id requis"}, status_code=400)
 
-    result = await scanner_service.trigger_research_arr(media_type, int(media_id), dead_path)
+    result = await scanner_service.trigger_research_arr(media_type, int(media_id), dead_path, media_instance)
     # Si la recherche a été déclenchée avec succès et qu'un dead_path était fourni, le purger
     if result.get("status") == "success" and dead_path:
         await scanner_service.clean_dead_symlinks([dead_path])
@@ -87,14 +88,19 @@ async def trigger_research(payload: Dict[str, Any] = Body(...)):
 
 @router.post("/research_all_dead")
 async def research_all_dead():
-    matched_dead = [d for d in scanner_service.dead_symlinks if d.get("media_type") in ("radarr", "sonarr", "whisparr") and d.get("media_id")]
+    matched_dead = [d for d in scanner_service.dead_symlinks if d.get("media_id")]
     if not matched_dead:
-        return JSONResponse({"status": "warning", "message": "Aucun lien mort associé à Radarr, Sonarr ou Whisparr"})
+        return JSONResponse({"status": "warning", "message": "Aucun lien mort associé à une instance *arr"})
 
     success_count = 0
     cleaned_paths = []
     for item in matched_dead:
-        res = await scanner_service.trigger_research_arr(item["media_type"], int(item["media_id"]), item.get("path"))
+        res = await scanner_service.trigger_research_arr(
+            item.get("media_type", ""),
+            int(item["media_id"]),
+            item.get("path"),
+            item.get("media_instance"),
+        )
         if res.get("status") == "success":
             success_count += 1
             if item.get("path"):
@@ -106,7 +112,7 @@ async def research_all_dead():
 
     return JSONResponse({
         "status": "success",
-        "message": f"Recherche relancée pour {success_count} média(s) dans Radarr / Sonarr / Whisparr.",
+        "message": f"Recherche relancée pour {success_count} média(s) dans vos applications *arr.",
         "count": success_count,
     })
 

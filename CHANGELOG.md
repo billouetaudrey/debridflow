@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.11.0] — 2026-11-25
+
+### Added
+- **Dynamic *arr Services Management (`arr_instances`)**:
+  - Replaced hardcoded Radarr/Sonarr/Whisparr settings with a fully dynamic *arr instance list in Settings and Onboarding.
+  - Users can dynamically add (`+ Add *arr Service`) and remove instances (`✕`), supporting multiple instances of the same service (e.g. Radarr 4K, Sonarr Anime, Radarr 1080p, Whisparr, Lidarr, Readarr).
+  - Configurable properties per instance: Service Type, Custom Name/Label, Instance URL, and API Key.
+  - The Media Library scanner dynamically queries all registered instances, maps broken symlinks with instance labels, and directs automated re-trigger searches to the exact corresponding *arr instance.
+  - Retained full backward compatibility with legacy `radarr_url`, `radarr_api_key`, `sonarr_url`, `sonarr_api_key`, `whisparr_url`, `whisparr_api_key`.
+
 ## [2.10.0] — 2026-11-25
 
 ### Added

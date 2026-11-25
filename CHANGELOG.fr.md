@@ -9,6 +9,16 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.11.0] — 2026-11-25
+
+### Ajouté
+- **Gestion dynamique des instances et services *arr (`arr_instances`)** :
+  - Remplacement de la configuration statique (Radarr / Sonarr / Whisparr) par une liste entièrement dynamique d'instances *arr dans les Paramètres et l'assistant d'accueil (Onboarding).
+  - Ajout (`+ Ajouter un service *arr`) et suppression (`✕`) dynamique de multiples instances, permettant de gérer plusieurs instances d'une même application (ex: Radarr 4K, Radarr 1080p, Sonarr Anime, Whisparr, Lidarr, Readarr).
+  - Paramètres personnalisables par instance : Type d'application, Nom personnalisé, URL de l'instance et Clé API.
+  - Le scanner de médiathèque analyse dynamiquement toutes les instances configurées, associe les symlinks brisés à leur instance spécifique et relance la recherche sur l'instance correspondante.
+  - Conservation d'une totale rétrocompatibilité avec les anciennes variables (`radarr_url`, `radarr_api_key`, `sonarr_url`, etc.).
+
 ## [2.10.0] — 2026-11-25
 
 ### Ajouté

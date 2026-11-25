@@ -56,6 +56,58 @@ function addScanPathRow(path = '') {
   if (input && !path) input.focus();
 }
 
+function addArrInstanceRow(type = 'radarr', name = '', url = '', apiKey = '') {
+  const container = document.getElementById('arr-instances-list');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'arr-row';
+
+  const defaults = {
+    radarr: { name: 'Radarr', url: 'http://127.0.0.1:7878' },
+    sonarr: { name: 'Sonarr', url: 'http://127.0.0.1:8989' },
+    whisparr: { name: 'Whisparr', url: 'http://127.0.0.1:6969' },
+    lidarr: { name: 'Lidarr', url: 'http://127.0.0.1:8686' },
+    readarr: { name: 'Readarr', url: 'http://127.0.0.1:8787' }
+  };
+
+  const curType = (type || 'radarr').toLowerCase();
+  const curName = name || (defaults[curType] ? defaults[curType].name : 'Radarr');
+  const curUrl = url || (defaults[curType] ? defaults[curType].url : 'http://127.0.0.1:7878');
+
+  row.innerHTML = `
+    <select name="arr_types" onchange="onArrTypeChange(this)">
+      <option value="radarr" ${curType === 'radarr' ? 'selected' : ''}>🎬 Radarr</option>
+      <option value="sonarr" ${curType === 'sonarr' ? 'selected' : ''}>📺 Sonarr</option>
+      <option value="whisparr" ${curType === 'whisparr' ? 'selected' : ''}>🔞 Whisparr</option>
+      <option value="lidarr" ${curType === 'lidarr' ? 'selected' : ''}>🎵 Lidarr</option>
+      <option value="readarr" ${curType === 'readarr' ? 'selected' : ''}>📚 Readarr</option>
+    </select>
+    <input type="text" name="arr_names" value="${esc(curName)}" placeholder="${esc(t('th_arr_name'))}" required data-edited="1">
+    <input type="text" name="arr_urls" value="${esc(curUrl)}" placeholder="${esc(t('th_arr_url'))}" required data-edited="1">
+    <input type="password" name="arr_api_keys" value="${esc(apiKey)}" placeholder="${esc(t('th_arr_key'))}">
+    <button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 10px;" title="${esc(t('btn_remove'))}">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function onArrTypeChange(selectEl) {
+  const row = selectEl.parentElement;
+  const nameInput = row.querySelector('[name="arr_names"]');
+  const urlInput = row.querySelector('[name="arr_urls"]');
+  const type = selectEl.value;
+  const defaults = {
+    radarr: { name: 'Radarr', url: 'http://127.0.0.1:7878' },
+    sonarr: { name: 'Sonarr', url: 'http://127.0.0.1:8989' },
+    whisparr: { name: 'Whisparr', url: 'http://127.0.0.1:6969' },
+    lidarr: { name: 'Lidarr', url: 'http://127.0.0.1:8686' },
+    readarr: { name: 'Readarr', url: 'http://127.0.0.1:8787' }
+  };
+  if (defaults[type]) {
+    if (!nameInput.dataset.edited || !nameInput.value) nameInput.value = defaults[type].name;
+    if (!urlInput.dataset.edited || !urlInput.value) urlInput.value = defaults[type].url;
+  }
+}
+
 async function testApi() {
   const btn = document.getElementById('btn-test-api');
   const box = document.getElementById('test-result');

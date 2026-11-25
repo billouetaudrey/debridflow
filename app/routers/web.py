@@ -22,6 +22,7 @@ from app.config import DEFAULT_SERVICES, DEFAULT_SETTINGS, logger
 from app.providers import SUPPORTED_PROVIDERS, get_provider, normalize_provider_name
 from app.state import (
     api_health,
+    get_arr_instances,
     get_services_config,
     rebuild_categories,
     resolve_service,
@@ -192,13 +193,12 @@ async def api_force_sync():
                 logger.warning(f"Erreur force_sync debrid: {exc}")
                 results["errors"].append(f"Debrid: {exc}")
 
-        # 3. Notification aux applications *Arr (Radarr, Sonarr, Whisparr)
-        arr_targets = [
-            ("Radarr", settings_db.get("radarr_url", "http://127.0.0.1:7878"), settings_db.get("radarr_api_key", "")),
-            ("Sonarr", settings_db.get("sonarr_url", "http://127.0.0.1:8989"), settings_db.get("sonarr_api_key", "")),
-            ("Whisparr", settings_db.get("whisparr_url", "http://127.0.0.1:6969"), settings_db.get("whisparr_api_key", "")),
-        ]
-        for arr_name, arr_url, arr_key in arr_targets:
+        # 3. Notification aux applications *Arr configurées (Radarr, Sonarr, Whisparr...)
+        arr_instances = get_arr_instances()
+        for inst in arr_instances:
+            arr_name = inst.get("name") or inst.get("type", "arr").capitalize()
+            arr_url = inst.get("url", "").rstrip("/")
+            arr_key = inst.get("api_key", "").strip()
             if arr_key and arr_url:
                 clean_url = arr_url.rstrip("/")
                 try:
@@ -768,6 +768,10 @@ async def update_settings(
     sonarr_api_key: str = Form(""),
     whisparr_url: str = Form(""),
     whisparr_api_key: str = Form(""),
+    arr_types: Optional[List[str]] = Form(None),
+    arr_names: Optional[List[str]] = Form(None),
+    arr_urls: Optional[List[str]] = Form(None),
+    arr_api_keys: Optional[List[str]] = Form(None),
     telegram_enabled: Optional[str] = Form(None),
     telegram_bot_token: str = Form(""),
     telegram_chat_id: str = Form(""),
@@ -795,6 +799,23 @@ async def update_settings(
                 }
     if not new_services:
         new_services = {k: dict(v) for k, v in DEFAULT_SERVICES.items()}
+
+    new_arr_instances: List[Dict[str, str]] = []
+    if arr_types and arr_names:
+        urls_safe = arr_urls or []
+        keys_safe = arr_api_keys or []
+        for idx, (a_type, a_name) in enumerate(zip(arr_types, arr_names)):
+            c_type = a_type.strip().lower()
+            c_name = a_name.strip()
+            c_url = urls_safe[idx].strip().rstrip("/") if idx < len(urls_safe) else ""
+            c_key = keys_safe[idx].strip() if idx < len(keys_safe) else ""
+            if c_type and c_name and c_url:
+                new_arr_instances.append({
+                    "type": c_type,
+                    "name": c_name,
+                    "url": c_url,
+                    "api_key": c_key,
+                })
 
     clean_lang = ui_language.strip().lower()
     if clean_lang not in ("fr", "en"):
@@ -839,12 +860,24 @@ async def update_settings(
                     parsed_paths.append(sub)
         if parsed_paths:
             settings_db["media_scan_paths"] = ",".join(parsed_paths)
-        settings_db["radarr_url"] = radarr_url.strip() or "http://127.0.0.1:7878"
-        settings_db["radarr_api_key"] = radarr_api_key.strip()
-        settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
-        settings_db["sonarr_api_key"] = sonarr_api_key.strip()
-        settings_db["whisparr_url"] = whisparr_url.strip() or "http://127.0.0.1:6969"
-        settings_db["whisparr_api_key"] = whisparr_api_key.strip()
+        if arr_types is not None:
+            settings_db["arr_instances"] = new_arr_instances
+            first_radarr = next((x for x in new_arr_instances if x["type"] == "radarr"), None)
+            first_sonarr = next((x for x in new_arr_instances if x["type"] == "sonarr"), None)
+            first_whisparr = next((x for x in new_arr_instances if x["type"] == "whisparr"), None)
+            settings_db["radarr_url"] = first_radarr["url"] if first_radarr else radarr_url.strip() or "http://127.0.0.1:7878"
+            settings_db["radarr_api_key"] = first_radarr["api_key"] if first_radarr else radarr_api_key.strip()
+            settings_db["sonarr_url"] = first_sonarr["url"] if first_sonarr else sonarr_url.strip() or "http://127.0.0.1:8989"
+            settings_db["sonarr_api_key"] = first_sonarr["api_key"] if first_sonarr else sonarr_api_key.strip()
+            settings_db["whisparr_url"] = first_whisparr["url"] if first_whisparr else whisparr_url.strip() or "http://127.0.0.1:6969"
+            settings_db["whisparr_api_key"] = first_whisparr["api_key"] if first_whisparr else whisparr_api_key.strip()
+        else:
+            settings_db["radarr_url"] = radarr_url.strip() or "http://127.0.0.1:7878"
+            settings_db["radarr_api_key"] = radarr_api_key.strip()
+            settings_db["sonarr_url"] = sonarr_url.strip() or "http://127.0.0.1:8989"
+            settings_db["sonarr_api_key"] = sonarr_api_key.strip()
+            settings_db["whisparr_url"] = whisparr_url.strip() or "http://127.0.0.1:6969"
+            settings_db["whisparr_api_key"] = whisparr_api_key.strip()
         settings_db["ddl_download_dir"] = ddl_download_dir.strip() or "/mnt/virtual/Medias/DL/DDL"
         # Visibilité des onglets
         q_tab = enable_queue_tab == "on"
@@ -909,6 +942,7 @@ async def reset_settings():
 async def web_dashboard(saved: Optional[str] = None):
     rows = []
     service_rows = []
+    arr_instance_rows = []
     scan_path_rows = []
     services_options = []
     active_dl_count = 0
@@ -952,6 +986,32 @@ async def web_dashboard(saved: Optional[str] = None):
                 f'<div class="scan-path-row">'
                 f'<input type="text" name="media_scan_paths" value="{html.escape(p)}" placeholder="Ex: /mnt/virtual/Medias/Films" style="flex:1;" required>'
                 f'<button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 12px;" title="Supprimer">✕</button>'
+                f'</div>'
+            )
+
+        for inst in get_arr_instances():
+            a_type = inst.get("type", "radarr").lower()
+            a_name = inst.get("name") or a_type.capitalize()
+            a_url = inst.get("url", "")
+            a_key = inst.get("api_key", "")
+            sel_radarr = "selected" if a_type == "radarr" else ""
+            sel_sonarr = "selected" if a_type == "sonarr" else ""
+            sel_whisparr = "selected" if a_type == "whisparr" else ""
+            sel_lidarr = "selected" if a_type == "lidarr" else ""
+            sel_readarr = "selected" if a_type == "readarr" else ""
+            arr_instance_rows.append(
+                f'<div class="arr-row">'
+                f'<select name="arr_types" onchange="onArrTypeChange(this)">'
+                f'<option value="radarr" {sel_radarr}>🎬 Radarr</option>'
+                f'<option value="sonarr" {sel_sonarr}>📺 Sonarr</option>'
+                f'<option value="whisparr" {sel_whisparr}>🔞 Whisparr</option>'
+                f'<option value="lidarr" {sel_lidarr}>🎵 Lidarr</option>'
+                f'<option value="readarr" {sel_readarr}>📚 Readarr</option>'
+                f'</select>'
+                f'<input type="text" name="arr_names" value="{html.escape(a_name)}" placeholder="Nom de l\'instance" required data-edited="1">'
+                f'<input type="text" name="arr_urls" value="{html.escape(a_url)}" placeholder="http://127.0.0.1:7878" required data-edited="1">'
+                f'<input type="password" name="arr_api_keys" value="{html.escape(a_key)}" placeholder="Clé API">'
+                f'<button type="button" class="btn-del" onclick="this.parentElement.remove()" style="padding:7px 10px;" title="Retirer">✕</button>'
                 f'</div>'
             )
 
@@ -1098,6 +1158,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__CHECKED_HIDE_LAST_DL_NAME__", "checked" if s.get("hide_last_download_name", True) else "")
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))
+        .replace("__ARR_INSTANCE_ROWS__", "".join(arr_instance_rows))
         .replace("__SERVICES_OPTIONS__", "".join(services_options))
         .replace("__SCAN_PATH_ROWS__", "".join(scan_path_rows))
         .replace("__API_KEY__", html.escape(s["api_key"]))

@@ -24,6 +24,27 @@ DEFAULT_SERVICES: Dict[str, Dict[str, str]] = {
     "torrent-direct": {"mode": "download", "subpath": "Torrent-Direct"},
 }
 
+DEFAULT_ARR_INSTANCES: List[Dict[str, str]] = [
+    {
+        "type": "radarr",
+        "name": "Radarr",
+        "url": os.getenv("RADARR_URL", "http://127.0.0.1:7878"),
+        "api_key": os.getenv("RADARR_API_KEY", ""),
+    },
+    {
+        "type": "sonarr",
+        "name": "Sonarr",
+        "url": os.getenv("SONARR_URL", "http://127.0.0.1:8989"),
+        "api_key": os.getenv("SONARR_API_KEY", ""),
+    },
+    {
+        "type": "whisparr",
+        "name": "Whisparr",
+        "url": os.getenv("WHISPARR_URL", "http://127.0.0.1:6969"),
+        "api_key": os.getenv("WHISPARR_API_KEY", ""),
+    },
+]
+
 # Configuration par défaut (surchargeable par variables d'environnement ou state.json)
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "api_key": os.getenv("ALLDEBRID_API_KEY", "").strip(),
@@ -59,10 +80,13 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "enable_ddl_tab": os.getenv("ENABLE_DDL_TAB", "false").lower() == "true",
     "enable_finder_tab": os.getenv("ENABLE_FINDER_TAB", "true").lower() == "true",
     "enable_scanner_tab": os.getenv("ENABLE_SCANNER_TAB", "true").lower() == "true",
+    "arr_instances": [dict(x) for x in DEFAULT_ARR_INSTANCES],
     "radarr_url": os.getenv("RADARR_URL", "http://127.0.0.1:7878"),
     "radarr_api_key": os.getenv("RADARR_API_KEY", ""),
     "sonarr_url": os.getenv("SONARR_URL", "http://127.0.0.1:8989"),
     "sonarr_api_key": os.getenv("SONARR_API_KEY", ""),
+    "whisparr_url": os.getenv("WHISPARR_URL", "http://127.0.0.1:6969"),
+    "whisparr_api_key": os.getenv("WHISPARR_API_KEY", ""),
     "telegram_enabled": os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
     "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
     "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", "").strip(),

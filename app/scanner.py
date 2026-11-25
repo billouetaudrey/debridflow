@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Set
 import httpx
 
 from app.config import logger
-from app.state import get_services_config, resolve_service, settings_db, state_lock, torrents_db
+from app.state import get_arr_instances, get_services_config, resolve_service, settings_db, state_lock, torrents_db
 
 SCANNER_CACHE_FILE = Path("/data/scanner_cache.json") if Path("/data").is_dir() else Path(__file__).resolve().parent.parent / "data" / "scanner_cache.json"
 
@@ -410,57 +410,58 @@ class ScannerService:
         return cache, dead
 
     async def _match_arr_media(self, dead_symlinks: List[Dict[str, Any]]) -> None:
-        radarr_url = settings_db.get("radarr_url", "http://127.0.0.1:7878").rstrip("/")
-        radarr_key = settings_db.get("radarr_api_key", "").strip()
-        sonarr_url = settings_db.get("sonarr_url", "http://127.0.0.1:8989").rstrip("/")
-        sonarr_key = settings_db.get("sonarr_api_key", "").strip()
-
-        movies = []
-        series = []
+        arr_instances = get_arr_instances()
+        if not arr_instances:
+            return
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            if radarr_key:
-                try:
-                    r = await client.get(f"{radarr_url}/api/v3/movie", headers={"X-Api-Key": radarr_key})
-                    if r.status_code == 200:
-                        movies = r.json()
-                except Exception as e:
-                    logger.debug(f"Scanner: impossible de joindre Radarr ({e})")
+            for inst in arr_instances:
+                a_type = inst.get("type", "radarr").lower()
+                a_name = inst.get("name") or a_type.capitalize()
+                a_url = inst.get("url", "").rstrip("/")
+                a_key = inst.get("api_key", "").strip()
+                if not a_key or not a_url:
+                    continue
 
-            if sonarr_key:
-                try:
-                    r = await client.get(f"{sonarr_url}/api/v3/series", headers={"X-Api-Key": sonarr_key})
-                    if r.status_code == 200:
-                        series = r.json()
-                except Exception as e:
-                    logger.debug(f"Scanner: impossible de joindre Sonarr ({e})")
+                if a_type in ("radarr", "whisparr"):
+                    try:
+                        r = await client.get(f"{a_url}/api/v3/movie", headers={"X-Api-Key": a_key})
+                        if r.status_code == 200:
+                            movies = r.json()
+                            for item in dead_symlinks:
+                                if item.get("media_id"):
+                                    continue
+                                p = item["path"]
+                                for m in movies:
+                                    m_path = m.get("path")
+                                    if m_path and (p.startswith(m_path + "/") or p == m_path):
+                                        item["media_type"] = a_type
+                                        item["media_instance"] = a_name
+                                        item["media_id"] = m["id"]
+                                        item["media_title"] = m.get("title", "")
+                                        break
+                    except Exception as e:
+                        logger.debug(f"Scanner: impossible de joindre {a_name} ({e})")
 
-        # Correspondance avec les chemins de liens morts
-        for item in dead_symlinks:
-            p = item["path"]
-            matched = False
-
-            # Test Radarr
-            for m in movies:
-                m_path = m.get("path")
-                if m_path and (p.startswith(m_path + "/") or p == m_path):
-                    item["media_type"] = "radarr"
-                    item["media_id"] = m["id"]
-                    item["media_title"] = m.get("title", "")
-                    matched = True
-                    break
-
-            if matched:
-                continue
-
-            # Test Sonarr
-            for s in series:
-                s_path = s.get("path")
-                if s_path and (p.startswith(s_path + "/") or p == s_path):
-                    item["media_type"] = "sonarr"
-                    item["media_id"] = s["id"]
-                    item["media_title"] = s.get("title", "")
-                    break
+                elif a_type == "sonarr":
+                    try:
+                        r = await client.get(f"{a_url}/api/v3/series", headers={"X-Api-Key": a_key})
+                        if r.status_code == 200:
+                            series = r.json()
+                            for item in dead_symlinks:
+                                if item.get("media_id"):
+                                    continue
+                                p = item["path"]
+                                for s in series:
+                                    s_path = s.get("path")
+                                    if s_path and (p.startswith(s_path + "/") or p == s_path):
+                                        item["media_type"] = "sonarr"
+                                        item["media_instance"] = a_name
+                                        item["media_id"] = s["id"]
+                                        item["media_title"] = s.get("title", "")
+                                        break
+                    except Exception as e:
+                        logger.debug(f"Scanner: impossible de joindre {a_name} ({e})")
 
     async def start_scan(self, force: bool = False, force_full: bool = False) -> Dict[str, Any]:
         now = time.time()
@@ -780,13 +781,12 @@ class ScannerService:
             except OSError:
                 pass
 
-        # 2. Suppression dans Radarr / Sonarr si demandée
+        # 2. Suppression dans les instances *Arr si demandée
         arr_deleted = 0
         if delete_from_arr:
-            radarr_url = settings_db.get("radarr_url", "http://127.0.0.1:7878").rstrip("/")
-            radarr_key = settings_db.get("radarr_api_key", "").strip()
-            sonarr_url = settings_db.get("sonarr_url", "http://127.0.0.1:8989").rstrip("/")
-            sonarr_key = settings_db.get("sonarr_api_key", "").strip()
+            arr_instances = get_arr_instances()
+            inst_map = {inst.get("name", "").strip().lower(): inst for inst in arr_instances}
+            type_map = {inst.get("type", "").strip().lower(): inst for inst in arr_instances}
 
             async with httpx.AsyncClient(timeout=15.0) as client:
                 for p_str in paths_to_clean:
@@ -794,30 +794,40 @@ class ScannerService:
                     if not item:
                         continue
                     m_type = item.get("media_type")
+                    m_inst = item.get("media_instance", "")
                     m_id = item.get("media_id")
                     if not m_id:
                         continue
 
-                    if m_type == "radarr" and radarr_key:
+                    target_inst = inst_map.get(m_inst.lower()) or type_map.get(str(m_type).lower())
+                    if not target_inst:
+                        continue
+                    target_url = target_inst.get("url", "").rstrip("/")
+                    target_key = target_inst.get("api_key", "").strip()
+                    target_type = target_inst.get("type", m_type).lower()
+                    if not target_key or not target_url:
+                        continue
+
+                    if target_type in ("radarr", "whisparr"):
                         try:
                             r = await client.delete(
-                                f"{radarr_url}/api/v3/movie/{m_id}",
-                                headers={"X-Api-Key": radarr_key},
+                                f"{target_url}/api/v3/movie/{m_id}",
+                                headers={"X-Api-Key": target_key},
                                 params={"deleteFiles": "false", "addImportExclusion": "false"},
                             )
                             if r.status_code in (200, 204):
                                 arr_deleted += 1
-                                logger.info(f"Scanner: film supprimé de Radarr (ID: {m_id}, Titre: {item.get('media_title')})")
+                                logger.info(f"Scanner: film supprimé de {target_inst.get('name')} (ID: {m_id}, Titre: {item.get('media_title')})")
                             else:
-                                logger.warning(f"Scanner: suppression Radarr movie {m_id} statut: {r.status_code}")
+                                logger.warning(f"Scanner: suppression {target_inst.get('name')} movie {m_id} statut: {r.status_code}")
                         except Exception as e:
-                            logger.error(f"Scanner: erreur suppression Radarr : {e}")
+                            logger.error(f"Scanner: erreur suppression {target_inst.get('name')} : {e}")
 
-                    elif m_type == "sonarr" and sonarr_key:
+                    elif target_type == "sonarr":
                         try:
                             r_ep = await client.get(
-                                f"{sonarr_url}/api/v3/episodefile",
-                                headers={"X-Api-Key": sonarr_key},
+                                f"{target_url}/api/v3/episodefile",
+                                headers={"X-Api-Key": target_key},
                                 params={"seriesId": m_id},
                             )
                             deleted_ep = False
@@ -830,38 +840,38 @@ class ScannerService:
                                 )
                                 if matched_ep:
                                     r_del = await client.delete(
-                                        f"{sonarr_url}/api/v3/episodefile/{matched_ep['id']}",
-                                        headers={"X-Api-Key": sonarr_key},
+                                        f"{target_url}/api/v3/episodefile/{matched_ep['id']}",
+                                        headers={"X-Api-Key": target_key},
                                     )
                                     if r_del.status_code in (200, 204):
                                         arr_deleted += 1
                                         deleted_ep = True
-                                        logger.info(f"Scanner: fichier d'épisode {matched_ep['id']} supprimé de Sonarr")
+                                        logger.info(f"Scanner: fichier d'épisode {matched_ep['id']} supprimé de {target_inst.get('name')}")
                                     if len(ep_files) <= 1:
                                         await client.delete(
-                                            f"{sonarr_url}/api/v3/series/{m_id}",
-                                            headers={"X-Api-Key": sonarr_key},
+                                            f"{target_url}/api/v3/series/{m_id}",
+                                            headers={"X-Api-Key": target_key},
                                             params={"deleteFiles": "false", "addImportListExclusion": "false"},
                                         )
-                                        logger.info(f"Scanner: série vide {m_id} supprimée de Sonarr.")
+                                        logger.info(f"Scanner: série vide {m_id} supprimée de {target_inst.get('name')}.")
                                     else:
                                         await client.post(
-                                            f"{sonarr_url}/api/v3/command",
-                                            headers={"X-Api-Key": sonarr_key},
+                                            f"{target_url}/api/v3/command",
+                                            headers={"X-Api-Key": target_key},
                                             json={"name": "RescanSeries", "seriesId": int(m_id)},
                                         )
 
                             if not deleted_ep:
                                 r_s = await client.delete(
-                                    f"{sonarr_url}/api/v3/series/{m_id}",
-                                    headers={"X-Api-Key": sonarr_key},
+                                    f"{target_url}/api/v3/series/{m_id}",
+                                    headers={"X-Api-Key": target_key},
                                     params={"deleteFiles": "false", "addImportListExclusion": "false"},
                                 )
                                 if r_s.status_code in (200, 204):
                                     arr_deleted += 1
-                                    logger.info(f"Scanner: série {m_id} supprimée de Sonarr ({item.get('media_title')})")
+                                    logger.info(f"Scanner: série {m_id} supprimée de {target_inst.get('name')} ({item.get('media_title')})")
                         except Exception as e:
-                            logger.error(f"Scanner: erreur suppression Sonarr : {e}")
+                            logger.error(f"Scanner: erreur suppression {target_inst.get('name')} : {e}")
 
         # 3. Suppression sur AllDebrid si le magnet existe encore sur AllDebrid
         ad_deleted = 0
@@ -986,7 +996,13 @@ class ScannerService:
         await self.start_scan()
         return deleted_count
 
-    async def trigger_research_arr(self, media_type: str, media_id: int, dead_path: Optional[str] = None) -> Dict[str, Any]:
+    async def trigger_research_arr(
+        self,
+        media_type: str,
+        media_id: int,
+        dead_path: Optional[str] = None,
+        media_instance: Optional[str] = None,
+    ) -> Dict[str, Any]:
         # Si un chemin de lien mort est spécifié, on le purge d'abord sur le disque
         if dead_path:
             try:
@@ -996,45 +1012,62 @@ class ScannerService:
             except OSError:
                 pass
 
-        radarr_url = settings_db.get("radarr_url", "http://127.0.0.1:7878").rstrip("/")
-        radarr_key = settings_db.get("radarr_api_key", "").strip()
-        sonarr_url = settings_db.get("sonarr_url", "http://127.0.0.1:8989").rstrip("/")
-        sonarr_key = settings_db.get("sonarr_api_key", "").strip()
-        whisparr_url = settings_db.get("whisparr_url", "http://127.0.0.1:6969").rstrip("/")
-        whisparr_key = settings_db.get("whisparr_api_key", "").strip()
+        arr_instances = get_arr_instances()
+        target_inst = None
+        if media_instance:
+            target_inst = next(
+                (i for i in arr_instances if (i.get("name") or "").strip().lower() == media_instance.strip().lower()),
+                None,
+            )
+        if not target_inst and media_type:
+            target_inst = next(
+                (i for i in arr_instances if (i.get("type") or "").strip().lower() == media_type.strip().lower()),
+                None,
+            )
+
+        if not target_inst:
+            return {"status": "error", "message": f"Aucune instance *arr configurée pour {media_instance or media_type}"}
+
+        target_url = target_inst.get("url", "").rstrip("/")
+        target_key = target_inst.get("api_key", "").strip()
+        target_type = target_inst.get("type", media_type).lower()
+        inst_name = target_inst.get("name") or target_type.capitalize()
+
+        if not target_url or not target_key:
+            return {"status": "error", "message": f"URL ou Clé API manquante pour {inst_name}"}
 
         async with httpx.AsyncClient(timeout=25.0) as client:
-            if media_type == "radarr" and radarr_key:
+            if target_type == "radarr":
                 # 1. Vérifier le film et supprimer le MovieFile mort pour que Radarr sache qu'il n'a plus le fichier
                 try:
                     r_movie = await client.get(
-                        f"{radarr_url}/api/v3/movie/{media_id}",
-                        headers={"X-Api-Key": radarr_key}
+                        f"{target_url}/api/v3/movie/{media_id}",
+                        headers={"X-Api-Key": target_key}
                     )
                     if r_movie.status_code == 200:
                         movie_data = r_movie.json()
                         file_id = movie_data.get("movieFileId") or (movie_data.get("movieFile") or {}).get("id")
                         if file_id:
                             r_del = await client.delete(
-                                f"{radarr_url}/api/v3/moviefile/{file_id}",
-                                headers={"X-Api-Key": radarr_key}
+                                f"{target_url}/api/v3/moviefile/{file_id}",
+                                headers={"X-Api-Key": target_key}
                             )
-                            logger.info(f"Scanner: MovieFile {file_id} purgé dans Radarr pour relance (statut {r_del.status_code})")
+                            logger.info(f"Scanner: MovieFile {file_id} purgé dans {inst_name} pour relance (statut {r_del.status_code})")
                         if not movie_data.get("monitored"):
                             movie_data["monitored"] = True
                             await client.put(
-                                f"{radarr_url}/api/v3/movie/{media_id}",
-                                headers={"X-Api-Key": radarr_key},
+                                f"{target_url}/api/v3/movie/{media_id}",
+                                headers={"X-Api-Key": target_key},
                                 json=movie_data
                             )
                 except Exception as e:
-                    logger.warning(f"Scanner: avertissement purge MovieFile Radarr ({media_id}): {e}")
+                    logger.warning(f"Scanner: avertissement purge MovieFile {inst_name} ({media_id}): {e}")
 
                 # 2. Rescan du film pour synchroniser Radarr
                 try:
                     await client.post(
-                        f"{radarr_url}/api/v3/command",
-                        headers={"X-Api-Key": radarr_key},
+                        f"{target_url}/api/v3/command",
+                        headers={"X-Api-Key": target_key},
                         json={"name": "RescanMovie", "movieId": int(media_id)},
                     )
                 except Exception:
@@ -1044,20 +1077,20 @@ class ScannerService:
 
                 # 3. Déclenchement de la recherche automatique
                 r = await client.post(
-                    f"{radarr_url}/api/v3/command",
-                    headers={"X-Api-Key": radarr_key},
+                    f"{target_url}/api/v3/command",
+                    headers={"X-Api-Key": target_key},
                     json={"name": "MoviesSearch", "movieIds": [int(media_id)]},
                 )
                 if r.status_code in (200, 201):
-                    return {"status": "success", "message": "Recherche Radarr lancée avec succès", "data": r.json()}
-                return {"status": "error", "message": f"Radarr a renvoyé une erreur ({r.status_code}): {r.text}"}
+                    return {"status": "success", "message": f"Recherche {inst_name} lancée avec succès", "data": r.json()}
+                return {"status": "error", "message": f"{inst_name} a renvoyé une erreur ({r.status_code}): {r.text}"}
 
-            elif media_type == "sonarr" and sonarr_key:
+            elif target_type == "sonarr":
                 # 1. Vérifier les épisodes et supprimer l'EpisodeFile mort
                 try:
                     r_ep = await client.get(
-                        f"{sonarr_url}/api/v3/episodefile",
-                        headers={"X-Api-Key": sonarr_key},
+                        f"{target_url}/api/v3/episodefile",
+                        headers={"X-Api-Key": target_key},
                         params={"seriesId": int(media_id)}
                     )
                     if r_ep.status_code == 200:
@@ -1066,19 +1099,19 @@ class ScannerService:
                         for ef in ep_files:
                             if ef.get("path") == dead_path or (p_name and Path(ef.get("path", "")).name == p_name):
                                 r_del = await client.delete(
-                                    f"{sonarr_url}/api/v3/episodefile/{ef['id']}",
-                                    headers={"X-Api-Key": sonarr_key}
+                                    f"{target_url}/api/v3/episodefile/{ef['id']}",
+                                    headers={"X-Api-Key": target_key}
                                 )
-                                logger.info(f"Scanner: EpisodeFile {ef['id']} purgé dans Sonarr (statut {r_del.status_code})")
+                                logger.info(f"Scanner: EpisodeFile {ef['id']} purgé dans {inst_name} (statut {r_del.status_code})")
                                 break
                 except Exception as e:
-                    logger.warning(f"Scanner: avertissement purge EpisodeFile Sonarr : {e}")
+                    logger.warning(f"Scanner: avertissement purge EpisodeFile {inst_name} : {e}")
 
                 # 2. Rescan de la série
                 try:
                     await client.post(
-                        f"{sonarr_url}/api/v3/command",
-                        headers={"X-Api-Key": sonarr_key},
+                        f"{target_url}/api/v3/command",
+                        headers={"X-Api-Key": target_key},
                         json={"name": "RescanSeries", "seriesId": int(media_id)},
                     )
                 except Exception:
@@ -1088,50 +1121,50 @@ class ScannerService:
 
                 # 3. Recherche automatique de la série
                 r = await client.post(
-                    f"{sonarr_url}/api/v3/command",
-                    headers={"X-Api-Key": sonarr_key},
+                    f"{target_url}/api/v3/command",
+                    headers={"X-Api-Key": target_key},
                     json={"name": "SeriesSearch", "seriesId": int(media_id)},
                 )
                 if r.status_code in (200, 201):
-                    return {"status": "success", "message": "Recherche Sonarr lancée avec succès", "data": r.json()}
-                return {"status": "error", "message": f"Sonarr a renvoyé une erreur ({r.status_code}): {r.text}"}
+                    return {"status": "success", "message": f"Recherche {inst_name} lancée avec succès", "data": r.json()}
+                return {"status": "error", "message": f"{inst_name} a renvoyé une erreur ({r.status_code}): {r.text}"}
 
-            elif media_type == "whisparr" and whisparr_key:
+            elif target_type == "whisparr":
                 # 1. Purge du fichier dans Whisparr
                 try:
                     r_wh = await client.get(
-                        f"{whisparr_url}/api/v3/movie/{media_id}",
-                        headers={"X-Api-Key": whisparr_key}
+                        f"{target_url}/api/v3/movie/{media_id}",
+                        headers={"X-Api-Key": target_key}
                     )
                     if r_wh.status_code == 200:
                         wh_data = r_wh.json()
                         file_id = wh_data.get("movieFileId") or (wh_data.get("movieFile") or {}).get("id")
                         if file_id:
                             await client.delete(
-                                f"{whisparr_url}/api/v3/moviefile/{file_id}",
-                                headers={"X-Api-Key": whisparr_key}
+                                f"{target_url}/api/v3/moviefile/{file_id}",
+                                headers={"X-Api-Key": target_key}
                             )
                         if not wh_data.get("monitored"):
                             wh_data["monitored"] = True
                             await client.put(
-                                f"{whisparr_url}/api/v3/movie/{media_id}",
-                                headers={"X-Api-Key": whisparr_key},
+                                f"{target_url}/api/v3/movie/{media_id}",
+                                headers={"X-Api-Key": target_key},
                                 json=wh_data
                             )
                 except Exception as e:
-                    logger.warning(f"Scanner: avertissement purge Whisparr : {e}")
+                    logger.warning(f"Scanner: avertissement purge {inst_name} : {e}")
 
                 # 2. Recherche automatique Whisparr
                 r = await client.post(
-                    f"{whisparr_url}/api/v3/command",
-                    headers={"X-Api-Key": whisparr_key},
+                    f"{target_url}/api/v3/command",
+                    headers={"X-Api-Key": target_key},
                     json={"name": "MoviesSearch", "movieIds": [int(media_id)]},
                 )
                 if r.status_code in (200, 201):
-                    return {"status": "success", "message": "Recherche Whisparr lancée avec succès", "data": r.json()}
-                return {"status": "error", "message": f"Whisparr a renvoyé une erreur ({r.status_code}): {r.text}"}
+                    return {"status": "success", "message": f"Recherche {inst_name} lancée avec succès", "data": r.json()}
+                return {"status": "error", "message": f"{inst_name} a renvoyé une erreur ({r.status_code}): {r.text}"}
 
-        return {"status": "error", "message": "Configuration Radarr, Sonarr ou Whisparr manquante ou invalide"}
+        return {"status": "error", "message": f"Type de service non pris en charge : {target_type}"}
 
 
 scanner_service = ScannerService()

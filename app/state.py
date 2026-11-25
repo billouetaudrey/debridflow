@@ -86,6 +86,41 @@ def get_ignored_exts() -> set:
     }
 
 
+def get_arr_instances() -> List[Dict[str, str]]:
+    raw_list = settings_db.get("arr_instances")
+    if isinstance(raw_list, list) and raw_list:
+        clean = []
+        for item in raw_list:
+            if isinstance(item, dict) and item.get("url"):
+                clean.append({
+                    "type": str(item.get("type") or "radarr").strip().lower(),
+                    "name": str(item.get("name") or item.get("type") or "arr").strip(),
+                    "url": str(item.get("url") or "").strip().rstrip("/"),
+                    "api_key": str(item.get("api_key") or "").strip(),
+                })
+        if clean:
+            return clean
+
+    # Rétrocompatibilité avec les paramètres individuels précédents
+    res = []
+    r_url = settings_db.get("radarr_url", "http://127.0.0.1:7878").rstrip("/")
+    r_key = settings_db.get("radarr_api_key", "").strip()
+    if r_key or settings_db.get("radarr_url"):
+        res.append({"type": "radarr", "name": "Radarr", "url": r_url, "api_key": r_key})
+
+    s_url = settings_db.get("sonarr_url", "http://127.0.0.1:8989").rstrip("/")
+    s_key = settings_db.get("sonarr_api_key", "").strip()
+    if s_key or settings_db.get("sonarr_url"):
+        res.append({"type": "sonarr", "name": "Sonarr", "url": s_url, "api_key": s_key})
+
+    w_url = settings_db.get("whisparr_url", "http://127.0.0.1:6969").rstrip("/")
+    w_key = settings_db.get("whisparr_api_key", "").strip()
+    if w_key or settings_db.get("whisparr_url"):
+        res.append({"type": "whisparr", "name": "Whisparr", "url": w_url, "api_key": w_key})
+
+    return res
+
+
 def load_state() -> None:
     global torrents_db, settings_db
     if STATE_FILE.exists():
@@ -114,6 +149,18 @@ def load_state() -> None:
                             settings_db["services"]["torrent-direct"] = dict(DEFAULT_SERVICES["torrent-direct"])
                     else:
                         settings_db["services"] = {k2: dict(v2) for k2, v2 in DEFAULT_SERVICES.items()}
+                elif k == "arr_instances":
+                    if isinstance(saved_settings.get("arr_instances"), list):
+                        settings_db["arr_instances"] = [
+                            {
+                                "type": str(x.get("type") or "radarr").strip().lower(),
+                                "name": str(x.get("name") or x.get("type") or "arr").strip(),
+                                "url": str(x.get("url") or "").strip().rstrip("/"),
+                                "api_key": str(x.get("api_key") or "").strip(),
+                            }
+                            for x in saved_settings["arr_instances"]
+                            if isinstance(x, dict) and x.get("url")
+                        ]
                 elif k == "ignored_exts" and k in saved_settings:
                     settings_db[k] = saved_settings[k]
                 elif k in saved_settings and saved_settings[k] != "":
