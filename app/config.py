@@ -42,6 +42,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "hide_last_download_name": os.getenv("HIDE_LAST_DOWNLOAD_NAME", "true").lower() == "true",
     "last_download_stat": {},
     "allowed_exts": ".mkv,.mp4,.avi,.mov,.wmv,.m4v,.ts,.webm,.srt,.ass,.ssa,.sub,.vtt",
+    "ignored_exts": os.getenv("IGNORED_EXTS", ".nfo,.jpg,.jpeg,.png,.txt,.exe,.html,.url,.lnk,.website"),
     "username": os.getenv("PYRDT_USER", "").strip(),
     "password": os.getenv("PYRDT_PASS", "").strip(),
     "ui_language": os.getenv("UI_LANGUAGE", "fr").strip().lower(),

@@ -9,6 +9,15 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.10.0] — 2026-11-25
+
+### Ajouté
+- **Exclusion et filtrage configurable des extensions de fichiers (`ignored_exts`)** :
+  - Ajout du paramètre `ignored_exts` (par défaut : `.nfo,.jpg,.jpeg,.png,.txt,.exe,.html,.url,.lnk,.website`) permettant d'ignorer automatiquement certains types de fichiers lors de la copie ou de la création de liens symboliques (symlinks).
+  - Les fichiers exclus sont filtrés dès l'exploration du point de montage rclone, lors de la détection unitaire et avant matérialisation, garantissant l'absence de fichiers indésirables (nfo, images, raccourcis, exécutables) dans les dossiers de destination.
+  - Champ de saisie intégré dans les Paramètres et l'assistant de configuration initiale (Onboarding) avec traductions françaises et anglaises.
+  - Prise en charge de la variable d'environnement `IGNORED_EXTS` et persistance dans `state.json`.
+
 ## [2.9.2] — 2026-11-25
 
 ### Ajouté

@@ -55,6 +55,8 @@ function openOnboarding(force = false) {
   if (obPoll) obPoll.value = getVal('poll_interval', '3.0');
   const obExts = document.getElementById('ob_allowed_exts');
   if (obExts) obExts.value = getVal('allowed_exts', '.mkv,.mp4,.avi,.mov,.wmv,.m4v,.ts,.webm,.srt,.ass,.ssa,.sub,.vtt');
+  const obIgnored = document.getElementById('ob_ignored_exts');
+  if (obIgnored) obIgnored.value = getVal('ignored_exts', '.nfo,.jpg,.jpeg,.png,.txt,.exe,.html,.url,.lnk,.website');
 
   // Step 4: Services
   const obSvcContainer = document.getElementById('ob-services-list');
@@ -379,6 +381,8 @@ function finishOnboarding() {
   if (obConcurrentEl) setVal('max_concurrent_downloads', obConcurrentEl.value);
   setVal('poll_interval', document.getElementById('ob_poll_interval').value);
   setVal('allowed_exts', document.getElementById('ob_allowed_exts').value);
+  const obIgnoredEl = document.getElementById('ob_ignored_exts');
+  if (obIgnoredEl) setVal('ignored_exts', obIgnoredEl.value);
 
   const mainSvcContainer = document.getElementById('services-list');
   if (mainSvcContainer) {

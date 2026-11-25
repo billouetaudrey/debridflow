@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.10.0] — 2026-11-25
+
+### Added
+- **Configurable Ignored File Extensions (`ignored_exts`)**:
+  - Added new configuration setting `ignored_exts` (default: `.nfo,.jpg,.jpeg,.png,.txt,.exe,.html,.url,.lnk,.website`) allowing users to exclude unwanted file formats from physical copies and symlinking.
+  - Files matching ignored extensions are filtered out during folder mount discovery, single-file checks, and final materialization, preventing unwanted clutter (metadata, samples, trackers, image thumbnails) in media directories.
+  - Added configuration field in Settings and Onboarding modal with English and French translations.
+  - Persisted in `state.json` and configurable via environment variable `IGNORED_EXTS`.
+
 ## [2.9.2] — 2026-11-25
 
 ### Added

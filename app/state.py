@@ -77,6 +77,15 @@ def get_allowed_exts() -> set:
     }
 
 
+def get_ignored_exts() -> set:
+    raw = settings_db.get("ignored_exts", "")
+    return {
+        (e.strip().lower() if e.strip().startswith(".") else f".{e.strip().lower()}")
+        for e in raw.split(",")
+        if e.strip()
+    }
+
+
 def load_state() -> None:
     global torrents_db, settings_db
     if STATE_FILE.exists():
@@ -105,6 +114,8 @@ def load_state() -> None:
                             settings_db["services"]["torrent-direct"] = dict(DEFAULT_SERVICES["torrent-direct"])
                     else:
                         settings_db["services"] = {k2: dict(v2) for k2, v2 in DEFAULT_SERVICES.items()}
+                elif k == "ignored_exts" and k in saved_settings:
+                    settings_db[k] = saved_settings[k]
                 elif k in saved_settings and saved_settings[k] != "":
                     settings_db[k] = saved_settings[k]
                 elif k in saved_settings and not v:

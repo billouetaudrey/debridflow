@@ -756,6 +756,7 @@ async def update_settings(
     enable_finder_tab: Optional[str] = Form(None),
     enable_scanner_tab: Optional[str] = Form(None),
     allowed_exts: str = Form(""),
+    ignored_exts: str = Form(""),
     username: str = Form(""),
     password: str = Form(""),
     ui_language: str = Form("fr"),
@@ -823,6 +824,9 @@ async def update_settings(
         settings_db["max_concurrent_downloads"] = max(1, int(max_concurrent_downloads))
         settings_db["hide_last_download_name"] = hide_last_download_name == "on"
         settings_db["allowed_exts"] = allowed_exts.strip() or DEFAULT_SETTINGS["allowed_exts"]
+        settings_db["ignored_exts"] = (
+            ignored_exts.strip() if ignored_exts is not None else DEFAULT_SETTINGS.get("ignored_exts", "")
+        )
         settings_db["username"] = username.strip()
         settings_db["password"] = password.strip()
         settings_db["ui_language"] = clean_lang
@@ -1110,6 +1114,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__SELECTED_LANG_FR__", "selected" if ui_lang == "fr" else "")
         .replace("__SELECTED_LANG_EN__", "selected" if ui_lang == "en" else "")
         .replace("__ALLOWED_EXTS__", html.escape(s["allowed_exts"]))
+        .replace("__IGNORED_EXTS__", html.escape(s.get("ignored_exts", "")))
         .replace("__API_BASE__", html.escape(s["api_base"]))
         .replace("__MEDIA_SCAN_PATHS__", html.escape(s.get("media_scan_paths", "")))
         .replace("__RADARR_URL__", html.escape(s.get("radarr_url", "http://127.0.0.1:7878")))

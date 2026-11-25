@@ -660,6 +660,11 @@
                   <small class="hint" data-i18n="hint_allowed_exts">Fichiers vidéos, audios ou sous-titres acceptés.</small>
                 </div>
                 <div class="field">
+                  <label data-i18n="lbl_ignored_exts">Extensions ignorées (séparées par virgules)</label>
+                  <input type="text" name="ignored_exts" value="__IGNORED_EXTS__" placeholder=".nfo,.jpg,.jpeg,.png,.txt,...">
+                  <small class="hint" data-i18n="hint_ignored_exts">Fichiers exclus du téléchargement et des symlinks (ex: .nfo, .jpg, .txt).</small>
+                </div>
+                <div class="field">
                   <label data-i18n="lbl_mount_timeout">Timeout montage Rclone (secondes)</label>
                   <input type="number" min="5" name="mount_timeout" value="__MOUNT_TIMEOUT__">
                   <small class="hint" data-i18n="hint_mount_timeout">Temps max d'attente d'apparition du fichier avant erreur.</small>
@@ -1447,6 +1452,11 @@
             <input type="text" id="ob_allowed_exts" placeholder=".mkv,.mp4,.avi,.mov,.srt,...">
             <small class="hint" data-i18n="hint_allowed_exts">Fichiers vidéos, audios ou sous-titres acceptés.</small>
           </div>
+          <div class="field full">
+            <label data-i18n="lbl_ignored_exts">Extensions ignorées (séparées par virgules)</label>
+            <input type="text" id="ob_ignored_exts" placeholder=".nfo,.jpg,.jpeg,.png,.txt,...">
+            <small class="hint" data-i18n="hint_ignored_exts">Fichiers exclus du téléchargement et des symlinks (ex: .nfo, .jpg, .txt).</small>
+          </div>
         </div>
       </div>
 
@@ -1604,13 +1614,13 @@
   </div>
 </div>
 
-<script src="/static/js/i18n.js?v=2.9"></script>
-<script src="/static/js/queue.js?v=2.9"></script>
-<script src="/static/js/settings.js?v=2.9"></script>
-<script src="/static/js/onboarding.js?v=2.9"></script>
-<script src="/static/js/scanner.js?v=2.9"></script>
-<script src="/static/js/finder.js?v=2.9"></script>
-<script src="/static/js/speedtest.js?v=2.9"></script>
-<script src="/static/js/app.js?v=2.9"></script>
+<script src="/static/js/i18n.js?v=2.10"></script>
+<script src="/static/js/queue.js?v=2.10"></script>
+<script src="/static/js/settings.js?v=2.10"></script>
+<script src="/static/js/onboarding.js?v=2.10"></script>
+<script src="/static/js/scanner.js?v=2.10"></script>
+<script src="/static/js/finder.js?v=2.10"></script>
+<script src="/static/js/speedtest.js?v=2.10"></script>
+<script src="/static/js/app.js?v=2.10"></script>
 </body>
 </html>

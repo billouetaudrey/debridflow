@@ -246,6 +246,8 @@ const TRANSLATIONS = {
     hint_dl_dir: "Chaque service écrit dans son sous-dossier ici.",
     lbl_allowed_exts: "Extensions autorisées (séparées par virgules)",
     hint_allowed_exts: "Fichiers vidéos, audios ou sous-titres acceptés.",
+    lbl_ignored_exts: "Extensions ignorées (séparées par virgules)",
+    hint_ignored_exts: "Fichiers exclus du téléchargement et des liens symboliques (ex: .nfo, .jpg, .png, .txt).",
     lbl_mount_timeout: "Timeout montage Rclone (secondes)",
     hint_mount_timeout: "Temps max d'attente d'apparition du fichier avant erreur.",
 
@@ -713,6 +715,8 @@ const TRANSLATIONS = {
     hint_dl_dir: "Each service writes to its own subfolder here.",
     lbl_allowed_exts: "Allowed Extensions (comma-separated)",
     hint_allowed_exts: "Allowed video, audio or subtitle extensions.",
+    lbl_ignored_exts: "Ignored Extensions (comma-separated)",
+    hint_ignored_exts: "Files excluded from downloading and symlinking (e.g. .nfo, .jpg, .png, .txt).",
     lbl_mount_timeout: "Rclone Mount Timeout (seconds)",
     hint_mount_timeout: "Max wait time for file appearance before error.",
 

@@ -9,7 +9,7 @@ import httpx
 
 from app.bencode import sanitize_filename
 from app.config import logger
-from app.state import get_allowed_exts, settings_db
+from app.state import get_allowed_exts, get_ignored_exts, settings_db
 
 
 def simplify_name(name: str) -> str:
@@ -98,12 +98,19 @@ def copy_chunked_with_limit(
     return copied
 
 
-def _collect_from_folder(folder: Path, allowed_exts: set, expected_set: set) -> List[Path]:
+def _collect_from_folder(
+    folder: Path, allowed_exts: set, expected_set: set, ignored_exts: Optional[set] = None
+) -> List[Path]:
+    if ignored_exts is None:
+        ignored_exts = get_ignored_exts()
     found: List[Path] = []
     for root, _, files in os.walk(folder):
         for f in files:
             p = Path(root) / f
-            if p.suffix.lower() in allowed_exts or f in expected_set:
+            sfx = p.suffix.lower()
+            if sfx in ignored_exts:
+                continue
+            if sfx in allowed_exts or f in expected_set:
                 found.append(p)
     return found
 
@@ -115,7 +122,12 @@ def find_mounted_files(
 ) -> List[Path]:
     mount_dir = Path(settings_db["rclone_mount_dir"])
     allowed_exts = get_allowed_exts()
-    expected_set = {Path(f).name for f in expected_files if f}
+    ignored_exts = get_ignored_exts()
+    expected_set = {
+        Path(f).name
+        for f in expected_files
+        if f and Path(f).suffix.lower() not in ignored_exts
+    }
     stem_name = Path(magnet_name).stem
     sim_target = simplify_name(magnet_name)
 
@@ -129,9 +141,11 @@ def find_mounted_files(
         for cand in id_candidates:
             try:
                 if cand.is_file():
-                    return [cand]
+                    if cand.suffix.lower() not in ignored_exts:
+                        return [cand]
+                    continue
                 if cand.is_dir():
-                    matched = _collect_from_folder(cand, allowed_exts, expected_set)
+                    matched = _collect_from_folder(cand, allowed_exts, expected_set, ignored_exts)
                     if matched:
                         return matched
             except OSError:
@@ -151,9 +165,11 @@ def find_mounted_files(
                     p = Path(entry.path)
                     try:
                         if entry.is_file():
-                            return [p]
+                            if p.suffix.lower() not in ignored_exts:
+                                return [p]
+                            continue
                         if entry.is_dir():
-                            matched = _collect_from_folder(p, allowed_exts, expected_set)
+                            matched = _collect_from_folder(p, allowed_exts, expected_set, ignored_exts)
                             if matched:
                                 return matched
                     except OSError:
@@ -165,9 +181,11 @@ def find_mounted_files(
     for cand in [mount_dir / magnet_name, mount_dir / stem_name] + id_candidates:
         try:
             if cand.is_file():
-                return [cand]
+                if cand.suffix.lower() not in ignored_exts:
+                    return [cand]
+                continue
             os.listdir(cand)
-            matched = _collect_from_folder(cand, allowed_exts, expected_set)
+            matched = _collect_from_folder(cand, allowed_exts, expected_set, ignored_exts)
             if matched:
                 return matched
         except OSError:
@@ -179,15 +197,18 @@ def find_mounted_files(
         if not exp_raw:
             continue
         exp_path = Path(exp_raw)
+        if exp_path.suffix.lower() in ignored_exts:
+            continue
         for base_cand in candidates:
             for test_target in [base_cand / exp_path, base_cand / exp_path.name]:
                 try:
                     if test_target.is_file():
                         if base_cand != mount_dir and base_cand.is_dir():
-                            matched = _collect_from_folder(base_cand, allowed_exts, expected_set)
+                            matched = _collect_from_folder(base_cand, allowed_exts, expected_set, ignored_exts)
                             if matched:
                                 return matched
-                        return [test_target]
+                        if test_target.suffix.lower() not in ignored_exts:
+                            return [test_target]
                 except OSError:
                     continue
 
@@ -203,6 +224,11 @@ def materialize_files_for_torrent(
     progress_callback: Optional[Callable[[int, int, float], None]] = None,
 ) -> Tuple[str, List[str], int, float]:
     dest_dir.mkdir(parents=True, exist_ok=True)
+    ignored_exts = get_ignored_exts()
+    source_files = [f for f in source_files if f.suffix.lower() not in ignored_exts]
+    if not source_files:
+        return str(dest_dir), [], 0, 0.0
+
     clean_root_name = sanitize_filename(entry["name"])
     created_paths: List[str] = []
     total_copied_bytes = 0
