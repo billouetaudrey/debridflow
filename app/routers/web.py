@@ -85,6 +85,9 @@ async def ui_queue_feed():
                 "retry_attempt": int(item.get("rclone_retry_attempt") or 0),
                 "retry_total": int(item.get("rclone_retry_total") or 0),
                 "retry_remaining": max(0, int(item.get("rclone_next_retry_ts", 0) - time.time())) if item.get("rclone_next_retry_ts") else 0,
+                "eta": int(item.get("eta") or 0),
+                "ready_since": int(item.get("ready_since") or 0),
+                "added_on": int(item.get("added_on") or 0),
             }
             for h, item in items_sorted
         ]

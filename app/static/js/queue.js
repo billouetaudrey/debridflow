@@ -74,6 +74,68 @@ function formatSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
 }
+
+const itemStartTimes = {};
+try {
+  const saved = sessionStorage.getItem('omnisym_item_start_times');
+  if (saved) Object.assign(itemStartTimes, JSON.parse(saved));
+} catch (e) {}
+
+function saveItemStartTimes() {
+  try {
+    sessionStorage.setItem('omnisym_item_start_times', JSON.stringify(itemStartTimes));
+  } catch (e) {}
+}
+
+function formatDuration(totalSeconds) {
+  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) return '--';
+  const sec = Math.floor(totalSeconds);
+  const dayUnit = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'd' : 'j';
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m < 60) return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+  const h = Math.floor(m / 60);
+  const remM = m % 60;
+  if (h < 24) return `${h}h ${remM < 10 ? '0' : ''}${remM}m`;
+  const d = Math.floor(h / 24);
+  const remH = h % 24;
+  return `${d}${dayUnit} ${remH < 10 ? '0' : ''}${remH}h`;
+}
+
+function getTimeInfoHtml(item, state, isDl, isDebrided) {
+  const isTransferActive = state === 'copying' || (state === 'downloading' && (isDl || !isDebrided));
+  if (!isTransferActive || !item.size || item.size <= 0) return '';
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  let startTs = Number(item.ready_since) || 0;
+  if (!startTs && itemStartTimes[item.hash]) {
+    startTs = itemStartTimes[item.hash];
+  } else if (!startTs) {
+    itemStartTimes[item.hash] = nowSec;
+    startTs = nowSec;
+    saveItemStartTimes();
+  }
+
+  const elapsedSec = Math.max(0, nowSec - startTs);
+  const elapsedStr = formatDuration(elapsedSec);
+
+  let etaSec = Number(item.eta) || 0;
+  const currentSpeed = (isDebrided ? (Number(item.dlspeed) || 0) : (Number(item.cloud_speed) || 0));
+  if (etaSec <= 0 && currentSpeed > 0) {
+    const remainingBytes = Math.max(0, item.size * (1 - (Number(item.progress) || 0)));
+    etaSec = Math.floor(remainingBytes / currentSpeed);
+  }
+  const etaStr = etaSec > 0 ? formatDuration(etaSec) : (currentSpeed > 0 ? '...' : '--');
+
+  const lblElapsed = t('lbl_elapsed') || 'Écoulé :';
+  const lblEta = t('lbl_eta') || 'Restant :';
+
+  return `<div class="queue-time-info" style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;color:#8b949e;margin-top:4px;max-width:180px;">
+    <span title="${esc(t('tip_elapsed_time') || 'Temps écoulé')}">⏱️ ${esc(lblElapsed)} ${elapsedStr}</span>
+    <span title="${esc(t('tip_eta_time') || 'Temps restant estimé')}">⏳ ${esc(lblEta)} ${etaStr}</span>
+  </div>`;
+}
 function updateHeaderStatus(items, apiHealth) {
   const orb = document.getElementById('status-orb');
   const sub = document.getElementById('api-sub');
@@ -625,6 +687,7 @@ function renderQueueRow(item, checkedSet, groupId = '') {
         ${debridBadge}
       </div>
       <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
+      ${getTimeInfoHtml(item, state, isDl, isDebrided)}
     </td>
     <td class="actions col-actions">
       ${searchBtn}
@@ -923,6 +986,7 @@ function renderQueue(items) {
               <span class="tag debrid-cache" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>
             </div>
             <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
+      ${getTimeInfoHtml(item, state, isDl, isDebrided)}
           </td>
           <td class="actions col-actions" style="text-align:right;">
             ${ddlSearchBtn}
