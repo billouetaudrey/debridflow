@@ -711,11 +711,16 @@
               <div id="services-list">__SERVICE_ROWS__</div>
 
               <div style="margin-top:24px;border-top:1px solid var(--border-muted);padding-top:18px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
                   <h4 style="margin:0;font-size:13px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Connexions API aux applications *arr (Radarr, Sonarr, Whisparr...)</h4>
-                  <button type="button" class="btn-sec" onclick="addArrInstanceRow()" style="padding:5px 12px;font-size:12px;cursor:pointer;" data-i18n="btn_add_arr_instance">+ Ajouter un service *arr</button>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" class="btn-sec" id="btn-test-arr" onclick="testArrConnections()" data-i18n="btn_test_arr">🧪 Tester les clés API</button>
+                    <button type="button" class="btn-sec" onclick="addArrInstanceRow()" data-i18n="btn_add_arr_instance">+ Ajouter un service *arr</button>
+                  </div>
                 </div>
                 <small class="hint" data-i18n="hint_arr_instances" style="display:block;margin-bottom:12px;">Configurez les accès API de vos instances Radarr, Sonarr, Whisparr... Vous pouvez ajouter plusieurs instances (ex: Sonarr 4K, Sonarr Anime).</small>
+
+                <div id="arr-test-results" style="display:none;margin-bottom:12px;padding:12px;border-radius:6px;border:1px solid var(--border-muted);background:var(--bg-card);font-size:12px;"></div>
 
                 <div class="arr-head">
                   <span data-i18n="th_arr_type">Type</span>
@@ -1596,13 +1601,13 @@
   </div>
 </div>
 
-<script src="/static/js/i18n.js?v=2.11"></script>
-<script src="/static/js/queue.js?v=2.11"></script>
-<script src="/static/js/settings.js?v=2.11"></script>
-<script src="/static/js/onboarding.js?v=2.11"></script>
-<script src="/static/js/scanner.js?v=2.11"></script>
-<script src="/static/js/finder.js?v=2.11"></script>
-<script src="/static/js/speedtest.js?v=2.11"></script>
-<script src="/static/js/app.js?v=2.11"></script>
+<script src="/static/js/i18n.js?v=2.12"></script>
+<script src="/static/js/queue.js?v=2.12"></script>
+<script src="/static/js/settings.js?v=2.12"></script>
+<script src="/static/js/onboarding.js?v=2.12"></script>
+<script src="/static/js/scanner.js?v=2.12"></script>
+<script src="/static/js/finder.js?v=2.12"></script>
+<script src="/static/js/speedtest.js?v=2.12"></script>
+<script src="/static/js/app.js?v=2.12"></script>
 </body>
 </html>

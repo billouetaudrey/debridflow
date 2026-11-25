@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.12.0] — 2026-11-25
+
+### Added
+- **Interactive *arr API Connection Testing (`/api/settings/test-arr`)**:
+  - Added dedicated test button `🧪 Test API Keys` directly in Settings > Services > *arr Connections.
+  - Interactively verifies connectivity and authentication with all configured instances (Radarr, Sonarr, Whisparr, Lidarr, Readarr) and reports application name and version.
+  - Provides clear diagnostic feedback per instance (Success with app version, connection error, or invalid API key).
+
 ## [2.11.0] — 2026-11-25
 
 ### Added

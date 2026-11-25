@@ -733,6 +733,117 @@ async def test_telegram_connection(
     return JSONResponse(res)
 
 
+@router.post("/api/settings/test-arr")
+async def test_arr_connections(
+    arr_types: Optional[List[str]] = Form(None),
+    arr_names: Optional[List[str]] = Form(None),
+    arr_urls: Optional[List[str]] = Form(None),
+    arr_api_keys: Optional[List[str]] = Form(None),
+):
+    targets: List[Dict[str, str]] = []
+    if arr_types and arr_names:
+        urls_safe = arr_urls or []
+        keys_safe = arr_api_keys or []
+        for idx, (a_type, a_name) in enumerate(zip(arr_types, arr_names)):
+            targets.append({
+                "type": a_type.strip().lower(),
+                "name": a_name.strip(),
+                "url": urls_safe[idx].strip().rstrip("/") if idx < len(urls_safe) else "",
+                "api_key": keys_safe[idx].strip() if idx < len(keys_safe) else "",
+            })
+    if not targets:
+        targets = get_arr_instances()
+
+    if not targets:
+        return JSONResponse({
+            "all_ok": False,
+            "message": "Aucune instance *arr configurée à tester.",
+            "results": [],
+        })
+
+    results = []
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        for t in targets:
+            name = t.get("name") or t.get("type", "arr").capitalize()
+            t_type = t.get("type", "radarr").lower()
+            url = t.get("url", "").rstrip("/")
+            key = t.get("api_key", "").strip()
+
+            if not url:
+                results.append({
+                    "name": name,
+                    "type": t_type,
+                    "ok": False,
+                    "message": "URL non renseignée",
+                })
+                continue
+
+            if not key:
+                results.append({
+                    "name": name,
+                    "type": t_type,
+                    "ok": False,
+                    "message": "Clé API non renseignée",
+                })
+                continue
+
+            endpoints_to_try = [
+                f"{url}/api/v3/system/status",
+                f"{url}/api/v1/system/status",
+                f"{url}/api/system/status",
+            ]
+            success = False
+            last_err = ""
+            for ep in endpoints_to_try:
+                try:
+                    r = await client.get(ep, headers={"X-Api-Key": key})
+                    if r.status_code == 200:
+                        data = r.json()
+                        app_name = data.get("appName") or name
+                        version = data.get("version") or ""
+                        msg = f"Connecté à {app_name} (v{version})" if version else f"Connecté à {app_name}"
+                        results.append({
+                            "name": name,
+                            "type": t_type,
+                            "ok": True,
+                            "app_name": app_name,
+                            "version": version,
+                            "message": msg,
+                        })
+                        success = True
+                        break
+                    elif r.status_code in (401, 403):
+                        last_err = "Clé API invalide ou non autorisée (HTTP 401/403)"
+                        break
+                    elif r.status_code == 404:
+                        continue
+                    else:
+                        last_err = f"Réponse inattendue (HTTP {r.status_code})"
+                except httpx.ConnectError:
+                    last_err = f"Connexion refusée sur {url} (vérifiez l'URL ou le port)"
+                    break
+                except httpx.TimeoutException:
+                    last_err = f"Timeout dépassé (> 8s) sur {url}"
+                    break
+                except Exception as exc:
+                    last_err = f"Erreur de communication : {str(exc)}"
+                    break
+
+            if not success:
+                results.append({
+                    "name": name,
+                    "type": t_type,
+                    "ok": False,
+                    "message": last_err or "Endpoint d'état introuvable",
+                })
+
+    all_ok = all(r["ok"] for r in results) if results else False
+    return JSONResponse({
+        "all_ok": all_ok,
+        "results": results,
+    })
+
+
 @router.post("/api/settings")
 async def update_settings(
     provider: str = Form("alldebrid"),

@@ -108,6 +108,75 @@ function onArrTypeChange(selectEl) {
   }
 }
 
+async function testArrConnections() {
+  const btn = document.getElementById('btn-test-arr');
+  const box = document.getElementById('arr-test-results');
+  if (!btn || !box) return;
+
+  btn.disabled = true;
+  const originalTxt = btn.textContent;
+  btn.textContent = t('testing_arr');
+
+  box.style.display = 'block';
+  box.style.background = 'var(--bg-card)';
+  box.style.borderColor = 'var(--border-muted)';
+  box.innerHTML = `<span style="color:var(--text-muted);">${esc(t('testing_arr'))}</span>`;
+
+  try {
+    const fd = new FormData();
+    const rows = document.querySelectorAll('#arr-instances-list .arr-row');
+    if (rows.length === 0) {
+      box.innerHTML = `<span style="color:#f85149;">${esc(t('no_arr_to_test'))}</span>`;
+      box.style.borderColor = '#f85149';
+      return;
+    }
+
+    rows.forEach(r => {
+      const type = r.querySelector('[name="arr_types"]');
+      const name = r.querySelector('[name="arr_names"]');
+      const url = r.querySelector('[name="arr_urls"]');
+      const key = r.querySelector('[name="arr_api_keys"]');
+      if (type) fd.append('arr_types', type.value);
+      if (name) fd.append('arr_names', name.value);
+      if (url) fd.append('arr_urls', url.value);
+      if (key) fd.append('arr_api_keys', key.value);
+    });
+
+    const res = await fetch('/api/settings/test-arr', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (data.results && data.results.length > 0) {
+      const itemsHtml = data.results.map(r => {
+        const icon = r.ok ? '✅' : '❌';
+        const color = r.ok ? '#3fb950' : '#f85149';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div>
+              <strong>${esc(r.name)}</strong> <span style="color:var(--text-muted);font-size:11px;">(${esc(r.type)})</span>
+            </div>
+            <div style="color:${color};font-weight:500;">
+              ${icon} ${esc(r.message)}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      box.style.borderColor = data.all_ok ? '#3fb950' : '#d29922';
+      box.style.background = data.all_ok ? 'rgba(63, 185, 80, 0.1)' : 'rgba(210, 153, 34, 0.1)';
+      box.innerHTML = itemsHtml;
+    } else {
+      box.innerHTML = `<span style="color:var(--text-muted);">${esc(data.message || t('no_arr_to_test'))}</span>`;
+    }
+  } catch (e) {
+    box.style.borderColor = '#f85149';
+    box.style.background = 'rgba(248, 81, 73, 0.1)';
+    box.innerHTML = `<span style="color:#f85149;">Erreur réseau lors du test : ${esc(String(e))}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalTxt;
+  }
+}
+
 async function testApi() {
   const btn = document.getElementById('btn-test-api');
   const box = document.getElementById('test-result');

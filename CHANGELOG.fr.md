@@ -9,6 +9,14 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.12.0] — 2026-11-25
+
+### Ajouté
+- **Test interactif des clés et connexions API *arr (`/api/settings/test-arr`)** :
+  - Ajout d'un bouton de test `🧪 Tester les clés API` dans Paramètres > Services > Connexions *arr.
+  - Vérification en direct de la connectivité et de la validité des clés pour toutes les instances configurées (Radarr, Sonarr, Whisparr, Lidarr, Readarr) avec détection du nom et de la version de chaque application.
+  - Rapport visuel détaillé par instance (succès avec numéro de version, erreur de connexion ou clé API invalide).
+
 ## [2.11.0] — 2026-11-25
 
 ### Ajouté
