@@ -350,9 +350,8 @@ OmniSym was **100% conceived, architected, and coded with Google Gemini**. From 
 
 Do you find **OmniSym** helpful in your day-to-day media management? Your feedback and support are what keep this project moving forward!
 
-* ⭐ **Star the repository on GitHub**: It's free, takes 2 seconds, and gives valuable visibility to the project.
+* ⭐ **Star the repository on GitHub**: It's free, anonymous, takes 2 seconds, and gives valuable visibility to the project.
 * 💬 **Share your feedback & ideas**: Open an [Issue](https://github.com/billouetaudrey/omnisym/issues) or Discussion to report a bug, share your setup, or suggest improvements.
-* ☕ **Buy me a coffee / Voluntary tip**: If you wish to show extra appreciation for the countless hours spent designing, developing, and maintaining OmniSym, you are warmly welcome to leave a tip or buy a coffee (via Ko-fi, Buy Me a Coffee, GitHub Sponsors, or PayPal Me).
 
 ---
 

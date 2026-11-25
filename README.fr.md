@@ -339,9 +339,8 @@ OmniSym a été **100% conçu, architecturé et développé avec Google Gemini**
 
 Vous appréciez **OmniSym** et il vous rend service au quotidien ? Vos retours et votre soutien sont le meilleur moteur pour faire évoluer le projet !
 
-* ⭐ **Laissez une étoile sur GitHub** : C'est gratuit, ça prend 2 secondes et cela offre une visibilité précieuse au projet.
+* ⭐ **Laissez une étoile sur GitHub** : C'est gratuit, anonyme, ça prend 2 secondes et cela offre une visibilité précieuse au projet.
 * 💬 **Faites un retour / Partagez vos idées** : Ouvrez une [Issue](https://github.com/billouetaudrey/omnisym/issues) ou une Discussion pour faire part de vos impressions, remonter un bug ou suggérer de nouvelles fonctionnalités.
-* ☕ **Offrir un café / Soutien libre** : Si vous souhaitez donner un coup de pouce pour le temps consacré au développement et à la maintenance bénévole, vous pouvez soutenir le projet ou offrir un café via un lien de donation (Ko-fi, Buy Me a Coffee, GitHub Sponsors ou PayPal Me).
 
 ---
 ## ⚖️ Avertissement Légal & Licence

@@ -709,6 +709,25 @@
                 <span></span>
               </div>
               <div id="services-list">__SERVICE_ROWS__</div>
+
+              <div style="margin-top:24px;border-top:1px solid var(--border-muted);padding-top:18px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <h4 style="margin:0;font-size:13px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Connexions API aux applications *arr (Radarr, Sonarr, Whisparr...)</h4>
+                  <button type="button" class="btn-sec" onclick="addArrInstanceRow()" style="padding:5px 12px;font-size:12px;cursor:pointer;" data-i18n="btn_add_arr_instance">+ Ajouter un service *arr</button>
+                </div>
+                <small class="hint" data-i18n="hint_arr_instances" style="display:block;margin-bottom:12px;">Configurez les accès API de vos instances Radarr, Sonarr, Whisparr... Vous pouvez ajouter plusieurs instances (ex: Sonarr 4K, Sonarr Anime).</small>
+
+                <div class="arr-head">
+                  <span data-i18n="th_arr_type">Type</span>
+                  <span data-i18n="th_arr_name">Nom</span>
+                  <span data-i18n="th_arr_url">URL de l'instance</span>
+                  <span data-i18n="th_arr_key">Clé API</span>
+                  <span></span>
+                </div>
+                <div id="arr-instances-list" style="display:flex;flex-direction:column;gap:8px;">
+                  __ARR_INSTANCE_ROWS__
+                </div>
+              </div>
             </div>
           </div>
 
@@ -730,25 +749,6 @@
                 <small class="hint" data-i18n="hint_scan_paths" style="display:block;margin-bottom:10px;">Chemins réels ou montages locaux où se trouvent vos films et séries à surveiller.</small>
                 <div id="scan-paths-list" style="display:flex;flex-direction:column;gap:8px;">
                   __SCAN_PATH_ROWS__
-                </div>
-              </div>
-
-              <div style="margin-top:18px;border-top:1px solid var(--border-muted);padding-top:14px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                  <h4 style="margin:0;font-size:13px;color:var(--text-bright);" data-i18n="sec_arr_integration">🔗 Connexions aux applications *arr (Relance automatique des recherches &amp; synchronisation)</h4>
-                  <button type="button" class="btn-sec" onclick="addArrInstanceRow()" style="padding:5px 12px;font-size:12px;cursor:pointer;" data-i18n="btn_add_arr_instance">+ Ajouter un service *arr</button>
-                </div>
-                <small class="hint" data-i18n="hint_arr_instances" style="display:block;margin-bottom:12px;">Configurez vos instances Radarr, Sonarr, Whisparr... Vous pouvez ajouter plusieurs instances (ex: Sonarr 4K, Sonarr Anime) ou d'autres applications.</small>
-
-                <div class="arr-head">
-                  <span data-i18n="th_arr_type">Type</span>
-                  <span data-i18n="th_arr_name">Nom</span>
-                  <span data-i18n="th_arr_url">URL de l'instance</span>
-                  <span data-i18n="th_arr_key">Clé API</span>
-                  <span></span>
-                </div>
-                <div id="arr-instances-list" style="display:flex;flex-direction:column;gap:8px;">
-                  __ARR_INSTANCE_ROWS__
                 </div>
               </div>
 
@@ -1456,6 +1456,17 @@
           <!-- Dynamically populated rows -->
         </div>
         <button type="button" class="btn-secondary" onclick="addObServiceRow()" data-i18n="btn_add_service">+ Ajouter un service</button>
+
+        <div style="margin-top:20px;border-top:1px solid var(--border-muted);padding-top:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label data-i18n="sec_arr_integration" style="margin:0;font-weight:600;">Connexions API aux applications *arr</label>
+            <button type="button" class="btn-secondary" onclick="addObArrInstanceRow()" style="padding:4px 10px;font-size:12px;cursor:pointer;" data-i18n="btn_add_arr_instance">+ Ajouter un service *arr</button>
+          </div>
+          <small class="hint" data-i18n="hint_arr_instances" style="display:block;margin-bottom:10px;">Configurez les accès API de vos instances Radarr, Sonarr, Whisparr...</small>
+          <div id="ob-arr-instances-list" style="display:flex;flex-direction:column;gap:8px;">
+            <!-- Dynamically populated rows -->
+          </div>
+        </div>
       </div>
 
       <!-- Step 5: Automatisation & Sécurité -->
@@ -1501,23 +1512,13 @@
         <!-- Médiathèque -->
         <div style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);margin-bottom:14px;">
           <h4 style="font-size:13px;margin:0 0 10px 0;color:var(--text-bright);" data-i18n="title_medialib_surveillance">Surveillance Médiathèque &amp; Radarr / Sonarr :</h4>
-          <div class="field full" style="margin-bottom:14px;">
+          <div class="field full">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <label data-i18n="lbl_scan_paths" style="margin:0;font-weight:600;">Dossiers Médiathèque à analyser</label>
               <button type="button" class="btn-secondary" onclick="addObScanPathRow()" style="padding:5px 12px;font-size:12px;cursor:pointer;" data-i18n="btn_add_scan_path">+ Ajouter un dossier</button>
             </div>
             <small class="hint" data-i18n="hint_scan_paths" style="display:block;margin-bottom:10px;">Dossiers scannés pour détecter les symlinks brisés.</small>
             <div id="ob-scan-paths-list" style="display:flex;flex-direction:column;gap:8px;">
-              <!-- Dynamically populated rows -->
-            </div>
-          </div>
-          <div style="margin-top:14px;border-top:1px solid var(--border-muted);padding-top:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <label data-i18n="sec_arr_integration" style="margin:0;font-weight:600;">Connexions aux applications *arr</label>
-              <button type="button" class="btn-secondary" onclick="addObArrInstanceRow()" style="padding:4px 10px;font-size:12px;cursor:pointer;" data-i18n="btn_add_arr_instance">+ Ajouter un service *arr</button>
-            </div>
-            <small class="hint" data-i18n="hint_arr_instances" style="display:block;margin-bottom:10px;">Configurez vos instances Radarr, Sonarr, etc.</small>
-            <div id="ob-arr-instances-list" style="display:flex;flex-direction:column;gap:8px;">
               <!-- Dynamically populated rows -->
             </div>
           </div>
