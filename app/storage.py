@@ -108,15 +108,41 @@ def _collect_from_folder(folder: Path, allowed_exts: set, expected_set: set) -> 
     return found
 
 
-def find_mounted_files(magnet_name: str, expected_files: List[str]) -> List[Path]:
+def find_mounted_files(
+    magnet_name: str,
+    expected_files: List[str],
+    ad_id: Optional[int] = None,
+) -> List[Path]:
     mount_dir = Path(settings_db["rclone_mount_dir"])
     allowed_exts = get_allowed_exts()
     expected_set = {Path(f).name for f in expected_files if f}
     stem_name = Path(magnet_name).stem
     sim_target = simplify_name(magnet_name)
 
+    # Candidats directs avec ad_id si AllDebrid a suffixé le dossier (ex: "<nom> (<ad_id>)")
+    id_candidates: List[Path] = []
+    if ad_id:
+        id_candidates.extend([
+            mount_dir / f"{magnet_name} ({ad_id})",
+            mount_dir / f"{stem_name} ({ad_id})",
+        ])
+        for cand in id_candidates:
+            try:
+                if cand.is_file():
+                    return [cand]
+                if cand.is_dir():
+                    matched = _collect_from_folder(cand, allowed_exts, expected_set)
+                    if matched:
+                        return matched
+            except OSError:
+                continue
+
     # 1. Forcer un readdir sur la racine pour invalider les caches négatifs FUSE
     target_lowers = {magnet_name.lower(), stem_name.lower()}
+    if ad_id:
+        target_lowers.add(f"{magnet_name.lower()} ({ad_id})")
+        target_lowers.add(f"{stem_name.lower()} ({ad_id})")
+
     try:
         with os.scandir(mount_dir) as it:
             for entry in it:
@@ -136,7 +162,7 @@ def find_mounted_files(magnet_name: str, expected_files: List[str]) -> List[Path
         pass
 
     # 2. Accès direct forcé par listdir() / stat() sur les chemins probables
-    for cand in [mount_dir / magnet_name, mount_dir / stem_name]:
+    for cand in [mount_dir / magnet_name, mount_dir / stem_name] + id_candidates:
         try:
             if cand.is_file():
                 return [cand]
@@ -148,7 +174,7 @@ def find_mounted_files(magnet_name: str, expected_files: List[str]) -> List[Path
             continue
 
     # 3. Test direct <dossier_candidat>/<fichier_attendu> ou sous-chemin attendu
-    candidates = [mount_dir, mount_dir / magnet_name, mount_dir / stem_name]
+    candidates = [mount_dir, mount_dir / magnet_name, mount_dir / stem_name] + id_candidates
     for exp_raw in expected_files:
         if not exp_raw:
             continue

@@ -502,7 +502,7 @@ async def background_worker() -> None:
                     if not expected_files:
                         expected_files = await alldebrid_get_magnet_files(client, ad_id)
 
-                    mounted_files = await asyncio.to_thread(find_mounted_files, ad_filename, expected_files)
+                    mounted_files = await asyncio.to_thread(find_mounted_files, ad_filename, expected_files, ad_id)
 
                     if not mounted_files:
                         waited = int(now_ts - ready_since)

@@ -26,6 +26,7 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
   - Résolution de l'exception `cannot access local variable 'raw_url' where it is not associated with a value` survenue lors de l'ajout manuel de fichiers `.torrent` dans l'interface sans lien magnet associé.
   - Génération automatique d'un URI magnet synthétique (`magnet:?xt=urn:btih:...`) pour permettre la relance ultérieure de ces torrents.
 - **Gestion des transferts concurrents et téléchargements multi-parties (Part 1, Part 2)** :
+  - **Prise en charge des dossiers AllDebrid suffixés par ID** : détection automatique des dossiers créés par AllDebrid sous la forme `<titre> (<ad_id>)` lors de l'ajout de plusieurs parties d'une même release portant le même nom.
   - **Fichiers temporaires isolés par hash** : nommage des fichiers `.part` avec l'identifiant court du torrent (`.<nom>.<hash>.part`), évitant tout écrasement ou suppression accidentelle lors du téléchargement simultané de torrents partageant le même nom ou dossier racine.
   - **Verrou de concurrence par dossier de destination** : mise en file d'attente automatique des téléchargements visant le même dossier de destination pour sérialiser leur exécution et prévenir les conflits d'écriture.
   - **Détection des fichiers déjà complétés** : si un fichier identique existe déjà avec la taille exacte de la source, la copie est immédiatement validée sans re-téléchargement inutile, permettant de fusionner proprement les différentes parties d'un pack dans un même dossier.
