@@ -305,8 +305,8 @@ function toggleResourceProtField() {
   const field = document.getElementById('field_throttle_cpu_threshold');
   if (chk && field) {
     field.style.opacity = chk.checked ? '1' : '0.4';
-    const inp = field.querySelector('input');
-    if (inp) inp.disabled = !chk.checked;
+    const el = field.querySelector('select, input');
+    if (el) el.disabled = !chk.checked;
   }
 }
 

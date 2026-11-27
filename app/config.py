@@ -61,7 +61,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "download_speed_limit": float(os.getenv("DOWNLOAD_SPEED_LIMIT", "0")),
     "max_concurrent_downloads": int(os.getenv("MAX_CONCURRENT_DOWNLOADS", "3")),
     "system_resource_protection": os.getenv("SYSTEM_RESOURCE_PROTECTION", "true").lower() == "true",
-    "throttle_cpu_threshold": int(os.getenv("THROTTLE_CPU_THRESHOLD", "50")),
+    "throttle_cpu_threshold": int(os.getenv("THROTTLE_CPU_THRESHOLD", "0")),
     "hide_last_download_name": os.getenv("HIDE_LAST_DOWNLOAD_NAME", "true").lower() == "true",
     "last_download_stat": {},
     "allowed_exts": ".mkv,.mp4,.avi,.mov,.wmv,.m4v,.ts,.webm,.srt,.ass,.ssa,.sub,.vtt",

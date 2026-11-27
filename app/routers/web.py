@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import html
+import os
 import re
 import time
 import urllib.parse
@@ -20,6 +21,7 @@ from app.alldebrid import (
 from app.bencode import get_subfolder_name, parse_magnet_uri, parse_torrent_bytes, sanitize_filename
 from app.config import DEFAULT_SERVICES, DEFAULT_SETTINGS, logger
 from app.providers import SUPPORTED_PROVIDERS, get_provider, normalize_provider_name
+from app.storage import get_auto_cpu_threshold
 from app.state import (
     api_health,
     get_arr_instances,
@@ -968,7 +970,7 @@ async def update_settings(
     download_speed_limit: float = Form(0.0),
     max_concurrent_downloads: int = Form(3),
     system_resource_protection: Optional[str] = Form(None),
-    throttle_cpu_threshold: int = Form(50),
+    throttle_cpu_threshold: int = Form(0),
     ddl_download_dir: str = Form("/mnt/virtual/Medias/DL/DDL"),
     hide_last_download_name: Optional[str] = Form(None),
     enable_queue_tab: Optional[str] = Form(None),
@@ -1067,7 +1069,7 @@ async def update_settings(
         settings_db["download_speed_limit"] = max(0.0, float(download_speed_limit))
         settings_db["max_concurrent_downloads"] = max(1, int(max_concurrent_downloads))
         settings_db["system_resource_protection"] = system_resource_protection == "on"
-        settings_db["throttle_cpu_threshold"] = max(10, min(95, int(throttle_cpu_threshold)))
+        settings_db["throttle_cpu_threshold"] = max(0, min(95, int(throttle_cpu_threshold)))
         settings_db["hide_last_download_name"] = hide_last_download_name == "on"
         settings_db["allowed_exts"] = allowed_exts.strip() or DEFAULT_SETTINGS["allowed_exts"]
         settings_db["ignored_exts"] = (
@@ -1405,6 +1407,10 @@ async def web_dashboard(saved: Optional[str] = None):
     current_prov = normalize_provider_name(s.get("provider", "alldebrid"))
     prov_meta = SUPPORTED_PROVIDERS.get(current_prov, SUPPORTED_PROVIDERS["alldebrid"])
 
+    detected_cores = os.cpu_count() or 4
+    auto_cpu_pct = get_auto_cpu_threshold()
+    curr_cpu_thresh = int(s.get("throttle_cpu_threshold", 0))
+
     prov_options = []
     for pid, pdata in SUPPORTED_PROVIDERS.items():
         is_sel = "selected" if pid == current_prov else ""
@@ -1426,7 +1432,16 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__DOWNLOAD_SPEED_LIMIT__", str(s.get("download_speed_limit", 0)))
         .replace("__MAX_CONCURRENT_DOWNLOADS__", str(s.get("max_concurrent_downloads", 3)))
         .replace("__CHECKED_RESOURCE_PROT__", "checked" if s.get("system_resource_protection", True) else "")
-        .replace("__THROTTLE_CPU_THRESHOLD__", str(s.get("throttle_cpu_threshold", 50)))
+        .replace("__DETECTED_CPU_CORES__", str(detected_cores))
+        .replace("__AUTO_CPU_PCT__", str(auto_cpu_pct))
+        .replace("__SELECTED_CPU_AUTO__", "selected" if curr_cpu_thresh == 0 else "")
+        .replace("__SELECTED_CPU_50__", "selected" if curr_cpu_thresh == 50 else "")
+        .replace("__SELECTED_CPU_60__", "selected" if curr_cpu_thresh == 60 else "")
+        .replace("__SELECTED_CPU_65__", "selected" if curr_cpu_thresh == 65 else "")
+        .replace("__SELECTED_CPU_70__", "selected" if curr_cpu_thresh == 70 else "")
+        .replace("__SELECTED_CPU_75__", "selected" if curr_cpu_thresh == 75 else "")
+        .replace("__SELECTED_CPU_80__", "selected" if curr_cpu_thresh == 80 else "")
+        .replace("__SELECTED_CPU_90__", "selected" if curr_cpu_thresh == 90 else "")
         .replace("__CHECKED_HIDE_LAST_DL_NAME__", "checked" if s.get("hide_last_download_name", True) else "")
         .replace("__TABLE_BODY__", table_body)
         .replace("__SERVICE_ROWS__", "".join(service_rows))

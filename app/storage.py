@@ -84,6 +84,22 @@ class CPULoadMonitor:
 cpu_monitor = CPULoadMonitor()
 
 
+def get_auto_cpu_threshold() -> int:
+    """Détermine automatiquement le seuil CPU optimal en fonction du nombre de cœurs détectés."""
+    try:
+        cores = os.cpu_count() or 4
+        if cores <= 2:
+            return 60  # 1-2 cœurs : 60%
+        elif cores <= 4:
+            return 70  # 4 cœurs (ex: Intel N100, N5105, Celeron) : 70%
+        elif cores <= 8:
+            return 75  # 6-8 cœurs : 75%
+        else:
+            return 80  # 12+ cœurs : 80%
+    except Exception:
+        return 70
+
+
 def apply_io_cpu_optimizations(fd_src: Optional[int] = None, fd_dst: Optional[int] = None) -> None:
     """Applique une priorité d'ordonnancement CPU réduite (+10) et informe le noyau d'un accès séquentiel."""
     try:
@@ -119,7 +135,12 @@ def copy_chunked_with_limit(
     """
     chunk_size = 1024 * 1024  # 1 Mo (réduit les appels système CPU de 75 % par rapport à 256 Ko)
     resource_prot = settings_db.get("system_resource_protection", True)
-    cpu_threshold = float(settings_db.get("throttle_cpu_threshold", 50))
+    raw_thresh = settings_db.get("throttle_cpu_threshold", 0)
+    try:
+        cfg_thresh = int(raw_thresh)
+    except (ValueError, TypeError):
+        cfg_thresh = 0
+    cpu_threshold = float(cfg_thresh if cfg_thresh > 0 else get_auto_cpu_threshold())
     bytes_since_evict = 0
     copied = 0
     t_start = time.time()
@@ -487,7 +508,12 @@ def download_http_file_chunked(
     """
     chunk_size = 1024 * 1024  # 1 Mo (réduit les appels système CPU de 75 % par rapport à 256 Ko)
     resource_prot = settings_db.get("system_resource_protection", True)
-    cpu_threshold = float(settings_db.get("throttle_cpu_threshold", 50))
+    raw_thresh = settings_db.get("throttle_cpu_threshold", 0)
+    try:
+        cfg_thresh = int(raw_thresh)
+    except (ValueError, TypeError):
+        cfg_thresh = 0
+    cpu_threshold = float(cfg_thresh if cfg_thresh > 0 else get_auto_cpu_threshold())
     bytes_since_evict = 0
     copied = 0
     t_start = time.time()

@@ -694,24 +694,6 @@
                   <input type="number" min="1" max="20" step="1" name="max_concurrent_downloads" value="__MAX_CONCURRENT_DOWNLOADS__" required>
                   <small class="hint" data-i18n="hint_max_concurrent_dl">Nombre de téléchargements simultanés (torrents/magnets en mode copie et liens directs DDL). Par défaut : 3.</small>
                 </div>
-                <div class="field full" style="background:var(--bg-subpanel);padding:12px;border-radius:8px;border:1px solid var(--border-muted);margin-top:6px;">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:260px;">
-                      <div class="chk-line" style="margin:0;">
-                        <input type="checkbox" id="system_resource_protection" name="system_resource_protection" __CHECKED_RESOURCE_PROT__ onchange="toggleResourceProtField()">
-                        <label for="system_resource_protection" style="font-weight:600;" data-i18n="lbl_resource_protection">Protection des ressources système (CPU, RAM & I/O doux)</label>
-                      </div>
-                      <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_resource_protection">
-                        Libère activement le cache RAM Linux (fadvise), optimise les écritures disque pour éviter les gels et régule automatiquement si la charge CPU dépasse le seuil.
-                      </small>
-                    </div>
-                    <div id="field_throttle_cpu_threshold" style="display:flex;align-items:center;gap:8px;">
-                      <label for="throttle_cpu_threshold" style="font-size:12px;white-space:nowrap;" data-i18n="lbl_cpu_threshold">Seuil CPU :</label>
-                      <input type="number" id="throttle_cpu_threshold" name="throttle_cpu_threshold" min="20" max="95" step="5" value="__THROTTLE_CPU_THRESHOLD__" style="width:70px;padding:5px 8px;font-size:12px;">
-                      <span style="font-size:12px;color:#8b949e;">%</span>
-                    </div>
-                  </div>
-                </div>
                 <div class="field full" style="background:var(--bg-subpanel);padding:12px;border-radius:8px;border:1px solid var(--border-muted);">
                   <label style="font-weight:600;display:flex;align-items:center;gap:6px;" data-i18n="lbl_ddl_download_dir">
                     <span>📁</span> <span>Dossier de destination complet pour les liens DDL</span>
@@ -1086,6 +1068,51 @@
                   <label data-i18n="lbl_poll_interval">Intervalle de vérification API (secondes)</label>
                   <input type="number" step="0.5" min="1.5" name="poll_interval" value="__POLL_INTERVAL__">
                   <small class="hint" data-i18n="hint_poll_interval">Fréquence d'interrogation du fournisseur Debrid (défaut : 3.0s).</small>
+                </div>
+              </div>
+
+              <!-- Gestion de la Charge & Ressources Système -->
+              <div style="margin-top:20px;border-top:1px solid var(--border-muted);padding-top:16px;">
+                <h4 style="font-size:13px;margin:0 0 4px 0;color:var(--text-bright);display:flex;align-items:center;gap:6px;">
+                  <span>🛡️</span> <span data-i18n="title_resource_prot">Gestion de la Charge &amp; Ressources Système (CPU, RAM, I/O)</span>
+                </h4>
+                <small class="hint" style="display:block;margin-bottom:12px;" data-i18n="desc_resource_prot">
+                  Protège la réactivité du serveur (Plex, Jellyfin, Docker) pendant les téléchargements et copies de gros fichiers.
+                </small>
+
+                <div class="field full" style="background:var(--bg-card);padding:14px;border-radius:8px;border:1px solid var(--border-muted);">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:260px;">
+                      <div class="chk-line" style="margin:0 0 6px 0;">
+                        <input type="checkbox" id="system_resource_protection" name="system_resource_protection" __CHECKED_RESOURCE_PROT__ onchange="toggleResourceProtField()">
+                        <label for="system_resource_protection" style="font-weight:600;font-size:13px;" data-i18n="lbl_resource_protection">Activer la protection intelligente des ressources (CPU / RAM / I/O)</label>
+                      </div>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#8b949e;font-size:11.5px;line-height:1.6;">
+                        <li data-i18n="hint_prot_fadvise"><b>Zéro saturation RAM</b> : libération active du cache Linux (fadvise) après chaque bloc.</li>
+                        <li data-i18n="hint_prot_chunks"><b>I/O &amp; CPU lissés</b> : blocs optimisés de 1 Mo et priorité réduite (nice +10) pour laisser la priorité à Plex.</li>
+                        <li data-i18n="hint_prot_adaptive"><b>Régulation adaptative</b> : micro-pause automatique si la charge CPU globale dépasse le seuil.</li>
+                      </ul>
+                    </div>
+
+                    <div id="field_throttle_cpu_threshold" style="display:flex;flex-direction:column;gap:6px;min-width:200px;background:var(--bg-subpanel);padding:10px 12px;border-radius:6px;border:1px solid var(--border-muted);">
+                      <label for="throttle_cpu_threshold" style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;" data-i18n="lbl_cpu_threshold_mode">
+                        <span>⚙️</span> <span>Seuil CPU de régulation :</span>
+                      </label>
+                      <select id="throttle_cpu_threshold" name="throttle_cpu_threshold" style="padding:6px 8px;font-size:12px;border-radius:4px;">
+                        <option value="0" __SELECTED_CPU_AUTO__ data-i18n="opt_cpu_auto">Auto : Détection CPU (__DETECTED_CPU_CORES__ cœurs → __AUTO_CPU_PCT__%)</option>
+                        <option value="50" __SELECTED_CPU_50__>50% (Très conservateur)</option>
+                        <option value="60" __SELECTED_CPU_60__>60% (Modéré)</option>
+                        <option value="65" __SELECTED_CPU_65__>65% (Équilibré)</option>
+                        <option value="70" __SELECTED_CPU_70__>70% (Recommandé N100 / 4 cœurs)</option>
+                        <option value="75" __SELECTED_CPU_75__>75% (Performant)</option>
+                        <option value="80" __SELECTED_CPU_80__>80% (Plein régime)</option>
+                        <option value="90" __SELECTED_CPU_90__>90% (Maximum toléré)</option>
+                      </select>
+                      <small class="hint" style="font-size:10.5px;color:#8b949e;" data-i18n="hint_cpu_auto_applied">
+                        En mode Auto, s'ajuste dynamiquement selon le nombre de cœurs détectés.
+                      </small>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1688,13 +1715,13 @@
   window.OMNISYM_DEFAULT_SUBFOLDER_MODE = "__DEFAULT_SUBFOLDER_MODE__";
   window.OMNISYM_DEFAULT_SUBFOLDER_CUSTOM = "__DEFAULT_SUBFOLDER_CUSTOM__";
 </script>
-<script src="/static/js/i18n.js?v=2.16"></script>
-<script src="/static/js/queue.js?v=2.16"></script>
-<script src="/static/js/settings.js?v=2.16"></script>
-<script src="/static/js/onboarding.js?v=2.16"></script>
-<script src="/static/js/scanner.js?v=2.16"></script>
-<script src="/static/js/finder.js?v=2.16"></script>
-<script src="/static/js/speedtest.js?v=2.16"></script>
-<script src="/static/js/app.js?v=2.16"></script>
+<script src="/static/js/i18n.js?v=2.17"></script>
+<script src="/static/js/queue.js?v=2.17"></script>
+<script src="/static/js/settings.js?v=2.17"></script>
+<script src="/static/js/onboarding.js?v=2.17"></script>
+<script src="/static/js/scanner.js?v=2.17"></script>
+<script src="/static/js/finder.js?v=2.17"></script>
+<script src="/static/js/speedtest.js?v=2.17"></script>
+<script src="/static/js/app.js?v=2.17"></script>
 </body>
 </html>
