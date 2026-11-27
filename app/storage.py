@@ -45,6 +45,65 @@ async def refresh_rclone_vfs(dir_name: str = "magnets") -> bool:
         return False
 
 
+class CPULoadMonitor:
+    """Moniteur léger de charge CPU globale basé sur /proc/stat avec cache pour éviter les I/O inutiles."""
+
+    def __init__(self):
+        self._last_total = 0
+        self._last_idle = 0
+        self._last_check = 0.0
+        self._cached_cpu_pct = 0.0
+
+    def get_cpu_percent(self) -> float:
+        now = time.time()
+        # Ne relit /proc/stat qu'au maximum toutes les 1.0s
+        if now - self._last_check < 1.0 and self._last_total > 0:
+            return self._cached_cpu_pct
+
+        try:
+            with open("/proc/stat", "r") as f:
+                line = f.readline()
+            parts = [float(x) for x in line.strip().split()[1:8]]
+            idle = parts[3] + parts[4]  # idle + iowait
+            total = sum(parts)
+
+            if self._last_total > 0:
+                diff_total = total - self._last_total
+                diff_idle = idle - self._last_idle
+                if diff_total > 0:
+                    cpu_pct = max(0.0, min(100.0, (1.0 - (diff_idle / diff_total)) * 100.0))
+                    self._cached_cpu_pct = cpu_pct
+            self._last_total = total
+            self._last_idle = idle
+            self._last_check = now
+            return self._cached_cpu_pct
+        except Exception:
+            return 0.0
+
+
+cpu_monitor = CPULoadMonitor()
+
+
+def apply_io_cpu_optimizations(fd_src: Optional[int] = None, fd_dst: Optional[int] = None) -> None:
+    """Applique une priorité d'ordonnancement CPU réduite (+10) et informe le noyau d'un accès séquentiel."""
+    try:
+        if hasattr(os, "getpriority") and hasattr(os, "nice"):
+            prio = os.getpriority(os.PRIO_PROCESS, 0)
+            if prio < 10:
+                os.nice(10 - prio)
+    except Exception:
+        pass
+
+    if hasattr(os, "posix_fadvise"):
+        try:
+            if fd_src is not None:
+                os.posix_fadvise(fd_src, 0, 0, os.POSIX_FADV_SEQUENTIAL)
+            if fd_dst is not None:
+                os.posix_fadvise(fd_dst, 0, 0, os.POSIX_FADV_SEQUENTIAL)
+        except Exception:
+            pass
+
+
 def copy_chunked_with_limit(
     src: Path,
     dst: Path,
@@ -54,16 +113,23 @@ def copy_chunked_with_limit(
     already_copied: int = 0,
 ) -> int:
     """
-    Copie src vers dst par blocs (chunks) avec limitation de vitesse et callback de progression.
+    Copie src vers dst par blocs (chunks) avec limitation de vitesse,
+    protection des ressources système (fadvise, chunk 1MB, régulation CPU) et callback de progression.
     Retourne le nombre d'octets copiés pour ce fichier.
     """
-    chunk_size = 256 * 1024  # 256 KB
+    chunk_size = 1024 * 1024  # 1 Mo (réduit les appels système CPU de 75 % par rapport à 256 Ko)
+    resource_prot = settings_db.get("system_resource_protection", True)
+    cpu_threshold = float(settings_db.get("throttle_cpu_threshold", 50))
+    bytes_since_evict = 0
     copied = 0
     t_start = time.time()
     last_callback_time = t_start
     last_callback_bytes = 0
 
     with open(src, "rb") as fsrc, open(dst, "wb") as fdst:
+        if resource_prot:
+            apply_io_cpu_optimizations(fsrc.fileno(), fdst.fileno())
+
         while True:
             chunk_start = time.time()
             buf = fsrc.read(chunk_size)
@@ -73,12 +139,32 @@ def copy_chunked_with_limit(
             buf_len = len(buf)
             copied += buf_len
 
+            # Libération immédiate de la mémoire tampon (Page Cache) pour éviter l'explosion de RAM
+            if resource_prot:
+                bytes_since_evict += buf_len
+                if bytes_since_evict >= 4 * 1024 * 1024:  # Tous les 4 Mo
+                    if hasattr(os, "posix_fadvise"):
+                        try:
+                            os.posix_fadvise(fdst.fileno(), max(0, copied - bytes_since_evict), bytes_since_evict, os.POSIX_FADV_DONTNEED)
+                            os.posix_fadvise(fsrc.fileno(), max(0, copied - bytes_since_evict), bytes_since_evict, os.POSIX_FADV_DONTNEED)
+                        except Exception:
+                            pass
+                    bytes_since_evict = 0
+
             # Limitation de vitesse si active
             if speed_limit_bytes > 0:
                 elapsed_chunk = time.time() - chunk_start
                 expected_chunk_time = buf_len / speed_limit_bytes
                 if elapsed_chunk < expected_chunk_time:
                     time.sleep(expected_chunk_time - elapsed_chunk)
+
+            # Régulation adaptative intelligente si la charge CPU de la machine dépasse le seuil (ex: 50%)
+            if resource_prot:
+                cpu_cur = cpu_monitor.get_cpu_percent()
+                if cpu_cur >= cpu_threshold:
+                    excess = min(50.0, cpu_cur - cpu_threshold)
+                    adaptive_sleep = 0.005 + (excess / 50.0) * 0.020
+                    time.sleep(adaptive_sleep)
 
             # Notification de progression périodique (toutes les 0.5s)
             now = time.time()
@@ -89,6 +175,13 @@ def copy_chunked_with_limit(
                 progress_callback(already_copied + copied, total_expected, instant_speed)
                 last_callback_time = now
                 last_callback_bytes = copied
+
+        if resource_prot and hasattr(os, "posix_fadvise"):
+            try:
+                os.posix_fadvise(fdst.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
+                os.posix_fadvise(fsrc.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
+            except Exception:
+                pass
 
     if progress_callback:
         total_time = max(0.001, time.time() - t_start)
@@ -388,10 +481,14 @@ def download_http_file_chunked(
     progress_callback: Optional[Callable[[int, int, float], None]] = None,
 ) -> Tuple[int, float]:
     """
-    Télécharge un fichier HTTP/HTTPS en streaming par blocs avec limitation de vitesse
+    Télécharge un fichier HTTP/HTTPS en streaming par blocs avec limitation de vitesse,
+    protection des ressources système (fadvise, chunk 1MB, régulation CPU)
     et callback de progression vers un fichier temporaire tmp_dst avant renommage en dst.
     """
-    chunk_size = 256 * 1024  # 256 KB
+    chunk_size = 1024 * 1024  # 1 Mo (réduit les appels système CPU de 75 % par rapport à 256 Ko)
+    resource_prot = settings_db.get("system_resource_protection", True)
+    cpu_threshold = float(settings_db.get("throttle_cpu_threshold", 50))
+    bytes_since_evict = 0
     copied = 0
     t_start = time.time()
     last_callback_time = t_start
@@ -414,6 +511,9 @@ def download_http_file_chunked(
                     total_expected = exp
 
             with open(tmp_dst, "wb") as fdst:
+                if resource_prot:
+                    apply_io_cpu_optimizations(None, fdst.fileno())
+
                 for chunk in resp.iter_bytes(chunk_size=chunk_size):
                     chunk_start = time.time()
                     if not chunk:
@@ -422,11 +522,31 @@ def download_http_file_chunked(
                     buf_len = len(chunk)
                     copied += buf_len
 
+                    # Libération immédiate de la mémoire tampon (Page Cache) pour éviter l'explosion de RAM
+                    if resource_prot:
+                        bytes_since_evict += buf_len
+                        if bytes_since_evict >= 4 * 1024 * 1024:  # Tous les 4 Mo
+                            if hasattr(os, "posix_fadvise"):
+                                try:
+                                    os.posix_fadvise(fdst.fileno(), max(0, copied - bytes_since_evict), bytes_since_evict, os.POSIX_FADV_DONTNEED)
+                                except Exception:
+                                    pass
+                            bytes_since_evict = 0
+
+                    # Limitation manuelle de vitesse si active
                     if speed_limit_bytes > 0:
                         elapsed_chunk = time.time() - chunk_start
                         expected_chunk_time = buf_len / speed_limit_bytes
                         if elapsed_chunk < expected_chunk_time:
                             time.sleep(expected_chunk_time - elapsed_chunk)
+
+                    # Régulation adaptative intelligente si la charge CPU de la machine dépasse le seuil (ex: 50%)
+                    if resource_prot:
+                        cpu_cur = cpu_monitor.get_cpu_percent()
+                        if cpu_cur >= cpu_threshold:
+                            excess = min(50.0, cpu_cur - cpu_threshold)
+                            adaptive_sleep = 0.005 + (excess / 50.0) * 0.020
+                            time.sleep(adaptive_sleep)
 
                     now = time.time()
                     if progress_callback and (now - last_callback_time >= 0.5):
@@ -436,6 +556,12 @@ def download_http_file_chunked(
                         progress_callback(copied, total_expected, instant_speed)
                         last_callback_time = now
                         last_callback_bytes = copied
+
+                if resource_prot and hasattr(os, "posix_fadvise"):
+                    try:
+                        os.posix_fadvise(fdst.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
+                    except Exception:
+                        pass
 
     if progress_callback:
         total_time = max(0.001, time.time() - t_start)

@@ -25,6 +25,7 @@ function showSettingsPage(pageId) {
   if (tgChk) toggleTelegramOptions(tgChk.checked);
 
   toggleDefaultSubfolderCustom();
+  toggleResourceProtField();
 
   const themeSel = document.getElementById('theme-select');
   if (themeSel) themeSel.value = currentTheme;
@@ -296,6 +297,16 @@ async function testTelegramNotification() {
       btn.disabled = false;
       btn.textContent = t('btn_test_tg');
     }
+  }
+}
+
+function toggleResourceProtField() {
+  const chk = document.getElementById('system_resource_protection');
+  const field = document.getElementById('field_throttle_cpu_threshold');
+  if (chk && field) {
+    field.style.opacity = chk.checked ? '1' : '0.4';
+    const inp = field.querySelector('input');
+    if (inp) inp.disabled = !chk.checked;
   }
 }
 
