@@ -69,10 +69,67 @@ function goHome() {
 
 
 function formatSize(bytes) {
-  if (!bytes || bytes <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  if (!bytes || bytes <= 0) return (typeof currentLang !== 'undefined' && currentLang === 'en') ? '0 B' : '0 o';
+  const units = (typeof currentLang !== 'undefined' && currentLang === 'en')
+    ? ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    : ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+  const safeI = Math.min(units.length - 1, Math.max(0, i));
+  return (bytes / Math.pow(1024, safeI)).toFixed(2) + ' ' + units[safeI];
+}
+
+function getSizeProgressHtml(item, state) {
+  try {
+    const total = Number(item.size) || 0;
+    const prog = Math.max(0, Math.min(1, Number(item.progress) || 0));
+    const downloaded = Math.round(total * prog);
+    const pct = Math.round(prog * 100);
+    const isDebrided = isItemDebrided(item);
+    const isDl = item.transfer_mode === 'download';
+    const isTransferActive = state === 'copying' || (state === 'downloading' && (isDl || !isDebrided));
+
+    // Après (Terminé)
+    if (state === 'pausedUP' || state === 'stalledUP' || state === 'completed') {
+      const finalSize = total > 0 ? formatSize(total) : '--';
+      return `<div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#3fb950;font-weight:500;" title="${esc(t('lbl_size_final') || 'Taille finale')}">
+        <span>💾</span> <span>${finalSize}</span>
+      </div>`;
+    }
+
+    // Pendant (Transfert actif : copie, téléchargement ou débridage cloud)
+    if (isTransferActive) {
+      const dlStr = total > 0 ? formatSize(downloaded) : '--';
+      const totStr = total > 0 ? formatSize(total) : '--';
+      return `<div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#58a6ff;font-weight:500;" title="${esc(t('lbl_size_progress') || 'Progression')}">
+        <span>📥</span> <span>${dlStr} / ${totStr} (${pct}%)</span>
+      </div>`;
+    }
+
+    // En pause
+    if (state === 'pausedDL') {
+      const dlStr = total > 0 ? formatSize(downloaded) : '--';
+      const totStr = total > 0 ? formatSize(total) : '--';
+      return `<div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#d29922;font-weight:500;">
+        <span>⏸️</span> <span>${dlStr} / ${totStr} (${pct}%)</span>
+      </div>`;
+    }
+
+    // Erreur
+    if (state === 'error') {
+      const totStr = total > 0 ? formatSize(total) : '--';
+      return `<div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#f85149;font-weight:500;">
+        <span>⚠️</span> <span>${totStr}</span>
+      </div>`;
+    }
+
+    // Avant (En attente, Résolution, Vérification DL, etc.)
+    const expStr = total > 0 ? formatSize(total) : '--';
+    return `<div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#8b949e;" title="${esc(t('lbl_size_total') || 'Taille totale')}">
+      <span>📦</span> <span>${expStr}</span>
+    </div>`;
+  } catch (e) {
+    return '';
+  }
 }
 
 const itemStartTimes = {};
@@ -734,10 +791,22 @@ function renderQueueRow(item, checkedSet, groupId = '') {
   const isCollapsed = isGroupCollapsed(groupId);
   const collapsedClass = isCollapsed ? 'group-collapsed' : '';
 
+  const totalSize = Number(item.size) || 0;
+  const sizeBadge = totalSize > 0
+    ? `<span class="tag-size" style="font-size:10.5px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#c9d1d9;" title="${esc(t('lbl_size_total') || 'Taille totale')}">${formatSize(totalSize)}</span>`
+    : '';
+
   return `<tr class="queue-item-row ${groupClass} ${collapsedClass}" data-hash="${fullId}" data-group-id="${groupId}">
     <td class="col-chk"><input type="checkbox" class="row-chk" value="${fullId}" ${isChecked} onchange="updateSelection()"></td>
     <td class="mono col-id"><div>#${adId}</div><small title="${fullId}" onclick="copyId('${fullId}')" style="cursor:pointer;color:#8b949e">${shortId} 📋</small></td>
-    <td class="col-name">${esc(item.name)}${canSearch ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
+    <td class="col-name">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-weight:500;">${esc(item.name)}</span>
+        ${sizeBadge}
+        ${canSearch ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}
+      </div>
+      <div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div>
+    </td>
     <td class="col-cat">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span class="tag">${esc(item.category)}</span>
@@ -751,6 +820,9 @@ function renderQueueRow(item, checkedSet, groupId = '') {
         ${debridBadge}
       </div>
       <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
+      <div class="queue-size-info" style="margin-top:3px;font-size:11px;">
+        ${getSizeProgressHtml(item, state)}
+      </div>
       ${getTimeInfoHtml(item, state)}
     </td>
     <td class="actions col-actions">
@@ -1041,8 +1113,20 @@ function renderQueue(items) {
           ? `<button type="button" class="btn-sec q-btn-search" onclick="searchAlternative('${fullId}')" style="font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;color:#58a6ff;border-color:rgba(88,166,255,0.4);" title="${esc(t('tip_search_alternative'))}"><span>🔍</span> <span>${esc(t('btn_search'))}</span></button>`
           : '';
 
+        const totalSize = Number(item.size) || 0;
+        const sizeBadge = totalSize > 0
+          ? `<span class="tag-size" style="font-size:10.5px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#c9d1d9;" title="${esc(t('lbl_size_total') || 'Taille totale')}">${formatSize(totalSize)}</span>`
+          : '';
+
         return `<tr>
-          <td class="col-name"><strong>${esc(item.name)}</strong>${canDdlSearch ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}<div style="color:#8b949e;font-size:11px;margin-top:2px;">${item.size > 0 ? formatSize(item.size) : ''}</div></td>
+          <td class="col-name">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <strong>${esc(item.name)}</strong>
+              ${sizeBadge}
+              ${canDdlSearch ? ` <a href="javascript:void(0)" onclick="searchAlternative('${fullId}')" title="${esc(t('tip_search_alternative'))}" style="text-decoration:none;font-size:12px;opacity:0.85;">🔍</a>` : ''}
+            </div>
+            <div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div>
+          </td>
           <td class="col-cat"><span class="tag">${esc(item.category)}</span><div style="color:#8b949e;font-size:11px;margin-top:2px;">${esc(item.save_path)}</div></td>
           <td class="col-status">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
@@ -1050,7 +1134,10 @@ function renderQueue(items) {
               <span class="tag debrid-cache" title="${esc(t('tip_debrided_ready'))}">⚡ ${esc(t('tag_debrided_ready'))}</span>
             </div>
             <div class="pbar"><div class="pbar-fill ${badgeCls}" style="width:${pct}%"></div></div>
-      ${getTimeInfoHtml(item, state)}
+            <div class="queue-size-info" style="margin-top:3px;font-size:11px;">
+              ${getSizeProgressHtml(item, state)}
+            </div>
+            ${getTimeInfoHtml(item, state)}
           </td>
           <td class="actions col-actions" style="text-align:right;">
             ${ddlSearchBtn}

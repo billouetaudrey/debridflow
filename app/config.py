@@ -94,6 +94,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "telegram_notify_scan_complete": os.getenv("TELEGRAM_NOTIFY_SCAN_COMPLETE", "true").lower() == "true",
     "telegram_notify_dead_link": os.getenv("TELEGRAM_NOTIFY_DEAD_LINK", "true").lower() == "true",
     "telegram_notify_download_complete": os.getenv("TELEGRAM_NOTIFY_DOWNLOAD_COMPLETE", "true").lower() == "true",
+    "telegram_notify_progress": os.getenv("TELEGRAM_NOTIFY_PROGRESS", "true").lower() == "true",
     "telegram_notify_clean_dead": os.getenv("TELEGRAM_NOTIFY_CLEAN_DEAD", "true").lower() == "true",
     "telegram_notify_error": os.getenv("TELEGRAM_NOTIFY_ERROR", "true").lower() == "true",
     "default_subfolder_mode": os.getenv("DEFAULT_SUBFOLDER_MODE", "none").strip().lower(),

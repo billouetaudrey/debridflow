@@ -41,6 +41,77 @@ class TelegramNotifier:
 
         return await self._dispatch(bot_token, chat_id, text, parse_mode, disable_web_page_preview)
 
+    async def send_message_get_id(
+        self,
+        text: str,
+        parse_mode: str = "HTML",
+        disable_web_page_preview: bool = True,
+    ) -> Optional[int]:
+        """Envoie un message Telegram et retourne le message_id si disponible."""
+        enabled = settings_db.get("telegram_enabled", False)
+        bot_token = str(settings_db.get("telegram_bot_token", "")).strip()
+        chat_id = str(settings_db.get("telegram_chat_id", "")).strip()
+
+        if not enabled or not bot_token or not chat_id:
+            return None
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_web_page_preview": disable_web_page_preview,
+        }
+        client = self._get_client()
+        try:
+            resp = await client.post(url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                msg_id = data.get("result", {}).get("message_id")
+                return int(msg_id) if msg_id else None
+            else:
+                logger.warning(f"Échec Telegram send_message_get_id (status {resp.status_code}): {resp.text}")
+                return None
+        except Exception as e:
+            logger.warning(f"Erreur Telegram send_message_get_id: {e}")
+            return None
+
+    async def edit_message(
+        self,
+        message_id: int,
+        text: str,
+        parse_mode: str = "HTML",
+        disable_web_page_preview: bool = True,
+    ) -> bool:
+        """Modifie un message Telegram existant (idéal pour la barre de progression)."""
+        enabled = settings_db.get("telegram_enabled", False)
+        bot_token = str(settings_db.get("telegram_bot_token", "")).strip()
+        chat_id = str(settings_db.get("telegram_chat_id", "")).strip()
+
+        if not enabled or not bot_token or not chat_id or not message_id:
+            return False
+
+        url = f"https://api.telegram.org/bot{bot_token}/editMessageText"
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_web_page_preview": disable_web_page_preview,
+        }
+        client = self._get_client()
+        try:
+            resp = await client.post(url, json=payload)
+            if resp.status_code == 200:
+                return True
+            if "message is not modified" in resp.text:
+                return True
+            logger.warning(f"Échec édition message Telegram {message_id} (status {resp.status_code}): {resp.text}")
+            return False
+        except Exception as e:
+            logger.warning(f"Erreur édition message Telegram {message_id}: {e}")
+            return False
+
     async def _dispatch(
         self,
         bot_token: str,
@@ -158,7 +229,63 @@ class TelegramNotifier:
         )
         await self.send_message(text)
 
-    async def notify_download_complete(
+    @staticmethod
+    def render_ascii_progress_bar(pct: float, length: int = 10) -> str:
+        """Génère une barre de progression ASCII : [████░░░░░░]."""
+        pct = max(0.0, min(1.0, float(pct)))
+        filled = int(round(pct * length))
+        empty = max(0, length - filled)
+        return "█" * filled + "░" * empty
+
+    @staticmethod
+    def _format_duration(total_seconds: float) -> str:
+        if total_seconds is None or total_seconds < 0:
+            return "--"
+        sec = int(total_seconds)
+        if sec < 60:
+            return f"{sec}s"
+        m = sec // 60
+        s = sec % 60
+        if m < 60:
+            return f"{m}m {s:02d}s"
+        h = m // 60
+        rem_m = m % 60
+        return f"{h}h {rem_m:02d}m"
+
+    def format_progress_message(
+        self,
+        name: str,
+        category: str,
+        mode: str,
+        bytes_copied: int,
+        total_expected: int,
+        instant_speed: float,
+        eta_seconds: int = 0,
+        elapsed_seconds: int = 0,
+    ) -> str:
+        pct_fraction = (bytes_copied / total_expected) if total_expected > 0 else 0.0
+        pct_fraction = max(0.0, min(1.0, pct_fraction))
+        pct_int = int(round(pct_fraction * 100))
+        pbar = self.render_ascii_progress_bar(pct_fraction, length=10)
+
+        cur_size_str = self._format_size(bytes_copied)
+        total_size_str = self._format_size(total_expected) if total_expected > 0 else "--"
+        speed_str = self._format_speed(int(instant_speed)) if instant_speed > 0 else "--"
+        eta_str = self._format_duration(eta_seconds) if eta_seconds > 0 else "--"
+        elapsed_str = self._format_duration(elapsed_seconds) if elapsed_seconds > 0 else "0s"
+
+        text = (
+            f"📥 <b>OmniSym — Téléchargement en cours</b>\n\n"
+            f"• <b>Nom</b> : <code>{html.escape(str(name))}</code>\n"
+            f"• <b>Catégorie</b> : <code>{html.escape(str(category or 'Aucune'))}</code>\n"
+            f"• <b>Progression</b> : <code>[{pbar}] {pct_int}%</code>\n"
+            f"• <b>Taille</b> : <b>{cur_size_str}</b> / {total_size_str}\n"
+            f"• <b>Vitesse</b> : <b>{speed_str}</b>\n"
+            f"• <b>Temps</b> : ⏱️ Écoulé : {elapsed_str} | ⏳ Restant : {eta_str}"
+        )
+        return text
+
+    def format_complete_message(
         self,
         name: str,
         category: str,
@@ -166,18 +293,15 @@ class TelegramNotifier:
         size_bytes: int = 0,
         duration: float = 0.0,
         avg_speed: int = 0,
-    ):
-        if not settings_db.get("telegram_notify_download_complete", True):
-            return
-
+    ) -> str:
         mode_badge = "📥 Téléchargement réel" if mode == "download" else "🔗 Symlink"
         size_str = self._format_size(size_bytes)
         speed_str = self._format_speed(avg_speed) if avg_speed > 0 else ""
-        dur_str = f"{duration:.1f}s" if duration > 0 else ""
+        dur_str = self._format_duration(duration) if duration > 0 else ""
 
         details = []
         if size_bytes > 0:
-            details.append(f"• <b>Taille</b> : {size_str}")
+            details.append(f"• <b>Taille</b> : <b>{size_str}</b>")
         if dur_str:
             details.append(f"• <b>Durée</b> : {dur_str}")
         if speed_str and mode == "download":
@@ -193,6 +317,20 @@ class TelegramNotifier:
             f"• <b>Catégorie</b> : <code>{html.escape(str(category or 'Aucune'))}</code>\n"
             f"• <b>Mode</b> : {mode_badge}{details_txt}"
         )
+        return text
+
+    async def notify_download_complete(
+        self,
+        name: str,
+        category: str,
+        mode: str,
+        size_bytes: int = 0,
+        duration: float = 0.0,
+        avg_speed: int = 0,
+    ):
+        if not settings_db.get("telegram_notify_download_complete", True):
+            return
+        text = self.format_complete_message(name, category, mode, size_bytes, duration, avg_speed)
         await self.send_message(text)
 
     async def notify_error(self, title: str, message: str):
@@ -227,6 +365,133 @@ class TelegramNotifier:
 
 
 notifier = TelegramNotifier()
+
+
+class TelegramProgressTracker:
+    """Suivi et mise à jour dynamique de la progression d'un téléchargement sur Telegram."""
+
+    def __init__(
+        self,
+        name: str,
+        category: str,
+        mode: str,
+        total_expected: int,
+        loop: asyncio.AbstractEventLoop,
+    ):
+        self.name = name
+        self.category = category
+        self.mode = mode
+        self.total_expected = total_expected
+        self.loop = loop
+        self.message_id: Optional[int] = None
+        self.last_update_time: float = 0.0
+        self.last_pct: float = -1.0
+        self.start_time: float = time.time()
+        self.is_updating: bool = False
+        self.closed: bool = False
+
+    async def init_message(self) -> None:
+        if not settings_db.get("telegram_notify_progress", True):
+            return
+        initial_text = notifier.format_progress_message(
+            name=self.name,
+            category=self.category,
+            mode=self.mode,
+            bytes_copied=0,
+            total_expected=self.total_expected,
+            instant_speed=0.0,
+            eta_seconds=0,
+            elapsed_seconds=0,
+        )
+        self.message_id = await notifier.send_message_get_id(initial_text)
+        self.last_update_time = time.time()
+
+    def update_progress(self, bytes_copied: int, total_expected: int, instant_speed: float) -> None:
+        if not self.message_id or self.closed:
+            return
+        now = time.time()
+        pct = (bytes_copied / total_expected) if total_expected > 0 else 0.0
+        time_elapsed = now - self.last_update_time
+        pct_jump = abs(pct - self.last_pct)
+
+        # Régulation Telegram : au moins 3s entre deux requêtes, ou saut de 10%
+        if time_elapsed < 3.0:
+            return
+        if time_elapsed >= 4.5 or pct_jump >= 0.10:
+            if not self.is_updating:
+                self.is_updating = True
+                self.last_update_time = now
+                self.last_pct = pct
+                rem_bytes = max(0, total_expected - bytes_copied)
+                eta = int(rem_bytes / instant_speed) if instant_speed > 0 else 0
+                elapsed = max(0, int(now - self.start_time))
+
+                asyncio.run_coroutine_threadsafe(
+                    self._dispatch_edit(bytes_copied, total_expected, instant_speed, eta, elapsed),
+                    self.loop,
+                )
+
+    async def _dispatch_edit(
+        self,
+        bytes_copied: int,
+        total_expected: int,
+        instant_speed: float,
+        eta: int,
+        elapsed: int,
+    ) -> None:
+        try:
+            if self.message_id and not self.closed:
+                text = notifier.format_progress_message(
+                    name=self.name,
+                    category=self.category,
+                    mode=self.mode,
+                    bytes_copied=bytes_copied,
+                    total_expected=total_expected,
+                    instant_speed=instant_speed,
+                    eta_seconds=eta,
+                    elapsed_seconds=elapsed,
+                )
+                await notifier.edit_message(self.message_id, text)
+        except Exception as e:
+            logger.debug(f"TelegramProgressTracker edit: {e}")
+        finally:
+            self.is_updating = False
+
+    async def complete(self, total_copied: int, duration: float, avg_speed: int) -> None:
+        self.closed = True
+        if not settings_db.get("telegram_notify_download_complete", True):
+            return
+        if self.message_id:
+            text = notifier.format_complete_message(
+                name=self.name,
+                category=self.category,
+                mode=self.mode,
+                size_bytes=total_copied,
+                duration=duration,
+                avg_speed=avg_speed,
+            )
+            ok = await notifier.edit_message(self.message_id, text)
+            if not ok:
+                await notifier.send_message(text)
+        else:
+            await notifier.notify_download_complete(
+                name=self.name,
+                category=self.category,
+                mode=self.mode,
+                size_bytes=total_copied,
+                duration=duration,
+                avg_speed=avg_speed,
+            )
+
+    async def fail(self, error_message: str) -> None:
+        self.closed = True
+        if self.message_id:
+            text = (
+                f"❌ <b>OmniSym — Téléchargement Interrompu</b>\n\n"
+                f"• <b>Nom</b> : <code>{html.escape(str(self.name))}</code>\n"
+                f"• <b>Erreur</b> : <code>{html.escape(str(error_message))}</code>"
+            )
+            await notifier.edit_message(self.message_id, text)
 
 
 async def run_telegram_listener() -> None:

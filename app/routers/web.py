@@ -997,6 +997,7 @@ async def update_settings(
     telegram_notify_scan_complete: Optional[str] = Form(None),
     telegram_notify_dead_link: Optional[str] = Form(None),
     telegram_notify_download_complete: Optional[str] = Form(None),
+    telegram_notify_progress: Optional[str] = Form(None),
     telegram_notify_clean_dead: Optional[str] = Form(None),
     telegram_notify_error: Optional[str] = Form(None),
     service_names: Optional[List[str]] = Form(None),
@@ -1122,6 +1123,7 @@ async def update_settings(
         settings_db["telegram_notify_scan_complete"] = telegram_notify_scan_complete == "on"
         settings_db["telegram_notify_dead_link"] = telegram_notify_dead_link == "on"
         settings_db["telegram_notify_download_complete"] = telegram_notify_download_complete == "on"
+        settings_db["telegram_notify_progress"] = telegram_notify_progress == "on"
         settings_db["telegram_notify_clean_dead"] = telegram_notify_clean_dead == "on"
         settings_db["telegram_notify_error"] = telegram_notify_error == "on"
         if onboarding_completed == "on":
@@ -1240,6 +1242,16 @@ async def web_dashboard(saved: Optional[str] = None):
                 f'</div>'
             )
 
+        def format_size_py(b: int) -> str:
+            if b <= 0:
+                return "0 o"
+            val = float(b)
+            for unit in ["o", "Ko", "Mo", "Go", "To"]:
+                if val < 1024.0:
+                    return f"{val:.2f} {unit}"
+                val /= 1024.0
+            return f"{val:.2f} Po"
+
         items_sorted = sorted(torrents_db.items(), key=lambda kv: kv[1].get("added_on", 0), reverse=True)
         for h, item in items_sorted:
             pct = int(float(item.get("progress", 0)) * 100)
@@ -1309,11 +1321,39 @@ async def web_dashboard(saved: Optional[str] = None):
                 seeders_txt = f" • {seeders_cnt} src" if seeders_cnt > 0 else ""
                 debrid_badge = f'<span class="tag debrid-pending" title="Fichier en cours de téléchargement chez le fournisseur (non débridé)">⏳ Non débridé{seeders_txt}</span>'
 
+            total_b = int(item.get("size") or 0)
+            prog_f = max(0.0, min(1.0, float(item.get("progress") or 0.0)))
+            downloaded_b = int(total_b * prog_f)
+
+            size_badge_ssr = (
+                f'<span class="tag-size" style="font-size:10.5px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#c9d1d9;">{format_size_py(total_b)}</span>'
+                if total_b > 0
+                else ""
+            )
+
+            if state in ("pausedUP", "stalledUP"):
+                final_sz = format_size_py(total_b) if total_b > 0 else "--"
+                size_prog_ssr = f'<div class="queue-size-info" style="margin-top:3px;font-size:11px;"><div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#3fb950;font-weight:500;"><span>💾</span> <span>{final_sz}</span></div></div>'
+            elif state == "copying" or (state == "downloading" and (mode == "download" or not is_deb)):
+                dl_sz = format_size_py(downloaded_b) if total_b > 0 else "--"
+                tot_sz = format_size_py(total_b) if total_b > 0 else "--"
+                size_prog_ssr = f'<div class="queue-size-info" style="margin-top:3px;font-size:11px;"><div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#58a6ff;font-weight:500;"><span>📥</span> <span>{dl_sz} / {tot_sz} ({pct}%)</span></div></div>'
+            elif state == "pausedDL":
+                dl_sz = format_size_py(downloaded_b) if total_b > 0 else "--"
+                tot_sz = format_size_py(total_b) if total_b > 0 else "--"
+                size_prog_ssr = f'<div class="queue-size-info" style="margin-top:3px;font-size:11px;"><div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#d29922;font-weight:500;"><span>⏸️</span> <span>{dl_sz} / {tot_sz} ({pct}%)</span></div></div>'
+            elif state == "error":
+                tot_sz = format_size_py(total_b) if total_b > 0 else "--"
+                size_prog_ssr = f'<div class="queue-size-info" style="margin-top:3px;font-size:11px;"><div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#f85149;font-weight:500;"><span>⚠️</span> <span>{tot_sz}</span></div></div>'
+            else:
+                tot_sz = format_size_py(total_b) if total_b > 0 else "--"
+                size_prog_ssr = f'<div class="queue-size-info" style="margin-top:3px;font-size:11px;"><div class="queue-size-line" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#8b949e;"><span>📦</span> <span>{tot_sz}</span></div></div>'
+
             rows.append(
                 f'<tr>'
                 f'<td class="col-chk"><input type="checkbox" class="row-chk" value="{full_id}" onchange="updateSelection()"></td>'
                 f'<td class="mono col-id"><div>#{ad_id}</div><small title="{full_id}" onclick="copyId(\'{full_id}\')" style="cursor:pointer;color:#8b949e">{short_id} 📋</small></td>'
-                f'<td class="col-name">{name_esc}<div style="color:#8b949e;font-size:11px;margin-top:2px;">{save_path_txt}</div></td>'
+                f'<td class="col-name"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-weight:500;">{name_esc}</span> {size_badge_ssr}</div><div style="color:#8b949e;font-size:11px;margin-top:2px;">{save_path_txt}</div></td>'
                 f'<td class="col-cat"><span class="tag">{cat_esc}</span> {mode_badge}</td>'
                 f'<td class="col-status">'
                 f'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
@@ -1321,6 +1361,7 @@ async def web_dashboard(saved: Optional[str] = None):
                 f'{debrid_badge}'
                 f'</div>'
                 f'<div class="pbar"><div class="pbar-fill {badge_cls}" style="width:{pct}%"></div></div>'
+                f'{size_prog_ssr}'
                 f'</td>'
                 f'<td class="actions col-actions">'
                 f'<button class="btn-sec" onclick="batchAction(\'retry\', [\'{full_id}\'])">Relancer</button> '
@@ -1433,6 +1474,7 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__CHECKED_TG_SCAN_COMPLETE__", "checked" if s.get("telegram_notify_scan_complete", True) else "")
         .replace("__CHECKED_TG_DEAD_LINK__", "checked" if s.get("telegram_notify_dead_link", True) else "")
         .replace("__CHECKED_TG_DL_COMPLETE__", "checked" if s.get("telegram_notify_download_complete", True) else "")
+        .replace("__CHECKED_TG_PROGRESS__", "checked" if s.get("telegram_notify_progress", True) else "")
         .replace("__CHECKED_TG_CLEAN_DEAD__", "checked" if s.get("telegram_notify_clean_dead", True) else "")
         .replace("__CHECKED_TG_ERROR__", "checked" if s.get("telegram_notify_error", True) else "")
     )

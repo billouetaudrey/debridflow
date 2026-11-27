@@ -49,7 +49,23 @@ async def background_worker() -> None:
         dest_dir: Path,
         target_path: Optional[str] = None,
     ) -> None:
+        tg_tracker = None
         try:
+            if mode == "download" and settings_db.get("telegram_enabled") and settings_db.get("telegram_notify_progress", True):
+                try:
+                    from app.notifications import TelegramProgressTracker
+                    total_exp = int(item_snapshot.get("size") or 0)
+                    tg_tracker = TelegramProgressTracker(
+                        name=item_snapshot["name"],
+                        category=item_snapshot.get("category", ""),
+                        mode=mode,
+                        total_expected=total_exp,
+                        loop=asyncio.get_running_loop(),
+                    )
+                    await tg_tracker.init_message()
+                except Exception as tg_err:
+                    logger.debug(f"Worker: init TelegramProgressTracker err: {tg_err}")
+
             def on_progress(bytes_copied: int, total_expected: int, instant_speed: float):
                 if info_hash in torrents_db:
                     torrents_db[info_hash]["dlspeed"] = int(instant_speed)
@@ -57,6 +73,8 @@ async def background_worker() -> None:
                         torrents_db[info_hash]["progress"] = min(0.99, round(bytes_copied / total_expected, 4))
                         rem = max(0, total_expected - bytes_copied)
                         torrents_db[info_hash]["eta"] = int(rem / instant_speed) if instant_speed > 0 else 0
+                if tg_tracker:
+                    tg_tracker.update_progress(bytes_copied, total_expected, instant_speed)
 
             speed_limit_mb = float(settings_db.get("download_speed_limit", 0))
             speed_limit_bytes = int(speed_limit_mb * 1024 * 1024)
@@ -120,19 +138,31 @@ async def background_worker() -> None:
             else:
                 logger.info(f"Symlink(s) créé(s) ({len(mounted_files)} fichier(s)) -> {content_path}")
             try:
-                from app.notifications import notifier
-                await notifier.notify_download_complete(
-                    name=item_snapshot["name"],
-                    category=item_snapshot.get("category", ""),
-                    mode=mode,
-                    size_bytes=total_copied if mode == "download" else item_snapshot.get("size", 0),
-                    duration=round(duration, 1),
-                    avg_speed=avg_speed,
-                )
+                if tg_tracker:
+                    await tg_tracker.complete(
+                        total_copied=total_copied if mode == "download" else item_snapshot.get("size", 0),
+                        duration=round(duration, 1),
+                        avg_speed=avg_speed,
+                    )
+                else:
+                    from app.notifications import notifier
+                    await notifier.notify_download_complete(
+                        name=item_snapshot["name"],
+                        category=item_snapshot.get("category", ""),
+                        mode=mode,
+                        size_bytes=total_copied if mode == "download" else item_snapshot.get("size", 0),
+                        duration=round(duration, 1),
+                        avg_speed=avg_speed,
+                    )
             except Exception as notif_err:
                 logger.warning(f"Worker: erreur notif download complete : {notif_err}")
         except Exception as exc:
             logger.error(f"Erreur transfert ({mode}) pour {item_snapshot.get('name')} : {exc}")
+            if tg_tracker:
+                try:
+                    await tg_tracker.fail(str(exc))
+                except Exception:
+                    pass
             async with state_lock:
                 if info_hash in torrents_db:
                     torrents_db[info_hash]["state"] = "error"
@@ -186,6 +216,21 @@ async def background_worker() -> None:
             speed_limit_mb = float(settings_db.get("download_speed_limit", 0))
             speed_limit_bytes = int(speed_limit_mb * 1024 * 1024)
 
+            tg_tracker = None
+            if settings_db.get("telegram_enabled") and settings_db.get("telegram_notify_progress", True):
+                try:
+                    from app.notifications import TelegramProgressTracker
+                    tg_tracker = TelegramProgressTracker(
+                        name=clean_name,
+                        category=item_snapshot.get("category", ""),
+                        mode="download",
+                        total_expected=total_expected,
+                        loop=asyncio.get_running_loop(),
+                    )
+                    await tg_tracker.init_message()
+                except Exception as tg_err:
+                    logger.debug(f"Worker: init TelegramProgressTracker DDL err: {tg_err}")
+
             async with state_lock:
                 if item_id in torrents_db:
                     torrents_db[item_id]["state"] = "copying"
@@ -201,6 +246,8 @@ async def background_worker() -> None:
                         torrents_db[item_id]["progress"] = min(0.99, round(bytes_copied / total_exp, 4))
                         rem = max(0, total_exp - bytes_copied)
                         torrents_db[item_id]["eta"] = int(rem / instant_speed) if instant_speed > 0 else 0
+                if tg_tracker:
+                    tg_tracker.update_progress(bytes_copied, total_exp, instant_speed)
 
             total_copied, duration = await asyncio.to_thread(
                 download_http_file_chunked,
@@ -250,20 +297,32 @@ async def background_worker() -> None:
             logger.info(f"Fichier DDL téléchargé -> {target_file} (Vitesse moy : {speed_str} en {duration:.1f}s)")
 
             try:
-                from app.notifications import notifier
-                await notifier.notify_download_complete(
-                    name=clean_name,
-                    category=item_snapshot.get("category", ""),
-                    mode="download",
-                    size_bytes=total_copied,
-                    duration=round(duration, 1),
-                    avg_speed=avg_speed,
-                )
+                if tg_tracker:
+                    await tg_tracker.complete(
+                        total_copied=total_copied,
+                        duration=round(duration, 1),
+                        avg_speed=avg_speed,
+                    )
+                else:
+                    from app.notifications import notifier
+                    await notifier.notify_download_complete(
+                        name=clean_name,
+                        category=item_snapshot.get("category", ""),
+                        mode="download",
+                        size_bytes=total_copied,
+                        duration=round(duration, 1),
+                        avg_speed=avg_speed,
+                    )
             except Exception as notif_err:
                 logger.warning(f"Worker: erreur notif download complete DDL : {notif_err}")
 
         except Exception as exc:
             logger.error(f"Erreur téléchargement DDL pour {item_snapshot.get('name')} : {exc}")
+            if tg_tracker:
+                try:
+                    await tg_tracker.fail(str(exc))
+                except Exception:
+                    pass
             async with state_lock:
                 if item_id in torrents_db:
                     torrents_db[item_id]["state"] = "error"
