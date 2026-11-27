@@ -241,6 +241,21 @@
         </div>
       </div>
 
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:8px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:var(--text-bright); display:block; margin-bottom:4px;" data-i18n="lbl_subfolder_mode">📁 Sous-dossier :</label>
+          <select id="ddl-page-subfolder-mode" onchange="onDdlPageSubfolderChange()" style="width:100%; padding:8px; font-size:12px; border-radius:6px; background:var(--bg-card); color:var(--text-bright); border:1px solid var(--border-muted);">
+            <option value="none" data-i18n="opt_subfolder_none">Aucun (racine de la destination)</option>
+            <option value="auto" data-i18n="opt_subfolder_auto">Au même nom que le téléchargement (auto)</option>
+            <option value="manual" data-i18n="opt_subfolder_manual">Personnalisé (manuel)</option>
+          </select>
+        </div>
+        <div id="ddl-page-subfolder-custom-field" style="display:none;">
+          <label style="font-size:12px; font-weight:600; color:var(--text-bright); display:block; margin-bottom:4px;" data-i18n="lbl_subfolder_custom">Nom du sous-dossier :</label>
+          <input type="text" id="ddl-page-subfolder-custom" placeholder="ex: MesFichiers" data-i18n-placeholder="ph_subfolder_custom" style="width:100%; box-sizing:border-box; font-size:12px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);">
+        </div>
+      </div>
+
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <input type="checkbox" id="ddl-page-remember-dest" style="cursor:pointer;">
@@ -685,6 +700,24 @@
                   </label>
                   <input type="text" name="ddl_download_dir" id="ddl_download_dir" value="__DDL_DOWNLOAD_DIR__" required style="font-family:monospace;margin-top:4px;">
                   <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_ddl_download_dir">Chemin complet où sont enregistrés les téléchargements directs hébergeurs (Rapidgator, 1fichier, etc.). Modifiable à tout moment ici ou directement lors de chaque ajout.</small>
+                </div>
+                <div class="field full" style="background:var(--bg-subpanel);padding:12px;border-radius:8px;border:1px solid var(--border-muted);margin-top:12px;">
+                  <label style="font-weight:600;display:flex;align-items:center;gap:6px;" data-i18n="lbl_default_subfolder_title">
+                    <span>📁</span> <span>Sous-dossier par défaut pour les ajouts de téléchargements</span>
+                  </label>
+                  <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:6px;">
+                    <div>
+                      <select name="default_subfolder_mode" id="default_subfolder_mode" onchange="toggleDefaultSubfolderCustom()" style="width:100%;padding:8px;font-size:13px;border-radius:6px;">
+                        <option value="none" __SELECTED_SUBFOLDER_NONE__ data-i18n="opt_subfolder_none">Aucun (racine du dossier de destination)</option>
+                        <option value="auto" __SELECTED_SUBFOLDER_AUTO__ data-i18n="opt_subfolder_auto">Au même nom que le téléchargement (auto)</option>
+                        <option value="manual" __SELECTED_SUBFOLDER_MANUAL__ data-i18n="opt_subfolder_manual">Personnalisé (manuel)</option>
+                      </select>
+                    </div>
+                    <div id="default_subfolder_custom_wrap" style="display:none;">
+                      <input type="text" name="default_subfolder_custom" id="default_subfolder_custom" value="__DEFAULT_SUBFOLDER_CUSTOM__" placeholder="Nom du sous-dossier par défaut" data-i18n-placeholder="ph_subfolder_custom" style="width:100%;padding:8px 10px;font-size:13px;border-radius:6px;">
+                    </div>
+                  </div>
+                  <small class="hint" style="display:block;margin-top:4px;" data-i18n="hint_default_subfolder">Définit si les torrents, magnets ou liens directs doivent être placés dans un sous-dossier automatique ou personnalisé. Modifiable lors de chaque ajout.</small>
                 </div>
               </div>
             </div>
@@ -1243,6 +1276,20 @@
             </select>
           </div>
         </div>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px; font-weight:600;" data-i18n="lbl_subfolder_mode">📁 Sous-dossier :</label>
+            <select id="upload-subfolder-mode" onchange="onUploadSubfolderChange()" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+              <option value="none" data-i18n="opt_subfolder_none">Aucun (racine du service)</option>
+              <option value="auto" data-i18n="opt_subfolder_auto">Au nom du téléchargement (auto)</option>
+              <option value="manual" data-i18n="opt_subfolder_manual">Personnalisé (manuel)</option>
+            </select>
+          </div>
+          <div class="field" id="upload-subfolder-custom-field" style="margin-bottom:0; display:none;">
+            <label style="font-size:12px; font-weight:600;" data-i18n="lbl_subfolder_custom">Nom du sous-dossier :</label>
+            <input type="text" id="upload-subfolder-custom" oninput="onUploadCategoryChange()" placeholder="ex: MonDossier" data-i18n-placeholder="ph_subfolder_custom" style="width:100%; box-sizing:border-box; padding:8px 10px; font-size:13px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);">
+          </div>
+        </div>
         <div id="upload-dest-preview" style="margin-top:8px; font-size:11px; color:var(--text-muted); word-break:break-all;"></div>
       </div>
 
@@ -1258,6 +1305,20 @@
           </select>
         </div>
         <input type="text" id="upload-ddl-dest-path" value="__DDL_DOWNLOAD_DIR__" placeholder="/mnt/virtual/Medias/DL/DDL" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:12px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-size:12px; font-weight:600;" data-i18n="lbl_subfolder_mode">📁 Sous-dossier :</label>
+            <select id="upload-ddl-subfolder-mode" onchange="onUploadDdlSubfolderChange()" style="width:100%; padding:8px; font-size:13px; border-radius:6px;">
+              <option value="none" data-i18n="opt_subfolder_none">Aucun (racine de la destination)</option>
+              <option value="auto" data-i18n="opt_subfolder_auto">Au nom du téléchargement (auto)</option>
+              <option value="manual" data-i18n="opt_subfolder_manual">Personnalisé (manuel)</option>
+            </select>
+          </div>
+          <div class="field" id="upload-ddl-subfolder-custom-field" style="margin-bottom:0; display:none;">
+            <label style="font-size:12px; font-weight:600;" data-i18n="lbl_subfolder_custom">Nom du sous-dossier :</label>
+            <input type="text" id="upload-ddl-subfolder-custom" placeholder="ex: MesFichiers" data-i18n-placeholder="ph_subfolder_custom" style="width:100%; box-sizing:border-box; padding:8px 10px; font-size:13px; border-radius:6px; border:1px solid var(--border-muted); background:var(--bg-card); color:var(--text-bright);">
+          </div>
+        </div>
         <div class="chk-line" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
           <input type="checkbox" id="upload-ddl-remember-dest" style="cursor:pointer;">
           <label for="upload-ddl-remember-dest" style="font-size:12px; cursor:pointer; color:var(--text-bright); font-weight:600;" data-i18n="lbl_remember_ddl_dest">Retenir ce dossier par défaut pour les prochains téléchargements DDL</label>
@@ -1601,13 +1662,17 @@
   </div>
 </div>
 
-<script src="/static/js/i18n.js?v=2.13"></script>
-<script src="/static/js/queue.js?v=2.13"></script>
-<script src="/static/js/settings.js?v=2.13"></script>
-<script src="/static/js/onboarding.js?v=2.13"></script>
-<script src="/static/js/scanner.js?v=2.13"></script>
-<script src="/static/js/finder.js?v=2.13"></script>
-<script src="/static/js/speedtest.js?v=2.13"></script>
-<script src="/static/js/app.js?v=2.13"></script>
+<script>
+  window.OMNISYM_DEFAULT_SUBFOLDER_MODE = "__DEFAULT_SUBFOLDER_MODE__";
+  window.OMNISYM_DEFAULT_SUBFOLDER_CUSTOM = "__DEFAULT_SUBFOLDER_CUSTOM__";
+</script>
+<script src="/static/js/i18n.js?v=2.14"></script>
+<script src="/static/js/queue.js?v=2.14"></script>
+<script src="/static/js/settings.js?v=2.14"></script>
+<script src="/static/js/onboarding.js?v=2.14"></script>
+<script src="/static/js/scanner.js?v=2.14"></script>
+<script src="/static/js/finder.js?v=2.14"></script>
+<script src="/static/js/speedtest.js?v=2.14"></script>
+<script src="/static/js/app.js?v=2.14"></script>
 </body>
 </html>

@@ -1254,6 +1254,21 @@ function openUploadModal(initialTab = 'magnet') {
   if (btnText) btnText.textContent = t('btn_send_debrid');
 
   switchUploadTab(initialTab || 'magnet');
+  const defMode = (window.OMNISYM_DEFAULT_SUBFOLDER_MODE || 'none').toLowerCase();
+  const defCustom = window.OMNISYM_DEFAULT_SUBFOLDER_CUSTOM || '';
+
+  const subModeEl = document.getElementById('upload-subfolder-mode');
+  if (subModeEl) subModeEl.value = defMode;
+  const subCustomEl = document.getElementById('upload-subfolder-custom');
+  if (subCustomEl) subCustomEl.value = defCustom;
+  onUploadSubfolderChange();
+
+  const ddlSubModeEl = document.getElementById('upload-ddl-subfolder-mode');
+  if (ddlSubModeEl) ddlSubModeEl.value = defMode;
+  const ddlSubCustomEl = document.getElementById('upload-ddl-subfolder-custom');
+  if (ddlSubCustomEl) ddlSubCustomEl.value = defCustom;
+  onUploadDdlSubfolderChange();
+
   onUploadCategoryChange();
 
   modal.style.display = 'flex';
@@ -1311,6 +1326,31 @@ function applyDdlPreset(val, targetInputId) {
   input.value = fullPath;
 }
 
+function onUploadSubfolderChange() {
+  const sel = document.getElementById('upload-subfolder-mode');
+  const customField = document.getElementById('upload-subfolder-custom-field');
+  if (sel && customField) {
+    customField.style.display = sel.value === 'manual' ? 'block' : 'none';
+  }
+  onUploadCategoryChange();
+}
+
+function onUploadDdlSubfolderChange() {
+  const sel = document.getElementById('upload-ddl-subfolder-mode');
+  const customField = document.getElementById('upload-ddl-subfolder-custom-field');
+  if (sel && customField) {
+    customField.style.display = sel.value === 'manual' ? 'block' : 'none';
+  }
+}
+
+function onDdlPageSubfolderChange() {
+  const sel = document.getElementById('ddl-page-subfolder-mode');
+  const customField = document.getElementById('ddl-page-subfolder-custom-field');
+  if (sel && customField) {
+    customField.style.display = sel.value === 'manual' ? 'block' : 'none';
+  }
+}
+
 function onUploadCategoryChange() {
   const catSel = document.getElementById('upload-category');
   const preview = document.getElementById('upload-dest-preview');
@@ -1323,7 +1363,19 @@ function onUploadCategoryChange() {
   const mode = opt.getAttribute('data-mode') || 'download';
   const baseInput = document.getElementById('download_base_dir');
   const baseDir = (baseInput ? baseInput.value.trim() : '') || '/mnt/virtual/Medias/DL';
-  const target = sub.startsWith('/') ? sub : `${baseDir.replace(/\/+$/, '')}/${sub}`;
+  let target = sub.startsWith('/') ? sub : `${baseDir.replace(/\/+$/, '')}/${sub}`;
+
+  const subModeEl = document.getElementById('upload-subfolder-mode');
+  const subMode = subModeEl ? subModeEl.value : 'none';
+  const customEl = document.getElementById('upload-subfolder-custom');
+  const customVal = customEl ? customEl.value.trim() : '';
+
+  if (subMode === 'auto') {
+    target = `${target.replace(/\/+$/, '')}/<${t('preview_subfolder_auto') || 'nom_du_téléchargement'}>`;
+  } else if (subMode === 'manual' && customVal) {
+    target = `${target.replace(/\/+$/, '')}/${customVal}`;
+  }
+
   const modeTag = mode === 'download' ? `<span class="tag dl">${t('tag_dl')}</span>` : `<span class="tag sym">${t('tag_sym')}</span>`;
 
   preview.innerHTML = `<span style="font-weight:600;color:var(--text-bright);">${t('lbl_destination')}</span> <code>${esc(target)}</code> <span style="margin-left:6px;">${modeTag}</span>`;
@@ -1401,10 +1453,18 @@ async function submitTorrentUpload() {
 
   if (currentUploadTab === 'magnet') {
     fd.append('magnet', magnetVal);
+    const subModeEl = document.getElementById('upload-subfolder-mode');
+    const customEl = document.getElementById('upload-subfolder-custom');
+    if (subModeEl) fd.append('subfolder_mode', subModeEl.value);
+    if (customEl && customEl.value.trim()) fd.append('subfolder_custom', customEl.value.trim());
   } else if (currentUploadTab === 'file') {
     for (const file of selectedTorrentFiles) {
       fd.append('torrent_files', file, file.name);
     }
+    const subModeEl = document.getElementById('upload-subfolder-mode');
+    const customEl = document.getElementById('upload-subfolder-custom');
+    if (subModeEl) fd.append('subfolder_mode', subModeEl.value);
+    if (customEl && customEl.value.trim()) fd.append('subfolder_custom', customEl.value.trim());
   } else if (currentUploadTab === 'ddl') {
     fd.append('ddl_links', ddlVal);
     if (ddlPwd && ddlPwd.value.trim()) fd.append('ddl_password', ddlPwd.value.trim());
@@ -1420,6 +1480,10 @@ async function submitTorrentUpload() {
       const cfgDest = document.getElementById('ddl_download_dir');
       if (cfgDest) cfgDest.value = ddlDestInput.value.trim();
     }
+    const ddlSubModeEl = document.getElementById('upload-ddl-subfolder-mode');
+    const ddlCustomEl = document.getElementById('upload-ddl-subfolder-custom');
+    if (ddlSubModeEl) fd.append('subfolder_mode', ddlSubModeEl.value);
+    if (ddlCustomEl && ddlCustomEl.value.trim()) fd.append('subfolder_custom', ddlCustomEl.value.trim());
   }
 
   if (submitBtn) submitBtn.disabled = true;
@@ -1488,6 +1552,10 @@ async function submitDdlPageUpload() {
   if (destEl && destEl.value.trim()) {
     fd.append('destination', destEl.value.trim());
   }
+  const ddlPageSubModeEl = document.getElementById('ddl-page-subfolder-mode');
+  const ddlPageCustomEl = document.getElementById('ddl-page-subfolder-custom');
+  if (ddlPageSubModeEl) fd.append('subfolder_mode', ddlPageSubModeEl.value);
+  if (ddlPageCustomEl && ddlPageCustomEl.value.trim()) fd.append('subfolder_custom', ddlPageCustomEl.value.trim());
   if (remEl && remEl.checked) {
     fd.append('remember_default', 'true');
     const modalDest = document.getElementById('upload-ddl-dest-path');

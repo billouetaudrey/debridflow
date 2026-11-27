@@ -8,7 +8,7 @@ from fastapi import APIRouter, Body, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.alldebrid import alldebrid_upload_file, alldebrid_upload_magnet
-from app.bencode import parse_magnet_uri, parse_torrent_bytes, sanitize_filename
+from app.bencode import get_subfolder_name, parse_magnet_uri, parse_torrent_bytes, sanitize_filename
 from app.config import logger
 from app.finder import (
     AVAILABLE_ENGINES,
@@ -139,6 +139,13 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
     save_dir = configured_dir
     save_dir.mkdir(parents=True, exist_ok=True)
 
+    sub_mode = (payload.get("subfolder_mode") or settings_db.get("default_subfolder_mode", "none")).strip().lower()
+    if sub_mode not in ("none", "auto", "manual"):
+        sub_mode = "none"
+    clean_custom = sanitize_filename(str(payload.get("subfolder_custom") or payload.get("custom_subfolder") or "").strip())
+    if sub_mode == "manual" and not clean_custom:
+        clean_custom = sanitize_filename(settings_db.get("default_subfolder_custom", "").strip())
+
     added_items: List[Dict[str, Any]] = []
     errors: List[str] = []
 
@@ -163,6 +170,15 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                     if real_hash:
                         info_hash = real_hash
 
+                    if sub_mode == "manual" and clean_custom:
+                        effective_save_dir = save_dir / clean_custom
+                    elif sub_mode == "auto":
+                        sub_name = get_subfolder_name(ad_name)
+                        effective_save_dir = save_dir / sub_name
+                    else:
+                        effective_save_dir = save_dir
+                    effective_save_dir.mkdir(parents=True, exist_ok=True)
+
                     async with state_lock:
                         torrents_db[info_hash] = {
                             "hash": info_hash,
@@ -171,8 +187,8 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                             "magnet_uri": f"magnet:?xt=urn:btih:{info_hash}&dn={ad_name}",
                             "category": cat,
                             "transfer_mode": transfer_mode,
-                            "save_path": str(save_dir),
-                            "content_path": str(save_dir / sanitize_filename(ad_name)),
+                            "save_path": str(effective_save_dir),
+                            "content_path": str(effective_save_dir / sanitize_filename(ad_name)),
                             "linked_paths": [],
                             "size": int(ad_data.get("size") or 0),
                             "progress": 0.0,
@@ -182,6 +198,8 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                             "deleted_on_ad": False,
                             "missing_count": 0,
                             "is_ddl": False,
+                            "subfolder_mode": sub_mode,
+                            "custom_subfolder": clean_custom,
                         }
                         save_state()
                     added_items.append({"hash": info_hash, "name": ad_name, "type": "magnet"})
@@ -203,6 +221,15 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                     if real_hash:
                         info_hash = real_hash
 
+                    if sub_mode == "manual" and clean_custom:
+                        effective_save_dir = save_dir / clean_custom
+                    elif sub_mode == "auto":
+                        sub_name = get_subfolder_name(ad_name)
+                        effective_save_dir = save_dir / sub_name
+                    else:
+                        effective_save_dir = save_dir
+                    effective_save_dir.mkdir(parents=True, exist_ok=True)
+
                     async with state_lock:
                         torrents_db[info_hash] = {
                             "hash": info_hash,
@@ -211,8 +238,8 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                             "magnet_uri": f"magnet:?xt=urn:btih:{info_hash}&dn={ad_name}",
                             "category": cat,
                             "transfer_mode": transfer_mode,
-                            "save_path": str(save_dir),
-                            "content_path": str(save_dir / sanitize_filename(ad_name)),
+                            "save_path": str(effective_save_dir),
+                            "content_path": str(effective_save_dir / sanitize_filename(ad_name)),
                             "linked_paths": [],
                             "size": int(ad_data.get("size") or 0),
                             "progress": 0.0,
@@ -222,6 +249,8 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                             "deleted_on_ad": False,
                             "missing_count": 0,
                             "is_ddl": False,
+                            "subfolder_mode": sub_mode,
+                            "custom_subfolder": clean_custom,
                         }
                         save_state()
                     added_items.append({"hash": info_hash, "name": ad_name, "type": "torrent"})
@@ -230,22 +259,31 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                 else:
                     info_hash = hashlib.sha1(raw_url.encode("utf-8")).hexdigest()
                     raw_fname = Path(raw_url.split("?")[0]).name or hint_name or "fichier_ddl"
+                    clean_item_name = sanitize_filename(hint_name or raw_fname) or "fichier_ddl"
                     ddl_cfg_dir = settings_db.get("ddl_download_dir")
                     if ddl_cfg_dir and cat in ("direct", "torrent-direct", ""):
                         ddl_save_dir = Path(ddl_cfg_dir)
                     else:
                         ddl_save_dir = save_dir
-                    ddl_save_dir.mkdir(parents=True, exist_ok=True)
+
+                    if sub_mode == "manual" and clean_custom:
+                        effective_ddl_dir = ddl_save_dir / clean_custom
+                    elif sub_mode == "auto":
+                        sub_name = get_subfolder_name(clean_item_name)
+                        effective_ddl_dir = ddl_save_dir / sub_name
+                    else:
+                        effective_ddl_dir = ddl_save_dir
+                    effective_ddl_dir.mkdir(parents=True, exist_ok=True)
 
                     async with state_lock:
                         torrents_db[info_hash] = {
                             "hash": info_hash,
                             "ad_id": "DDL",
-                            "name": sanitize_filename(hint_name or raw_fname) or "fichier_ddl",
+                            "name": clean_item_name,
                             "category": cat,
                             "transfer_mode": "download",
-                            "save_path": str(ddl_save_dir),
-                            "content_path": str(ddl_save_dir / sanitize_filename(raw_fname)),
+                            "save_path": str(effective_ddl_dir),
+                            "content_path": str(effective_ddl_dir / sanitize_filename(raw_fname)),
                             "linked_paths": [],
                             "size": 0,
                             "progress": 0.0,
@@ -259,6 +297,8 @@ async def api_finder_download(payload: Dict[str, Any] = Body(...)):
                             "password": "",
                             "download_url": "",
                             "error_msg": "",
+                            "subfolder_mode": sub_mode,
+                            "custom_subfolder": clean_custom,
                         }
                         save_state()
                     added_items.append({"hash": info_hash, "name": hint_name or raw_fname, "type": "ddl"})

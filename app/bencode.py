@@ -88,3 +88,25 @@ def parse_magnet_uri(magnet: str) -> Tuple[str, str]:
 def sanitize_filename(name: str) -> str:
     """Nettoie les caractères interdits pour les systèmes de fichiers Linux / Windows."""
     return re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name).strip()
+
+
+def get_subfolder_name(name: str) -> str:
+    """
+    Retourne un nom de sous-dossier propre basé sur le nom du fichier / release / torrent.
+    Si le nom se termine par une extension de fichier connue (.mkv, .mp4, .zip, etc.),
+    celle-ci est retirée afin d'obtenir un nom de dossier élégant.
+    """
+    clean = sanitize_filename(name).strip()
+    if not clean:
+        return "telechargement"
+    from pathlib import Path
+    p = Path(clean)
+    common_exts = {
+        ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".m4v", ".ts", ".webm",
+        ".rar", ".zip", ".7z", ".tar", ".gz", ".iso", ".exe", ".pdf",
+        ".mp3", ".flac", ".wav", ".aac", ".ogg"
+    }
+    if p.suffix.lower() in common_exts and p.stem:
+        return p.stem
+    return clean
+

@@ -12,7 +12,7 @@ from app.alldebrid import (
     alldebrid_unlock_link,
     check_alldebrid_api_health,
 )
-from app.bencode import sanitize_filename
+from app.bencode import get_subfolder_name, sanitize_filename
 from app.config import logger
 from app.state import (
     api_health,
@@ -88,6 +88,11 @@ async def background_worker() -> None:
                 await alldebrid_delete_magnet(http_client, ad_id)
                 deleted_on_ad = True
 
+            save_path_final = str(dest_dir)
+            if item_snapshot.get("subfolder_mode") in ("auto", "manual") and content_path:
+                c_p = Path(content_path)
+                save_path_final = str(c_p.parent if c_p.is_file() else c_p)
+
             async with state_lock:
                 if info_hash in torrents_db:
                     torrents_db[info_hash].update(
@@ -99,7 +104,7 @@ async def background_worker() -> None:
                             "avg_speed": avg_speed,
                             "state": "pausedUP",
                             "transfer_mode": mode,
-                            "save_path": str(dest_dir),
+                            "save_path": save_path_final,
                             "content_path": content_path,
                             "linked_paths": linked_paths,
                             "completion_on": now_done,
@@ -154,11 +159,24 @@ async def background_worker() -> None:
         dest_dir: Path,
     ) -> None:
         try:
-            dest_dir.mkdir(parents=True, exist_ok=True)
             raw_name = item_snapshot.get("name") or "fichier"
             clean_name = sanitize_filename(raw_name) or "fichier"
-            target_file = dest_dir / clean_name
-            tmp_file = dest_dir / f".{clean_name}.{item_id[:8]}.part"
+
+            subfolder_mode = (item_snapshot.get("subfolder_mode") or "none").strip().lower()
+            custom_subfolder = (item_snapshot.get("custom_subfolder") or "").strip()
+
+            if subfolder_mode == "auto":
+                sub_name = get_subfolder_name(clean_name)
+                target_dir = dest_dir if dest_dir.name == sub_name else (dest_dir / sub_name)
+            elif subfolder_mode == "manual":
+                clean_sub = sanitize_filename(custom_subfolder) or get_subfolder_name(clean_name)
+                target_dir = dest_dir if dest_dir.name == clean_sub else (dest_dir / clean_sub)
+            else:
+                target_dir = dest_dir
+
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_file = target_dir / clean_name
+            tmp_file = target_dir / f".{clean_name}.{item_id[:8]}.part"
             download_url = item_snapshot.get("download_url")
 
             if not download_url:
@@ -171,7 +189,7 @@ async def background_worker() -> None:
             async with state_lock:
                 if item_id in torrents_db:
                     torrents_db[item_id]["state"] = "copying"
-                    torrents_db[item_id]["save_path"] = str(dest_dir)
+                    torrents_db[item_id]["save_path"] = str(target_dir)
                     save_state()
 
             logger.info(f"Début téléchargement DDL -> {target_file} (Taille : {total_expected} octets)")
@@ -216,7 +234,7 @@ async def background_worker() -> None:
                             "avg_speed": avg_speed,
                             "state": "pausedUP",
                             "transfer_mode": "download",
-                            "save_path": str(dest_dir),
+                            "save_path": str(target_dir),
                             "content_path": str(target_file),
                             "completion_on": now_done,
                             "error_msg": "",

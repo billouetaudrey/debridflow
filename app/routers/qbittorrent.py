@@ -14,7 +14,7 @@ from app.alldebrid import (
     alldebrid_upload_file,
     alldebrid_upload_magnet,
 )
-from app.bencode import parse_magnet_uri, parse_torrent_bytes, sanitize_filename
+from app.bencode import get_subfolder_name, parse_magnet_uri, parse_torrent_bytes, sanitize_filename
 from app.config import logger
 from app.state import (
     categories_db,
@@ -98,11 +98,30 @@ async def qb_add_torrent(
     category: Optional[str] = Form("tv-sonarr"),
     savepath: Optional[str] = Form(None),
     torrents: Optional[List[UploadFile]] = File(None),
+    root_folder: Optional[str] = Form(None),
+    subfolder_mode: Optional[str] = Form(None),
+    subfolder_custom: Optional[str] = Form(None),
 ):
     cat = (category or "tv-sonarr").strip()
     mode, configured_dir = resolve_service(cat)
     save_dir = Path(savepath.strip()) if (savepath and savepath.strip()) else configured_dir
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    if subfolder_mode:
+        sub_mode = subfolder_mode.strip().lower()
+    elif root_folder is not None and str(root_folder).lower() in ("true", "1"):
+        sub_mode = "auto"
+    elif root_folder is not None and str(root_folder).lower() in ("false", "0"):
+        sub_mode = "none"
+    else:
+        sub_mode = settings_db.get("default_subfolder_mode", "none").strip().lower()
+
+    if sub_mode not in ("none", "auto", "manual"):
+        sub_mode = "none"
+
+    clean_custom = sanitize_filename(subfolder_custom.strip()) if subfolder_custom else ""
+    if sub_mode == "manual" and not clean_custom:
+        clean_custom = sanitize_filename(settings_db.get("default_subfolder_custom", "").strip())
 
     async with httpx.AsyncClient() as client:
         if urls:
@@ -111,6 +130,16 @@ async def qb_add_torrent(
                 ad_data = await alldebrid_upload_magnet(client, raw_url)
                 ad_id = int(ad_data["id"])
                 ad_name = ad_data.get("name") or name
+
+                if sub_mode == "manual" and clean_custom:
+                    effective_save_dir = save_dir / clean_custom
+                elif sub_mode == "auto":
+                    sub_name = get_subfolder_name(ad_name)
+                    effective_save_dir = save_dir / sub_name
+                else:
+                    effective_save_dir = save_dir
+                effective_save_dir.mkdir(parents=True, exist_ok=True)
+
                 async with state_lock:
                     torrents_db[info_hash] = {
                         "hash": info_hash,
@@ -119,8 +148,8 @@ async def qb_add_torrent(
                         "magnet_uri": raw_url,
                         "category": cat,
                         "transfer_mode": mode,
-                        "save_path": str(save_dir),
-                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "save_path": str(effective_save_dir),
+                        "content_path": str(effective_save_dir / sanitize_filename(ad_name)),
                         "linked_paths": [],
                         "size": int(ad_data.get("size") or 0),
                         "progress": 0.0,
@@ -133,9 +162,11 @@ async def qb_add_torrent(
                         "debrid_cached": bool(ad_data.get("ready", False)),
                         "seeders": 0,
                         "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                        "subfolder_mode": sub_mode,
+                        "custom_subfolder": clean_custom,
                     }
                     save_state()
-                logger.info(f"Magnet ajouté [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
+                logger.info(f"Magnet ajouté [{cat} | {mode} -> {effective_save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
 
         if torrents:
             for up_file in torrents:
@@ -147,6 +178,16 @@ async def qb_add_torrent(
                 real_hash = str(ad_data.get("hash") or "").strip().lower()
                 if real_hash:
                     info_hash = real_hash
+
+                if sub_mode == "manual" and clean_custom:
+                    effective_save_dir = save_dir / clean_custom
+                elif sub_mode == "auto":
+                    sub_name = get_subfolder_name(ad_name)
+                    effective_save_dir = save_dir / sub_name
+                else:
+                    effective_save_dir = save_dir
+                effective_save_dir.mkdir(parents=True, exist_ok=True)
+
                 async with state_lock:
                     torrents_db[info_hash] = {
                         "hash": info_hash,
@@ -155,8 +196,8 @@ async def qb_add_torrent(
                         "magnet_uri": f"magnet:?xt=urn:btih:{info_hash}&dn={ad_name}",
                         "category": cat,
                         "transfer_mode": mode,
-                        "save_path": str(save_dir),
-                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "save_path": str(effective_save_dir),
+                        "content_path": str(effective_save_dir / sanitize_filename(ad_name)),
                         "linked_paths": [],
                         "size": int(ad_data.get("size") or 0),
                         "progress": 0.0,
@@ -169,9 +210,11 @@ async def qb_add_torrent(
                         "debrid_cached": bool(ad_data.get("ready", False)),
                         "seeders": 0,
                         "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                        "subfolder_mode": sub_mode,
+                        "custom_subfolder": clean_custom,
                     }
                     save_state()
-                logger.info(f"Fichier .torrent ajouté [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
+                logger.info(f"Fichier .torrent ajouté [{cat} | {mode} -> {effective_save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
 
     return PlainTextResponse("Ok.")
 

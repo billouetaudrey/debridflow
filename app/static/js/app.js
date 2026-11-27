@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const activeSubPage = sessionStorage.getItem('pyrdt_settings_page') || 'alldebrid';
   showSettingsPage(activeSubPage);
 
+  const defMode = (window.OMNISYM_DEFAULT_SUBFOLDER_MODE || 'none').toLowerCase();
+  const defCustom = window.OMNISYM_DEFAULT_SUBFOLDER_CUSTOM || '';
+  const ddlPageModeEl = document.getElementById('ddl-page-subfolder-mode');
+  if (ddlPageModeEl) ddlPageModeEl.value = defMode;
+  const ddlPageCustomEl = document.getElementById('ddl-page-subfolder-custom');
+  if (ddlPageCustomEl) ddlPageCustomEl.value = defCustom;
+  if (typeof onDdlPageSubfolderChange === 'function') onDdlPageSubfolderChange();
+
   if (urlParams.has('saved')) {
     showTab('settings');
     try {

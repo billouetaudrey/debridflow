@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import httpx
 
-from app.bencode import sanitize_filename
+from app.bencode import get_subfolder_name, sanitize_filename
 from app.config import logger
 from app.state import get_allowed_exts, get_ignored_exts, settings_db
 
@@ -237,6 +237,20 @@ def materialize_files_for_torrent(
 
     total_expected_bytes = int(entry.get("size") or sum(f.stat().st_size for f in source_files if f.exists()))
 
+    subfolder_mode = (entry.get("subfolder_mode") or "none").strip().lower()
+    custom_subfolder = (entry.get("custom_subfolder") or entry.get("subfolder") or "").strip()
+
+    if subfolder_mode == "auto":
+        sub_name = get_subfolder_name(entry["name"])
+        target_dir = dest_dir if dest_dir.name == sub_name else (dest_dir / sub_name)
+    elif subfolder_mode == "manual":
+        clean_sub = sanitize_filename(custom_subfolder) or get_subfolder_name(entry["name"])
+        target_dir = dest_dir if dest_dir.name == clean_sub else (dest_dir / clean_sub)
+    else:
+        target_dir = dest_dir
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+
     def _transfer(src: Path, dst: Path, already_copied: int) -> int:
         dst.parent.mkdir(parents=True, exist_ok=True)
         # Si le fichier de destination existe déjà et possède exactement la même taille que la source, il est complet
@@ -283,15 +297,33 @@ def materialize_files_for_torrent(
             os.symlink(src, dst)
             return 0
 
+    if subfolder_mode in ("auto", "manual"):
+        if len(source_files) == 1:
+            src = source_files[0]
+            dst = target_dir / src.name
+            bytes_copied = _transfer(src, dst, 0)
+            total_copied_bytes += bytes_copied
+            duration = max(0.001, time.time() - t_transfer_start)
+            return str(dst), [str(dst)], total_copied_bytes, duration
+
+        for src in source_files:
+            dst = target_dir / src.name
+            bytes_copied = _transfer(src, dst, total_copied_bytes)
+            total_copied_bytes += bytes_copied
+            created_paths.append(str(dst))
+
+        duration = max(0.001, time.time() - t_transfer_start)
+        return str(target_dir), created_paths, total_copied_bytes, duration
+
     if len(source_files) == 1:
         src = source_files[0]
-        dst = dest_dir / src.name
+        dst = target_dir / src.name
         bytes_copied = _transfer(src, dst, 0)
         total_copied_bytes += bytes_copied
         duration = max(0.001, time.time() - t_transfer_start)
         return str(dst), [str(dst)], total_copied_bytes, duration
 
-    release_dir = dest_dir / clean_root_name
+    release_dir = target_dir / clean_root_name
     release_dir.mkdir(parents=True, exist_ok=True)
     for src in source_files:
         dst = release_dir / src.name
@@ -314,7 +346,14 @@ def remove_local_artifacts(item: Dict[str, Any]) -> None:
     cpath = Path(item.get("content_path", ""))
     save_root = str(item.get("save_path") or settings_db["download_base_dir"])
     if cpath.is_symlink() or cpath.is_file():
+        parent_dir = cpath.parent
         cpath.unlink(missing_ok=True)
+        try:
+            if parent_dir != Path(save_root) and str(parent_dir).startswith(save_root) and parent_dir.is_dir():
+                if not any(parent_dir.iterdir()):
+                    parent_dir.rmdir()
+        except OSError:
+            pass
     elif cpath.is_dir() and str(cpath).startswith(save_root) and str(cpath) != save_root:
         for child in cpath.iterdir():
             if child.is_symlink() or child.is_file():

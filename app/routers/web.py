@@ -17,7 +17,7 @@ from app.alldebrid import (
     alldebrid_upload_magnet,
     check_alldebrid_api_health,
 )
-from app.bencode import parse_magnet_uri, parse_torrent_bytes, sanitize_filename
+from app.bencode import get_subfolder_name, parse_magnet_uri, parse_torrent_bytes, sanitize_filename
 from app.config import DEFAULT_SERVICES, DEFAULT_SETTINGS, logger
 from app.providers import SUPPORTED_PROVIDERS, get_provider, normalize_provider_name
 from app.state import (
@@ -168,7 +168,21 @@ async def api_force_sync():
                                 ad_status_str = str(ad_info.get("status") or "").strip()
 
                                 if status_code == 4:
-                                    torrents_db[info_hash]["name"] = ad_filename
+                                    if ad_filename and torrents_db[info_hash].get("name") != ad_filename:
+                                        torrents_db[info_hash]["name"] = ad_filename
+                                        if (
+                                            torrents_db[info_hash].get("subfolder_mode") == "auto"
+                                            and torrents_db[info_hash].get("state") not in ("copying", "pausedUP", "stalledUP")
+                                        ):
+                                            cat = torrents_db[info_hash].get("category", "")
+                                            _, base_svc_dir = resolve_service(cat)
+                                            sub_n = get_subfolder_name(ad_filename)
+                                            new_sdir = base_svc_dir / sub_n
+                                            new_sdir.mkdir(parents=True, exist_ok=True)
+                                            torrents_db[info_hash]["save_path"] = str(new_sdir)
+                                            torrents_db[info_hash]["content_path"] = str(new_sdir / sanitize_filename(ad_filename))
+                                    else:
+                                        torrents_db[info_hash]["name"] = ad_filename
                                     torrents_db[info_hash]["size"] = ad_size
                                     torrents_db[info_hash]["progress"] = 0.99
                                     torrents_db[info_hash]["is_debrided"] = True
@@ -180,7 +194,21 @@ async def api_force_sync():
                                     progress = (downloaded / ad_size) if ad_size > 0 else 0.1
                                     seeders = int(ad_info.get("seeders") or 0)
                                     cloud_speed = int(ad_info.get("downloadSpeed") or 0)
-                                    torrents_db[info_hash]["name"] = ad_filename
+                                    if ad_filename and torrents_db[info_hash].get("name") != ad_filename:
+                                        torrents_db[info_hash]["name"] = ad_filename
+                                        if (
+                                            torrents_db[info_hash].get("subfolder_mode") == "auto"
+                                            and torrents_db[info_hash].get("state") not in ("copying", "pausedUP", "stalledUP")
+                                        ):
+                                            cat = torrents_db[info_hash].get("category", "")
+                                            _, base_svc_dir = resolve_service(cat)
+                                            sub_n = get_subfolder_name(ad_filename)
+                                            new_sdir = base_svc_dir / sub_n
+                                            new_sdir.mkdir(parents=True, exist_ok=True)
+                                            torrents_db[info_hash]["save_path"] = str(new_sdir)
+                                            torrents_db[info_hash]["content_path"] = str(new_sdir / sanitize_filename(ad_filename))
+                                    else:
+                                        torrents_db[info_hash]["name"] = ad_filename
                                     torrents_db[info_hash]["size"] = ad_size
                                     torrents_db[info_hash]["progress"] = min(0.99, round(progress, 4))
                                     torrents_db[info_hash]["is_debrided"] = False
@@ -229,6 +257,8 @@ async def api_upload_torrent(
     ddl_password: Optional[str] = Form(None),
     ddl_destination: Optional[str] = Form(None),
     ddl_remember_default: Optional[str] = Form(None),
+    subfolder_mode: Optional[str] = Form(None),
+    subfolder_custom: Optional[str] = Form(None),
 ):
     api_key = settings_db.get("api_key", "").strip()
     if not api_key:
@@ -244,6 +274,13 @@ async def api_upload_torrent(
         mode = transfer_mode
     save_dir = configured_dir
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    sub_mode = (subfolder_mode or settings_db.get("default_subfolder_mode", "none")).strip().lower()
+    if sub_mode not in ("none", "auto", "manual"):
+        sub_mode = "none"
+    clean_custom = sanitize_filename(subfolder_custom.strip()) if subfolder_custom else ""
+    if sub_mode == "manual" and not clean_custom:
+        clean_custom = sanitize_filename(settings_db.get("default_subfolder_custom", "").strip())
 
     magnet_list: List[str] = []
     if magnet:
@@ -294,14 +331,25 @@ async def api_upload_torrent(
             for raw_url in ddl_list:
                 info_hash = hashlib.sha1(raw_url.encode("utf-8")).hexdigest()
                 raw_fname = Path(raw_url.split("?")[0]).name or "fichier_ddl"
+                clean_item_name = sanitize_filename(raw_fname) or "fichier_ddl"
+
+                if sub_mode == "manual" and clean_custom:
+                    effective_ddl_dir = ddl_save_dir / clean_custom
+                elif sub_mode == "auto":
+                    sub_name = get_subfolder_name(clean_item_name)
+                    effective_ddl_dir = ddl_save_dir / sub_name
+                else:
+                    effective_ddl_dir = ddl_save_dir
+                effective_ddl_dir.mkdir(parents=True, exist_ok=True)
+
                 torrents_db[info_hash] = {
                     "hash": info_hash,
                     "ad_id": "DDL",
-                    "name": sanitize_filename(raw_fname) or "fichier_ddl",
+                    "name": clean_item_name,
                     "category": cat,
                     "transfer_mode": "download",
-                    "save_path": str(ddl_save_dir),
-                    "content_path": str(ddl_save_dir / sanitize_filename(raw_fname)),
+                    "save_path": str(effective_ddl_dir),
+                    "content_path": str(effective_ddl_dir / clean_item_name),
                     "linked_paths": [],
                     "size": 0,
                     "progress": 0.0,
@@ -319,6 +367,8 @@ async def api_upload_torrent(
                     "debrid_cached": False,
                     "seeders": 0,
                     "cloud_status": "En attente de débridage",
+                    "subfolder_mode": sub_mode,
+                    "custom_subfolder": clean_custom,
                 }
                 added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
             save_state()
@@ -337,6 +387,15 @@ async def api_upload_torrent(
                 if real_hash:
                     info_hash = real_hash
 
+                if sub_mode == "manual" and clean_custom:
+                    effective_save_dir = save_dir / clean_custom
+                elif sub_mode == "auto":
+                    sub_name = get_subfolder_name(ad_name)
+                    effective_save_dir = save_dir / sub_name
+                else:
+                    effective_save_dir = save_dir
+                effective_save_dir.mkdir(parents=True, exist_ok=True)
+
                 torrent_mag_uri = raw_url
                 async with state_lock:
                     torrents_db[info_hash] = {
@@ -346,8 +405,8 @@ async def api_upload_torrent(
                         "magnet_uri": torrent_mag_uri,
                         "category": cat,
                         "transfer_mode": mode,
-                        "save_path": str(save_dir),
-                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "save_path": str(effective_save_dir),
+                        "content_path": str(effective_save_dir / sanitize_filename(ad_name)),
                         "linked_paths": [],
                         "size": int(ad_data.get("size") or 0),
                         "progress": 0.0,
@@ -360,9 +419,11 @@ async def api_upload_torrent(
                         "debrid_cached": bool(ad_data.get("ready", False)),
                         "seeders": 0,
                         "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                        "subfolder_mode": sub_mode,
+                        "custom_subfolder": clean_custom,
                     }
                     save_state()
-                logger.info(f"Magnet ajouté manuellement [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
+                logger.info(f"Magnet ajouté manuellement [{cat} | {mode} -> {effective_save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
                 added_items.append({"name": ad_name, "hash": info_hash, "id": str(ad_id)})
             except Exception as exc:
                 logger.error(f"Erreur upload magnet manuel ({raw_url[:40]}...) : {exc}")
@@ -384,6 +445,15 @@ async def api_upload_torrent(
                 if real_hash:
                     info_hash = real_hash
 
+                if sub_mode == "manual" and clean_custom:
+                    effective_save_dir = save_dir / clean_custom
+                elif sub_mode == "auto":
+                    sub_name = get_subfolder_name(ad_name)
+                    effective_save_dir = save_dir / sub_name
+                else:
+                    effective_save_dir = save_dir
+                effective_save_dir.mkdir(parents=True, exist_ok=True)
+
                 synthetic_magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={ad_name}"
                 async with state_lock:
                     torrents_db[info_hash] = {
@@ -393,8 +463,8 @@ async def api_upload_torrent(
                         "magnet_uri": synthetic_magnet,
                         "category": cat,
                         "transfer_mode": mode,
-                        "save_path": str(save_dir),
-                        "content_path": str(save_dir / sanitize_filename(ad_name)),
+                        "save_path": str(effective_save_dir),
+                        "content_path": str(effective_save_dir / sanitize_filename(ad_name)),
                         "linked_paths": [],
                         "size": int(ad_data.get("size") or 0),
                         "progress": 0.0,
@@ -407,9 +477,11 @@ async def api_upload_torrent(
                         "debrid_cached": bool(ad_data.get("ready", False)),
                         "seeders": 0,
                         "cloud_status": "Débridé (Cache)" if ad_data.get("ready") else "En attente débridage",
+                        "subfolder_mode": sub_mode,
+                        "custom_subfolder": clean_custom,
                     }
                     save_state()
-                logger.info(f"Fichier .torrent ajouté manuellement [{cat} | {mode} -> {save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
+                logger.info(f"Fichier .torrent ajouté manuellement [{cat} | {mode} -> {effective_save_dir}] ID={ad_id} ({info_hash[:8]}) : {ad_name}")
                 added_items.append({"name": ad_name, "hash": info_hash, "id": str(ad_id)})
             except Exception as exc:
                 logger.error(f"Erreur upload .torrent manuel ({up_file.filename}) : {exc}")
@@ -438,6 +510,8 @@ async def api_upload_ddl(
     category: Optional[str] = Form("torrent-direct"),
     destination: Optional[str] = Form(None),
     remember_default: Optional[str] = Form(None),
+    subfolder_mode: Optional[str] = Form(None),
+    subfolder_custom: Optional[str] = Form(None),
 ):
     api_key = settings_db.get("api_key", "").strip()
     if not api_key:
@@ -454,6 +528,13 @@ async def api_upload_ddl(
         custom_ddl_dir = settings_db.get("ddl_download_dir")
         save_dir = Path(custom_ddl_dir) if custom_ddl_dir else configured_dir
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    sub_mode = (subfolder_mode or settings_db.get("default_subfolder_mode", "none")).strip().lower()
+    if sub_mode not in ("none", "auto", "manual"):
+        sub_mode = "none"
+    clean_custom = sanitize_filename(subfolder_custom.strip()) if subfolder_custom else ""
+    if sub_mode == "manual" and not clean_custom:
+        clean_custom = sanitize_filename(settings_db.get("default_subfolder_custom", "").strip())
 
     if str(remember_default).lower() in ("true", "1", "on"):
         async with state_lock:
@@ -479,14 +560,25 @@ async def api_upload_ddl(
         for raw_url in ddl_list:
             info_hash = hashlib.sha1(raw_url.encode("utf-8")).hexdigest()
             raw_fname = Path(raw_url.split("?")[0]).name or "fichier_ddl"
+            clean_item_name = sanitize_filename(raw_fname) or "fichier_ddl"
+
+            if sub_mode == "manual" and clean_custom:
+                effective_save_dir = save_dir / clean_custom
+            elif sub_mode == "auto":
+                sub_name = get_subfolder_name(clean_item_name)
+                effective_save_dir = save_dir / sub_name
+            else:
+                effective_save_dir = save_dir
+            effective_save_dir.mkdir(parents=True, exist_ok=True)
+
             torrents_db[info_hash] = {
                 "hash": info_hash,
                 "ad_id": "DDL",
-                "name": sanitize_filename(raw_fname) or "fichier_ddl",
+                "name": clean_item_name,
                 "category": cat,
                 "transfer_mode": "download",
-                "save_path": str(save_dir),
-                "content_path": str(save_dir / sanitize_filename(raw_fname)),
+                "save_path": str(effective_save_dir),
+                "content_path": str(effective_save_dir / clean_item_name),
                 "linked_paths": [],
                 "size": 0,
                 "progress": 0.0,
@@ -500,6 +592,8 @@ async def api_upload_ddl(
                 "password": (password or "").strip(),
                 "download_url": "",
                 "error_msg": "",
+                "subfolder_mode": sub_mode,
+                "custom_subfolder": clean_custom,
             }
             added_items.append({"hash": info_hash, "name": raw_fname, "type": "ddl"})
         save_state()
@@ -909,6 +1003,8 @@ async def update_settings(
     service_modes_list: Optional[List[str]] = Form(None),
     service_subpaths: Optional[List[str]] = Form(None),
     onboarding_completed: Optional[str] = Form(None),
+    default_subfolder_mode: str = Form("none"),
+    default_subfolder_custom: str = Form(""),
 ):
     new_services: Dict[str, Dict[str, str]] = {}
     if service_names and service_modes_list:
@@ -1003,6 +1099,11 @@ async def update_settings(
             settings_db["whisparr_url"] = whisparr_url.strip() or "http://127.0.0.1:6969"
             settings_db["whisparr_api_key"] = whisparr_api_key.strip()
         settings_db["ddl_download_dir"] = ddl_download_dir.strip() or "/mnt/virtual/Medias/DL/DDL"
+        clean_sub_mode = default_subfolder_mode.strip().lower()
+        if clean_sub_mode not in ("none", "auto", "manual"):
+            clean_sub_mode = "none"
+        settings_db["default_subfolder_mode"] = clean_sub_mode
+        settings_db["default_subfolder_custom"] = sanitize_filename(default_subfolder_custom.strip())
         # Visibilité des onglets
         q_tab = enable_queue_tab == "on"
         d_tab = enable_ddl_tab == "on"
@@ -1309,6 +1410,11 @@ async def web_dashboard(saved: Optional[str] = None):
         .replace("__WHISPARR_URL__", html.escape(s.get("whisparr_url", "http://127.0.0.1:6969")))
         .replace("__WHISPARR_API_KEY__", html.escape(s.get("whisparr_api_key", "")))
         .replace("__DDL_DOWNLOAD_DIR__", html.escape(str(s.get("ddl_download_dir", "/mnt/virtual/Medias/DL/DDL"))))
+        .replace("__DEFAULT_SUBFOLDER_MODE__", html.escape(str(s.get("default_subfolder_mode", "none"))))
+        .replace("__DEFAULT_SUBFOLDER_CUSTOM__", html.escape(str(s.get("default_subfolder_custom", ""))))
+        .replace("__SELECTED_SUBFOLDER_NONE__", "selected" if s.get("default_subfolder_mode", "none") == "none" else "")
+        .replace("__SELECTED_SUBFOLDER_AUTO__", "selected" if s.get("default_subfolder_mode") == "auto" else "")
+        .replace("__SELECTED_SUBFOLDER_MANUAL__", "selected" if s.get("default_subfolder_mode") == "manual" else "")
         .replace("__CHECKED_QUEUE_TAB__", "checked" if s.get("enable_queue_tab", True) else "")
         .replace("__QUEUE_TAB_DISPLAY__", "" if s.get("enable_queue_tab", True) else "display:none;")
         .replace("__CHECKED_DDL_TAB__", "checked" if s.get("enable_ddl_tab", False) else "")

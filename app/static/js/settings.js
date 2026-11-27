@@ -1,3 +1,11 @@
+function toggleDefaultSubfolderCustom() {
+  const sel = document.getElementById('default_subfolder_mode');
+  const wrap = document.getElementById('default_subfolder_custom_wrap');
+  if (sel && wrap) {
+    wrap.style.display = sel.value === 'manual' ? 'block' : 'none';
+  }
+}
+
 function showSettingsPage(pageId) {
   const pages = ['alldebrid', 'storage', 'services', 'scanner', 'automation', 'security', 'appearance', 'notifications', 'system'];
   if (!pages.includes(pageId)) pageId = 'alldebrid';
@@ -15,6 +23,8 @@ function showSettingsPage(pageId) {
 
   const tgChk = document.getElementById('telegram_enabled');
   if (tgChk) toggleTelegramOptions(tgChk.checked);
+
+  toggleDefaultSubfolderCustom();
 
   const themeSel = document.getElementById('theme-select');
   if (themeSel) themeSel.value = currentTheme;
