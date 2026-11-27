@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.17.0] — 2026-11-27
+
+### Added
+- **Dynamic CPU Auto-Detection & Intelligent System Resource Throttling**:
+  - Added `get_auto_cpu_threshold()` helper detecting available CPU cores (`os.cpu_count()`) to automatically assign the optimal load limit (60% for 1-2 cores, 70% for 4 cores like Intel N100, 75% for 6-8 cores, 80% for 12+ cores).
+  - Default `Auto` mode (`0`) dynamically adapts to machine specifications out-of-the-box.
+  - Relocated system protection controls to the dedicated **9. Performance & System** sub-page (`setpage-system`).
+  - Added user-friendly dropdown selector indicating real-time CPU core count and auto-calculated threshold, with manual override presets (50%, 60%, 65%, 70%, 75%, 80%, 90%).
+
+## [2.16.0] — 2026-11-27
+
+### Added
+- **System Resource Protection During Transfers (CPU, RAM & I/O)**:
+  - **Zero RAM Bloat**: Active, continuous Linux Page Cache eviction via `os.posix_fadvise(..., POSIX_FADV_DONTNEED)` every 4MB of data written to disk, preventing artificial RAM ballooning and dirty buffer exhaustion.
+  - **Disk I/O Freeze Prevention**: Sequential hardware readahead (`POSIX_FADV_SEQUENTIAL`) and smoothed write buffers eliminating kernel dirty writeback storms that stall media players (Plex, Jellyfin).
+  - **75% Syscall & CPU Reduction**: Upgraded chunk transfer size from 256KB to 1MB, slashing context switches and syscall overhead during multi-gigabit transfers.
+  - **Lowered Scheduling Priority (`nice +10`)**: Transfer threads yield CPU cycles to critical system processes (Plex transcoding, Docker daemons, OS).
+  - **Adaptive CPU Load Throttling**: Lightweight `/proc/stat` reader (`CPULoadMonitor`) triggering gentle progressive micro-pauses (5ms to 25ms) when system-wide CPU utilization exceeds the configured threshold.
+
+## [2.15.0] — 2026-11-27
+
+### Added
+- **Lifecycle Download Size Display (*Before, During, After*)**:
+  - **Before** (*Queued, Resolving, Rclone checking*): Shows total expected payload size badge next to release title and under progress bar (`📦 X.XX GB`).
+  - **During** (*Downloading, Copying*): Displays live transferred bytes against total payload with real-time percentage (`📥 X.XX GB / Y.YY GB (ZZ%)`).
+  - **After** (*Completed, Paused*): Displays saved final size with dedicated status indicators (`💾 X.XX GB`).
+  - Full SSR (Server-Side Rendering) integration and unified support in the Direct Download (DDL) table.
+  - Localized binary units (`B, KB, MB, GB, TB` in English, `o, Ko, Mo, Go, To` in French).
+- **Live Updating Telegram Progress Notifications (`editMessageText`)**:
+  - Real-time download monitoring directly in Telegram without notification alert buzzer spam.
+  - Dynamic ASCII progress bar: `[██████░░░░] 60%` showing downloaded size, live speed, elapsed time, and ETA.
+  - Throttled update rate (every 4-5 seconds or upon >= 10% progress jump) fully compliant with Telegram Bot API limits.
+  - In-place completion editing: Seamlessly updates the existing progress message into `✅ OmniSym — Transfer Completed` with final statistics.
+  - Configurable `telegram_notify_progress` toggle in Settings > Telegram.
+
+## [2.14.0] — 2026-11-27
+
+### Added
+- **Subfolder Download Organization (Automatic & Manual)**:
+  - Option to automatically download torrents, magnets, and DDL links into subfolders matching release names (`subfolder_mode: auto`) or custom subfolders (`subfolder_mode: manual`).
+  - Integrated into manual upload modal, DDL dedicated view, Settings default profiles, and qBittorrent WebAPI (`/api/v2/torrents/add`).
+
+## [2.13.0] — 2026-11-26
+
+### Added
+- **Bilingual *arr API Error Diagnostics & Robustness**:
+  - Full English and French localization for all *arr connection diagnostics, connectivity testing, and error descriptions (Radarr, Sonarr, Whisparr, Lidarr, Readarr).
+
 ## [2.12.0] — 2026-11-25
 
 ### Added

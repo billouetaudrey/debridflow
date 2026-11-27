@@ -9,6 +9,55 @@ et applique le versionnage sémantique [Semantic Versioning](https://semver.org/
 
 ---
 
+## [2.17.0] — 2026-11-27
+
+### Ajouté
+- **Auto-détection CPU et optimisation intelligente des ressources système** :
+  - Fonction `get_auto_cpu_threshold()` analysant le nombre de cœurs processeur (`os.cpu_count()`) pour appliquer automatiquement le seuil optimal (60% pour 1-2 cœurs, 70% pour 4 cœurs comme l'Intel N100, 75% pour 6-8 cœurs, 80% pour 12+ cœurs).
+  - Mode `Auto` par défaut (`0`), s'adaptant à la machine sans configuration manuelle nécessaire.
+  - Déplacement de tous les paramètres de protection système dans la page dédiée **9. Performances & Système** (`setpage-system`).
+  - Menu déroulant ergonomique permettant soit le mode Auto avec indication en temps réel des cœurs et du seuil calculé, soit le choix d'un seuil forcé (50%, 60%, 65%, 70%, 75%, 80%, 90%).
+
+## [2.16.0] — 2026-11-27
+
+### Ajouté
+- **Protection des ressources système pendant les téléchargements (CPU, RAM & I/O)** :
+  - **Zéro ballonnement RAM** : Libération active et continue du cache mémoire Linux (*Page Cache*) via `os.posix_fadvise(..., POSIX_FADV_DONTNEED)` tous les 4 Mo écrits dans les fichiers temporaires et définitifs.
+  - **Élimination des micro-gels disque (I/O)** : Pré-lecture séquentielle matérielle (`POSIX_FADV_SEQUENTIAL`) et lissage des écritures pour éviter les tempêtes de *dirty writeback* qui bloquent le système.
+  - **Division par 4 de la charge CPU** : Passage de la taille des blocs de transfert de 256 Ko à 1 Mo, divisant par 4 le nombre d'appels système `read`/`write` à haut débit.
+  - **Priorité d'ordonnancement réduite (`nice +10`)** : Les threads de copie et de téléchargement cèdent automatiquement la priorité CPU aux processus vitaux du serveur (Plex, Jellyfin, Docker, système).
+  - **Régulateur adaptatif de charge CPU** : Mesure légère et continue de la charge CPU via `/proc/stat` (`CPULoadMonitor`) avec micro-pause progressive (5 à 25 ms) lorsque le CPU dépasse le seuil configuré.
+
+## [2.15.0] — 2026-11-27
+
+### Ajouté
+- **Affichage complet du cycle de vie de la taille du téléchargement (*Avant, Pendant, Après*)** :
+  - **Avant** (*En file, Résolution, Vérification rclone*) : Badge de taille totale prévisionnelle à côté du nom et sous la barre d'avancement (`📦 X.XX Go`).
+  - **Pendant** (*Téléchargement actif, Copie locale*) : Affichage dynamique du volume transféré par rapport au volume total et du pourcentage en direct (`📥 X.XX Go / Y.YY Go (ZZ%)`).
+  - **Après** (*Terminé, Pause*) : Confirmation de la taille finale enregistrée avec icône dédiée (`💾 X.XX Go`).
+  - Prise en charge complète en rendu serveur (SSR) et dans la file dédiée aux téléchargements directs (DDL).
+  - Localisation automatique des unités de taille (`o, Ko, Mo, Go, To` en français, `B, KB, MB, GB, TB` en anglais).
+- **Notifications Telegram avec barre de progression en temps réel (`editMessageText`)** :
+  - Suivi interactif des téléchargements en direct sur Telegram sans spam de notifications sonores.
+  - Barre de progression ASCII dynamique : `[██████░░░░] 60%` accompagnée de la taille, du débit instantané, du temps écoulé et de l'estimation de temps restant (ETA).
+  - Fréquence de mise à jour régulée (toutes les 4 à 5 secondes ou saut de 10 %) respectant les limites de débit de l'API Telegram.
+  - Finalisation sur place : le message de progression est automatiquement édité à 100 % en `✅ Récupération Terminée` avec les statistiques finales.
+  - Option configurable `telegram_notify_progress` dans la section Telegram des Paramètres.
+
+## [2.14.0] — 2026-11-27
+
+### Ajouté
+- **Téléchargement dans un sous-dossier automatique ou personnalisé (`subfolder_mode`)** :
+  - Possibilité de ranger automatiquement chaque torrent, magnet ou lien direct dans un sous-dossier portant le nom du téléchargement (`subfolder_mode: auto`) ou un nom personnalisé (`subfolder_mode: manual`).
+  - Intégration complète dans la modale d'ajout manuel, la page dédiée DDL, les profils par défaut dans les Paramètres, ainsi que l'API qBittorrent WebAPI (`/api/v2/torrents/add`).
+
+## [2.13.0] — 2026-11-26
+
+### Ajouté
+- **Améliorations de robustesse et internationalisation complète des erreurs API *arr** :
+  - Traduction bilingue exhaustive FR / EN de l'ensemble des diagnostics de connexion et tests API Radarr, Sonarr, Whisparr, Lidarr et Readarr.
+  - Détection précoce des codes d'erreur HTTP et des problèmes réseau avec conseils de résolution intégrés.
+
 ## [2.12.0] — 2026-11-25
 
 ### Ajouté
